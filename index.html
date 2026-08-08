@@ -6,492 +6,962 @@
 
 <title>AskirawaFi | Programmable USDC Treasury</title>
 
-<link rel="stylesheet" href="style.css">
+<style>
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", sans-serif;
+  background: #03090d;
+  color: #f4f7f8;
+  line-height: 1.5;
+}
+
+button {
+  font: inherit;
+  cursor: pointer;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+/* NAVIGATION */
+
+header {
+  width: 100%;
+  border-bottom: 1px solid #142229;
+  background: rgba(3, 9, 13, 0.96);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.navbar {
+  max-width: 1250px;
+  margin: auto;
+  padding: 18px 28px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 30px;
+}
+
+.logo {
+  font-size: 22px;
+  font-weight: 750;
+  letter-spacing: -0.5px;
+}
+
+.logo span {
+  color: #39d98a;
+}
+
+.nav-links {
+  display: flex;
+  gap: 32px;
+  color: #91a1aa;
+  font-size: 14px;
+}
+
+.nav-links a:hover {
+  color: #39d98a;
+}
+
+.nav-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.network {
+  border: 1px solid #1b343d;
+  border-radius: 10px;
+  padding: 10px 14px;
+  color: #cbd5d9;
+  font-size: 13px;
+}
+
+.connect {
+  border: 0;
+  background: #39d98a;
+  color: #03100a;
+  padding: 11px 18px;
+  border-radius: 9px;
+  font-weight: 700;
+}
+
+.connect:hover {
+  background: #50e6a0;
+}
+
+/* MAIN */
+
+main {
+  max-width: 1250px;
+  margin: auto;
+  padding: 58px 28px 80px;
+}
+
+.page-heading {
+  margin-bottom: 34px;
+}
+
+.eyebrow {
+  color: #39d98a;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  margin-bottom: 10px;
+}
+
+.page-heading h1 {
+  font-size: 38px;
+  line-height: 1.1;
+  letter-spacing: -1.5px;
+  margin-bottom: 10px;
+}
+
+.page-heading p {
+  color: #8d9da5;
+  font-size: 16px;
+}
+
+/* TOP TREASURY */
+
+.top-grid {
+  display: grid;
+  grid-template-columns: 1.5fr 1fr;
+  gap: 18px;
+  margin-bottom: 18px;
+}
+
+.card {
+  border: 1px solid #172b34;
+  background: linear-gradient(145deg, #071319, #050c11);
+  border-radius: 16px;
+}
+
+.main-balance {
+  padding: 34px;
+  min-height: 265px;
+  position: relative;
+  overflow: hidden;
+}
+
+.main-balance::after {
+  content: "";
+  position: absolute;
+  width: 260px;
+  height: 260px;
+  right: -90px;
+  top: -80px;
+  background: rgba(57, 217, 138, 0.08);
+  filter: blur(55px);
+  border-radius: 50%;
+}
+
+.balance-label {
+  color: #39d98a;
+  font-size: 12px;
+  letter-spacing: 1.5px;
+  font-weight: 700;
+}
+
+.balance-number {
+  font-size: 52px;
+  font-weight: 700;
+  letter-spacing: -2px;
+  margin-top: 20px;
+}
+
+.balance-unit {
+  color: #91a1aa;
+  margin-top: 4px;
+}
+
+.change {
+  display: inline-block;
+  margin-top: 24px;
+  padding: 7px 10px;
+  border-radius: 8px;
+  background: rgba(57, 217, 138, 0.08);
+  color: #39d98a;
+  font-size: 13px;
+}
+
+/* HEALTH */
+
+.health-card {
+  padding: 28px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-height: 265px;
+}
+
+.health-title {
+  color: #39d98a;
+  font-size: 12px;
+  letter-spacing: 1.5px;
+  font-weight: 700;
+}
+
+.health-status {
+  font-size: 30px;
+  font-weight: 700;
+  margin-top: 15px;
+}
+
+.health-description {
+  color: #8999a1;
+  margin-top: 4px;
+}
+
+/* SMALL STATS */
+
+.stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+  margin-bottom: 18px;
+}
+
+.stat {
+  padding: 22px;
+  min-height: 125px;
+}
+
+.stat-label {
+  color: #87979f;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+}
+
+.stat-value {
+  font-size: 25px;
+  font-weight: 700;
+  margin-top: 10px;
+}
+
+.stat-sub {
+  color: #87979f;
+  font-size: 13px;
+  margin-top: 3px;
+}
+
+/* ACTIVITY */
+
+.activity-card {
+  padding: 26px;
+  margin-bottom: 18px;
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 18px;
+}
+
+.section-header h2 {
+  font-size: 22px;
+}
+
+.view-all {
+  color: #39d98a;
+  font-size: 13px;
+}
+
+.activity-table {
+  width: 100%;
+}
+
+.table-head,
+.activity-row {
+  display: grid;
+  grid-template-columns: 1.2fr 1.5fr 1fr 0.8fr 0.8fr;
+  gap: 15px;
+  align-items: center;
+}
+
+.table-head {
+  color: #687982;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.7px;
+  padding: 13px 8px;
+  border-bottom: 1px solid #172a32;
+}
+
+.activity-row {
+  padding: 17px 8px;
+  border-bottom: 1px solid #102128;
+  font-size: 14px;
+}
+
+.activity-row:last-child {
+  border-bottom: 0;
+}
+
+.muted {
+  color: #82929a;
+  font-size: 12px;
+}
+
+.amount {
+  font-weight: 600;
+}
+
+.status {
+  display: inline-block;
+  width: fit-content;
+  padding: 5px 9px;
+  border-radius: 7px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.completed {
+  color: #39d98a;
+  background: rgba(57, 217, 138, 0.08);
+}
+
+.pending {
+  color: #e7c65b;
+  background: rgba(231, 198, 91, 0.08);
+}
+
+/* WHY SECTION */
+
+.why {
+  padding: 30px;
+}
+
+.why-heading {
+  margin-bottom: 22px;
+}
+
+.why-heading h2 {
+  font-size: 26px;
+  margin-bottom: 6px;
+}
+
+.why-heading p {
+  color: #87979f;
+}
+
+.features {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+}
+
+.feature {
+  border: 1px solid #172b34;
+  background: #071218;
+  border-radius: 13px;
+  padding: 24px;
+}
+
+.feature h3 {
+  font-size: 16px;
+  margin-bottom: 8px;
+}
+
+.feature p {
+  color: #8999a1;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+/* CTA */
+
+.cta {
+  margin-top: 18px;
+  padding: 30px;
+  border: 1px solid #194335;
+  border-radius: 16px;
+  background: linear-gradient(100deg, #061712, #071116);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.cta h2 {
+  font-size: 23px;
+  margin-bottom: 5px;
+}
+
+.cta p {
+  color: #82929a;
+  font-size: 14px;
+}
+
+.cta-button {
+  border: 0;
+  background: #39d98a;
+  color: #03100a;
+  padding: 12px 20px;
+  border-radius: 9px;
+  font-weight: 700;
+}
+
+/* FOOTER */
+
+footer {
+  border-top: 1px solid #142229;
+  padding: 28px;
+  color: #71818a;
+  font-size: 13px;
+}
+
+.footer-inner {
+  max-width: 1250px;
+  margin: auto;
+  display: flex;
+  justify-content: space-between;
+}
+
+/* MOBILE */
+
+@media (max-width: 850px) {
+
+  .navbar {
+    padding: 15px 18px;
+  }
+
+  .nav-links {
+    display: none;
+  }
+
+  .network {
+    display: none;
+  }
+
+  main {
+    padding: 38px 15px 60px;
+  }
+
+  .page-heading h1 {
+    font-size: 30px;
+  }
+
+  .top-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .balance-number {
+    font-size: 40px;
+  }
+
+  .stats {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .activity-card {
+    padding: 18px;
+    overflow-x: auto;
+  }
+
+  .activity-table {
+    min-width: 720px;
+  }
+
+  .features {
+    grid-template-columns: 1fr;
+  }
+
+  .cta {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .footer-inner {
+    flex-direction: column;
+    gap: 8px;
+  }
+}
+
+@media (max-width: 480px) {
+
+  .logo {
+    font-size: 19px;
+  }
+
+  .connect {
+    padding: 9px 12px;
+    font-size: 12px;
+  }
+
+  .stats {
+    grid-template-columns: 1fr;
+  }
+
+  .main-balance {
+    padding: 25px;
+  }
+
+  .health-card {
+    min-height: 190px;
+  }
+}
+</style>
 </head>
 
 <body>
 
 <header>
+  <div class="navbar">
 
-<div class="logo">AskirawaFi</div>
+    <div class="logo">
+      Askirawa<span>Fi</span>
+    </div>
 
-<nav>
-<a href="#dashboard">Dashboard</a>
-<a href="#features">Features</a>
-<a href="#activity">Activity</a>
-</nav>
+    <nav class="nav-links">
+      <a href="#dashboard">Dashboard</a>
+      <a href="#activity">Activity</a>
+      <a href="#automation">Automations</a>
+      <a href="#transactions">Transactions</a>
+    </nav>
 
-<button class="connect" onclick="connectWallet()">
-Connect Wallet
-</button>
+    <div class="nav-right">
 
+      <div class="network">
+        Arc Mainnet
+      </div>
+
+      <button class="connect">
+        Connect Wallet
+      </button>
+
+    </div>
+
+  </div>
 </header>
 
 
-<main>
+<main id="dashboard">
 
-<section class="hero">
+  <div class="page-heading">
 
-<div class="hero-content">
+    <div class="eyebrow">
+      Programmable USDC Treasury
+    </div>
 
-<div class="badge">
-● Built on Arc • Powered by Circle
-</div>
+    <h1>Dashboard Overview</h1>
 
-<h1>
-Programmable money for modern businesses.
-</h1>
+    <p>
+      Your programmable treasury in action.
+    </p>
 
-<p>
-AskirawaFi gives businesses a programmable USDC treasury for automated payments, payroll and financial operations.
-</p>
+  </div>
 
-<div class="hero-buttons">
 
-<button class="primary" onclick="scrollToDashboard()">
-Launch Treasury
-</button>
+  <!-- TREASURY TOP -->
 
-<button class="secondary" onclick="showMessage('AskirawaFi demo powered by USDC on Arc')">
-Watch Demo
-</button>
+  <section class="top-grid">
 
-</div>
+    <div class="card main-balance">
 
-</div>
+      <div class="balance-label">
+        TOTAL TREASURY
+      </div>
 
-<div class="hero-card">
+      <div class="balance-number">
+        $245,000.00
+      </div>
 
-<div class="card-top">
-<span>USDC TREASURY</span>
-<span class="status">● LIVE</span>
-</div>
+      <div class="balance-unit">
+        USDC
+      </div>
 
-<h2>$245,000.00</h2>
+      <div class="change">
+        +12.8% vs last month
+      </div>
 
-<div class="growth">
-+12.8% this month
-</div>
+    </div>
 
-<div class="mini-chart">
-<div></div>
-<div></div>
-<div></div>
-<div></div>
-<div></div>
-<div></div>
-<div></div>
-<div></div>
-</div>
 
-</div>
+    <div class="card health-card">
 
-</section>
+      <div>
+        <div class="health-title">
+          TREASURY HEALTH
+        </div>
 
+        <div class="health-status">
+          Healthy
+        </div>
 
-<section id="dashboard" class="dashboard">
+        <div class="health-description">
+          All systems operational
+        </div>
+      </div>
 
-<div class="section-heading">
+    </div>
 
-<div>
-<span class="eyebrow">TREASURY OVERVIEW</span>
-<h2>Financial control center</h2>
-</div>
+  </section>
 
-<div class="network">
-<span>●</span> Arc Network Operational
-</div>
 
-</div>
+  <!-- STATS -->
 
+  <section class="stats">
 
-<div class="stats">
+    <div class="card stat">
+      <div class="stat-label">
+        Available Balance
+      </div>
 
-<div class="stat-card">
-<span>Available Balance</span>
-<h3>$245,000</h3>
-<p>USDC</p>
-</div>
+      <div class="stat-value">
+        $245,000
+      </div>
 
-<div class="stat-card">
-<span>Automated Payments</span>
-<h3>128</h3>
-<p>This month</p>
-</div>
+      <div class="stat-sub">
+        USDC
+      </div>
+    </div>
 
-<div class="stat-card">
-<span>Pending Payments</span>
-<h3>07</h3>
-<p>Awaiting execution</p>
-</div>
 
-<div class="stat-card">
-<span>Settlement</span>
-<h3>&lt;1 sec</h3>
-<p>Arc finality</p>
-</div>
+    <div class="card stat">
+      <div class="stat-label">
+        Automated Payments
+      </div>
 
-</div>
+      <div class="stat-value">
+        128
+      </div>
 
+      <div class="stat-sub">
+        This month
+      </div>
+    </div>
 
-<div class="dashboard-grid">
 
-<div class="panel">
+    <div class="card stat">
+      <div class="stat-label">
+        Pending Payments
+      </div>
 
-<div class="panel-header">
+      <div class="stat-value">
+        07
+      </div>
 
-<div>
-<span class="eyebrow">TREASURY ACTIVITY</span>
-<h3>Balance movement</h3>
-</div>
+      <div class="stat-sub">
+        Awaiting execution
+      </div>
+    </div>
 
-<select>
-<option>Last 30 days</option>
-<option>Last 7 days</option>
-<option>This year</option>
-</select>
 
-</div>
+    <div class="card stat">
+      <div class="stat-label">
+        Total Spent
+      </div>
 
-<div class="chart">
+      <div class="stat-value">
+        $18,450
+      </div>
 
-<div class="chart-line"></div>
+      <div class="stat-sub">
+        This month
+      </div>
+    </div>
 
-<div class="chart-labels">
-<span>01</span>
-<span>07</span>
-<span>14</span>
-<span>21</span>
-<span>30</span>
-</div>
+  </section>
 
-</div>
 
-</div>
+  <!-- RECENT ACTIVITY -->
 
+  <section class="card activity-card" id="activity">
 
-<div class="panel">
+    <div class="section-header">
 
-<div class="panel-header">
+      <h2>
+        Recent Activity
+      </h2>
 
-<div>
-<span class="eyebrow">AUTOMATION</span>
-<h3>Payment queue</h3>
-</div>
+      <div class="view-all">
+        View All
+      </div>
 
-<span class="queue-count">07</span>
+    </div>
 
-</div>
 
-<div class="payment">
+    <div class="activity-table">
 
-<div>
-<strong>Team Payroll</strong>
-<span>12 recipients</span>
-</div>
+      <div class="table-head">
 
-<strong>$18,450</strong>
+        <div>Type</div>
+        <div>Description</div>
+        <div>Amount</div>
+        <div>Date</div>
+        <div>Status</div>
 
-</div>
+      </div>
 
-<div class="payment">
 
-<div>
-<strong>Vendor Settlement</strong>
-<span>Scheduled today</span>
-</div>
+      <div class="activity-row">
 
-<strong>$7,250</strong>
+        <div>Payroll</div>
 
-</div>
+        <div>
+          August Payroll
+        </div>
 
-<div class="payment">
+        <div class="amount">
+          18,450 USDC
+        </div>
 
-<div>
-<strong>Operations</strong>
-<span>Recurring payment</span>
-</div>
+        <div class="muted">
+          Today
+        </div>
 
-<strong>$3,800</strong>
+        <div class="status completed">
+          Completed
+        </div>
 
-</div>
+      </div>
 
-<button class="full-button" onclick="sendPayment()">
-+ Create Payment
-</button>
 
-</div>
+      <div class="activity-row">
 
-</div>
+        <div>Vendor Settlement</div>
 
-</section>
+        <div>
+          Arc Project Services
+        </div>
 
+        <div class="amount">
+          7,250 USDC
+        </div>
 
-<section id="activity" class="activity">
+        <div class="muted">
+          Today
+        </div>
 
-<div class="section-heading">
+        <div class="status completed">
+          Completed
+        </div>
 
-<div>
-<span class="eyebrow">TRANSACTIONS</span>
-<h2>Recent activity</h2>
-</div>
+      </div>
 
-<button class="secondary small" onclick="showMessage('Transaction history refreshed')">
-Refresh
-</button>
 
-</div>
+      <div class="activity-row">
 
+        <div>Operations</div>
 
-<div class="table">
+        <div>
+          Recurring Payment
+        </div>
 
-<div class="table-head">
-<span>Transaction</span>
-<span>Amount</span>
-<span>Status</span>
-</div>
+        <div class="amount">
+          3,800 USDC
+        </div>
 
+        <div class="muted">
+          Yesterday
+        </div>
 
-<div class="transaction">
+        <div class="status completed">
+          Completed
+        </div>
 
-<div>
-<strong>Payroll • August</strong>
-<span>Today • Arc</span>
-</div>
+      </div>
 
-<strong>$18,450 USDC</strong>
 
-<span class="success">Completed</span>
+      <div class="activity-row">
 
-</div>
+        <div>Treasury Deposit</div>
 
+        <div>
+          USDC Deposit
+        </div>
 
-<div class="transaction">
+        <div class="amount">
+          50,000 USDC
+        </div>
 
-<div>
-<strong>Vendor Settlement</strong>
-<span>Today • Arc</span>
-</div>
+        <div class="muted">
+          Yesterday
+        </div>
 
-<strong>$7,250 USDC</strong>
+        <div class="status pending">
+          Pending
+        </div>
 
-<span class="success">Completed</span>
+      </div>
 
-</div>
 
+      <div class="activity-row">
 
-<div class="transaction">
+        <div>Vendor Settlement</div>
 
-<div>
-<strong>Operations Reserve</strong>
-<span>Yesterday • Arc</span>
-</div>
+        <div>
+          Marketing Services
+        </div>
 
-<strong>$3,800 USDC</strong>
+        <div class="amount">
+          5,600 USDC
+        </div>
 
-<span class="pending">Pending</span>
+        <div class="muted">
+          2 days ago
+        </div>
 
-</div>
+        <div class="status completed">
+          Completed
+        </div>
 
+      </div>
 
-<div class="transaction">
 
-<div>
-<strong>Treasury Deposit</strong>
-<span>Yesterday • Arc</span>
-</div>
+      <div class="activity-row">
 
-<strong>+$50,000 USDC</strong>
+        <div>Payroll</div>
 
-<span class="success">Completed</span>
+        <div>
+          Team Payroll
+        </div>
 
-</div>
+        <div class="amount">
+          18,450 USDC
+        </div>
 
-</div>
+        <div class="muted">
+          3 days ago
+        </div>
 
-</section>
+        <div class="status completed">
+          Completed
+        </div>
 
+      </div>
 
-<section id="features" class="features">
+    </div>
 
-<div class="section-heading center">
+  </section>
 
-<span class="eyebrow">WHY ASKIRAWAFI</span>
 
-<h2>Money that works automatically.</h2>
+  <!-- WHY ASKIRAWAFI -->
 
-<p>
-Built around stablecoin-native financial operations.
-</p>
+  <section class="card why" id="automation">
 
-</div>
+    <div class="why-heading">
 
+      <div class="eyebrow">
+        WHY ASKIRAWAFI
+      </div>
 
-<div class="feature-grid">
+      <h2>
+        Money that works automatically.
+      </h2>
 
-<div class="feature">
-<div class="icon">₮</div>
-<h3>USDC Native</h3>
-<p>Keep treasury operations denominated in a stable digital dollar.</p>
-</div>
+      <p>
+        Built around stablecoin-native financial operations.
+      </p>
 
-<div class="feature">
-<div class="icon">⚡</div>
-<h3>Arc Settlement</h3>
-<p>Fast and predictable settlement for programmable financial workflows.</p>
-</div>
+    </div>
 
-<div class="feature">
-<div class="icon">↻</div>
-<h3>Automation</h3>
-<p>Schedule recurring payments and treasury rules without manual intervention.</p>
-</div>
 
-<div class="feature">
-<div class="icon">◎</div>
-<h3>Business Ready</h3>
-<p>Designed for organizations managing payroll, vendors and operational funds.</p>
-</div>
+    <div class="features">
 
-</div>
+      <div class="feature">
 
-</section>
+        <h3>
+          USDC Native
+        </h3>
 
+        <p>
+          Keep treasury operations denominated in a stable digital dollar.
+        </p>
 
-<section class="cta">
+      </div>
 
-<h2>Make your treasury programmable.</h2>
 
-<p>
-AskirawaFi turns USDC into an automated financial operating layer.
-</p>
+      <div class="feature">
 
-<button class="primary" onclick="scrollToDashboard()">
-Open Treasury
-</button>
+        <h3>
+          Arc Settlement
+        </h3>
 
-</section>
+        <p>
+          Fast and predictable settlement for programmable financial workflows.
+        </p>
+
+      </div>
+
+
+      <div class="feature">
+
+        <h3>
+          Automation
+        </h3>
+
+        <p>
+          Schedule recurring payments and treasury rules without manual intervention.
+        </p>
+
+      </div>
+
+    </div>
+
+  </section>
+
+
+  <!-- CTA -->
+
+  <section class="cta" id="transactions">
+
+    <div>
+
+      <h2>
+        Make your treasury programmable.
+      </h2>
+
+      <p>
+        AskirawaFi turns USDC into an automated financial operating layer.
+      </p>
+
+    </div>
+
+    <button class="cta-button">
+      Start Building
+    </button>
+
+  </section>
 
 </main>
 
 
 <footer>
 
-<div class="logo">AskirawaFi</div>
+  <div class="footer-inner">
 
-<p>
-Programmable USDC Treasury • Built on Arc • Powered by Circle
-</p>
+    <div>
+      AskirawaFi
+    </div>
+
+    <div>
+      Programmable USDC Treasury. Built on Arc.
+    </div>
+
+  </div>
 
 </footer>
 
 
-<div id="toast" class="toast"></div>
-
-
 <script src="script.js"></script>
-<section id="treasury" class="treasury-dashboard">
 
-  <div class="section-label">TREASURY CONTROL CENTER</div>
-
-  <div class="treasury-header">
-    <div>
-      <h2>Your USDC Treasury</h2>
-      <p>
-        Monitor balances, manage payments and automate financial operations
-        from one programmable treasury.
-      </p>
-    </div>
-
-    <div class="treasury-status">
-      <span class="status-dot"></span>
-      Treasury Active
-    </div>
-  </div>
-
-  <div class="treasury-grid">
-
-    <div class="treasury-card treasury-balance">
-      <span class="card-label">AVAILABLE USDC</span>
-      <strong>$245,000.00</strong>
-      <span class="card-change">+12.8% this month</span>
-    </div>
-
-    <div class="treasury-card">
-      <span class="card-label">AUTOMATED PAYMENTS</span>
-      <strong>128</strong>
-      <span class="card-muted">This month</span>
-    </div>
-
-    <div class="treasury-card">
-      <span class="card-label">NEXT PAYMENT</span>
-      <strong>2,500 USDC</strong>
-      <span class="card-muted">Due in 2 days</span>
-    </div>
-
-    <div class="treasury-card">
-      <span class="card-label">NETWORK</span>
-      <strong>Arc</strong>
-      <span class="card-muted">USDC-native infrastructure</span>
-    </div>
-
-  </div>
-
-  <div class="treasury-actions">
-
-    <button class="action-button primary-action" id="sendPayment">
-      Send USDC
-    </button>
-
-    <button class="action-button" id="schedulePayment">
-      Schedule Payment
-    </button>
-
-    <button class="action-button" id="viewActivity">
-      View Activity
-    </button>
-
-  </div>
-
-  <div class="activity-panel" id="activity">
-
-    <div class="activity-header">
-      <div>
-        <span class="section-label">RECENT ACTIVITY</span>
-        <h3>Treasury Transactions</h3>
-      </div>
-
-      <span class="activity-live">
-        ● LIVE
-      </span>
-    </div>
-
-    <div class="activity-row">
-      <div>
-        <strong>Payroll distribution</strong>
-        <span>USDC payment</span>
-      </div>
-      <strong>-12,500 USDC</strong>
-    </div>
-
-    <div class="activity-row">
-      <div>
-        <strong>Client settlement</strong>
-        <span>Incoming USDC</span>
-      </div>
-      <strong>+25,000 USDC</strong>
-    </div>
-
-    <div class="activity-row">
-      <div>
-        <strong>Vendor payment</strong>
-        <span>Automated transfer</span>
-      </div>
-      <strong>-4,250 USDC</strong>
-    </div>
-
-  </div>
-
-</section>
 </body>
 </html>
