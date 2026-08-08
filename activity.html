@@ -99,7 +99,17 @@
 
       </div>
 
+<div class="wallet-summary">
+  <div>
+    <span class="label">CONNECTED WALLET</span>
+    <div id="walletAddress">Not connected</div>
+  </div>
 
+  <div>
+    <span class="label">NETWORK</span>
+    <div>Arc Mainnet</div>
+  </div>
+</div>
       <div id="activityList">
 
         <div class="empty-state">
@@ -140,6 +150,39 @@ searchInput.addEventListener("input", function () {
   });
 
 });
+<script>
+const walletAddress = document.getElementById("walletAddress");
+
+function shortenAddress(address) {
+  return address.slice(0, 6) + "..." + address.slice(-4);
+}
+
+async function updateWalletAddress() {
+  if (!window.ethereum) {
+    walletAddress.textContent = "Not connected";
+    return;
+  }
+
+  try {
+    const accounts = await window.ethereum.request({
+      method: "eth_accounts"
+    });
+
+    if (accounts.length > 0) {
+      walletAddress.textContent = shortenAddress(accounts[0]);
+    } else {
+      walletAddress.textContent = "Not connected";
+    }
+  } catch (error) {
+    console.error("Unable to read wallet:", error);
+  }
+}
+
+updateWalletAddress();
+
+if (window.ethereum) {
+  window.ethereum.on("accountsChanged", updateWalletAddress);
+}
 </script>
 
 </body>
