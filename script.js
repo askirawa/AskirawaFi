@@ -1,30 +1,68 @@
-document.addEventListener("DOMContentLoaded", () => {
+// AskirawaFi Treasury Dashboard
+// Interactive frontend logic
 
-  const treasury = document.getElementById("treasury");
-  const transactions = document.getElementById("transactions");
-  const uptime = document.getElementById("uptime");
+const treasury = {
+  balance: 245000,
+  transactions: 128,
+  reliability: 99.99
+};
 
-  function animate(element, start, end, duration, prefix = "", suffix = "") {
-    let startTime = null;
+function formatUSDC(amount) {
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+    maximumFractionDigits: 2
+  }).format(amount);
+}
 
-    function step(timestamp) {
-      if (!startTime) startTime = timestamp;
-      const progress = Math.min((timestamp - startTime) / duration, 1);
+function updateTreasury() {
+  const balanceElement = document.getElementById("treasuryBalance");
+  const transactionsElement = document.getElementById("transactionCount");
+  const reliabilityElement = document.getElementById("reliability");
 
-      const value = Math.floor(progress * (end - start) + start);
-
-      element.innerHTML = prefix + value.toLocaleString() + suffix;
-
-      if (progress < 1) {
-        requestAnimationFrame(step);
-      }
-    }
-
-    requestAnimationFrame(step);
+  if (balanceElement) {
+    balanceElement.textContent = formatUSDC(treasury.balance);
   }
 
-  animate(treasury, 0, 245000, 1800, "$");
-  animate(transactions, 0, 128, 1800);
-  animate(uptime, 0, 99, 1800, "", "%");
+  if (transactionsElement) {
+    transactionsElement.textContent = treasury.transactions;
+  }
 
+  if (reliabilityElement) {
+    reliabilityElement.textContent = `${treasury.reliability}%`;
+  }
+}
+
+function simulateTransaction() {
+  const amount = 1000;
+
+  if (treasury.balance < amount) {
+    alert("Insufficient treasury balance.");
+    return;
+  }
+
+  treasury.balance -= amount;
+  treasury.transactions += 1;
+
+  updateTreasury();
+
+  alert(
+    `Transaction simulated successfully.\n\n${formatUSDC(
+      amount
+    )} USDC processed through AskirawaFi.`
+  );
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  updateTreasury();
+
+  const transactionButton =
+    document.getElementById("simulateTransaction");
+
+  if (transactionButton) {
+    transactionButton.addEventListener(
+      "click",
+      simulateTransaction
+    );
+  }
 });
