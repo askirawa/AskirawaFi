@@ -11,32 +11,31 @@ document.addEventListener("DOMContentLoaded", async () => {
     return;
   }
 
+  // Reown Project ID
   const PROJECT_ID = "c7bb3a991b675f05777c830bac0f18de";
 
+  // Arc Mainnet
   const ARC_CHAIN_ID = 5042;
 
   const ARC_NETWORK = {
     id: ARC_CHAIN_ID,
     name: "Arc Mainnet",
     nativeCurrency: {
-      name: "USD Coin",
+      name: "USDC",
       symbol: "USDC",
-      decimals: 6
+      decimals: 6,
     },
     rpcUrls: {
       default: {
-        http: ["https://rpc.arc.network"]
+        http: ["https://rpc.arc.network"],
       },
-      public: {
-        http: ["https://rpc.arc.network"]
-      }
     },
     blockExplorers: {
       default: {
         name: "Arc Explorer",
-        url: "https://explorer.arc.io"
-      }
-    }
+        url: "https://explorer.arc.io",
+      },
+    },
   };
 
   let modal = null;
@@ -46,27 +45,34 @@ document.addEventListener("DOMContentLoaded", async () => {
       connectButton.disabled = true;
       connectButton.textContent = "Connecting...";
 
+      // Load Reown AppKit
+      const { createAppKit } = await import(
+        "https://esm.sh/@reown/appkit"
+      );
+
+      const { EthersAdapter } = await import(
+        "https://esm.sh/@reown/appkit-adapter-ethers"
+      );
+
+      const { defineChain } = await import(
+        "https://esm.sh/@reown/appkit/networks"
+      );
+
+      // Define Arc
+      const arc = defineChain(ARC_NETWORK);
+
+      // Ethers adapter
+      const adapter = new EthersAdapter();
+
+      // Create AppKit only once
       if (!modal) {
-        const { createAppKit } = await import(
-          "https://esm.sh/@reown/appkit"
-        );
-
-        const { EthersAdapter } = await import(
-          "https://esm.sh/@reown/appkit-adapter-ethers"
-        );
-
-        const { defineChain } = await import(
-          "https://esm.sh/@reown/appkit/networks"
-        );
-
-        const arc = defineChain(ARC_NETWORK);
-
-        const adapter = new EthersAdapter();
-
         modal = createAppKit({
           adapters: [adapter],
+
           networks: [arc],
+
           defaultNetwork: arc,
+
           projectId: PROJECT_ID,
 
           metadata: {
@@ -74,33 +80,39 @@ document.addEventListener("DOMContentLoaded", async () => {
             description:
               "Programmable USDC Treasury built on Arc",
             url: window.location.origin,
-            icons: []
+            icons: [],
           },
 
           features: {
-            analytics: true
+            analytics: true,
           },
 
+          allWallets: "SHOW",
+
           enableWallets: true,
+
           enableNetworkSwitch: true,
-          enableReconnect: true
+
+          enableReconnect: true,
         });
       }
 
-      modal.open({
-        view: "Connect"
+      // Open the wallet connection interface
+      await modal.open({
+        view: "Connect",
       });
 
-      connectButton.disabled = false;
       connectButton.textContent = "Connect Wallet";
+      connectButton.disabled = false;
+
     } catch (error) {
       console.error("Wallet connection error:", error);
 
-      connectButton.disabled = false;
       connectButton.textContent = "Connect Wallet";
+      connectButton.disabled = false;
 
       alert(
-        "Unable to open the wallet connection window. Please refresh the page and try again."
+        "Unable to open the wallet connection window. Please try again."
       );
     }
   });
