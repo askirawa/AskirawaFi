@@ -1,60 +1,107 @@
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", async () => {
   const buttons = Array.from(document.querySelectorAll("button"));
+
   const connectButton = buttons.find(
-    (button) => button.textContent.trim().toLowerCase() === "connect wallet"
+    (button) =>
+      button.textContent.trim().toLowerCase() === "connect wallet"
   );
 
-  if (!connectButton) return;
+  if (!connectButton) {
+    console.error("Connect Wallet button not found.");
+    return;
+  }
+
+  const PROJECT_ID = "c7bb3a991b675f05777c830bac0f18de";
+
+  const ARC_CHAIN_ID = 5042;
+
+  const ARC_NETWORK = {
+    id: ARC_CHAIN_ID,
+    name: "Arc Mainnet",
+    nativeCurrency: {
+      name: "USD Coin",
+      symbol: "USDC",
+      decimals: 6
+    },
+    rpcUrls: {
+      default: {
+        http: ["https://rpc.arc.network"]
+      },
+      public: {
+        http: ["https://rpc.arc.network"]
+      }
+    },
+    blockExplorers: {
+      default: {
+        name: "Arc Explorer",
+        url: "https://explorer.arc.io"
+      }
+    }
+  };
+
+  let modal = null;
 
   connectButton.addEventListener("click", async () => {
-    if (!window.ethereum) {
-      alert("Please open AskirawaFi in MetaMask or install MetaMask.");
-      return;
-    }
-
     try {
-      const accounts = await window.ethereum.request({
-        method: "eth_requestAccounts"
-      });
+      connectButton.disabled = true;
+      connectButton.textContent = "Connecting...";
 
-      const address = accounts[0];
+      if (!modal) {
+        const { createAppKit } = await import(
+          "https://esm.sh/@reown/appkit"
+        );
 
-      try {
-        await window.ethereum.request({
-          method: "wallet_switchEthereumChain",
-          params: [{ chainId: "0x13b2" }]
+        const { EthersAdapter } = await import(
+          "https://esm.sh/@reown/appkit-adapter-ethers"
+        );
+
+        const { defineChain } = await import(
+          "https://esm.sh/@reown/appkit/networks"
+        );
+
+        const arc = defineChain(ARC_NETWORK);
+
+        const adapter = new EthersAdapter();
+
+        modal = createAppKit({
+          adapters: [adapter],
+          networks: [arc],
+          defaultNetwork: arc,
+          projectId: PROJECT_ID,
+
+          metadata: {
+            name: "AskirawaFi",
+            description:
+              "Programmable USDC Treasury built on Arc",
+            url: window.location.origin,
+            icons: []
+          },
+
+          features: {
+            analytics: true
+          },
+
+          enableWallets: true,
+          enableNetworkSwitch: true,
+          enableReconnect: true
         });
-      } catch (switchError) {
-        if (switchError.code === 4902) {
-          await window.ethereum.request({
-            method: "wallet_addEthereumChain",
-            params: [{
-              chainId: "0x13b2",
-              chainName: "Arc",
-              nativeCurrency: {
-                name: "USDC",
-                symbol: "USDC",
-                decimals: 6
-              },
-              rpcUrls: ["https://rpc.arc.network"],
-              blockExplorerUrls: ["https://explorer.arc.io"]
-            }]
-          });
-        } else {
-          throw switchError;
-        }
       }
 
-      connectButton.textContent =
-        address.slice(0, 6) + "..." + address.slice(-4);
+      modal.open({
+        view: "Connect"
+      });
 
-      connectButton.dataset.connected = "true";
-
-      console.log("AskirawaFi wallet connected:", address);
-
+      connectButton.disabled = false;
+      connectButton.textContent = "Connect Wallet";
     } catch (error) {
-      console.error("Wallet connection failed:", error);
-      alert("Wallet connection was cancelled or failed.");
+      console.error("Wallet connection error:", error);
+
+      connectButton.disabled = false;
+      connectButton.textContent = "Connect Wallet";
+
+      alert(
+        "Unable to open the wallet connection window. Please refresh the page and try again."
+      );
     }
   });
 });
