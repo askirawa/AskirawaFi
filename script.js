@@ -1,137 +1,60 @@
 document.addEventListener("DOMContentLoaded", () => {
-  const connectWalletBtn = document.querySelector("#connectWallet");
-  const launchTreasuryBtn = document.querySelector("#launchTreasury");
-  const watchDemoBtn = document.querySelector("#watchDemo");
+  const buttons = Array.from(document.querySelectorAll("button"));
+  const connectButton = buttons.find(
+    (button) => button.textContent.trim().toLowerCase() === "connect wallet"
+  );
 
-  // Wallet connection
-  if (connectWalletBtn) {
-    connectWalletBtn.addEventListener("click", async () => {
-      if (typeof window.ethereum === "undefined") {
-        alert(
-          "No compatible wallet detected. Please open AskirawaFi in a Web3-enabled wallet."
-        );
-        return;
-      }
+  if (!connectButton) return;
+
+  connectButton.addEventListener("click", async () => {
+    if (!window.ethereum) {
+      alert("Please open AskirawaFi in MetaMask or install MetaMask.");
+      return;
+    }
+
+    try {
+      const accounts = await window.ethereum.request({
+        method: "eth_requestAccounts"
+      });
+
+      const address = accounts[0];
 
       try {
-        const accounts = await window.ethereum.request({
-          method: "eth_requestAccounts"
+        await window.ethereum.request({
+          method: "wallet_switchEthereumChain",
+          params: [{ chainId: "0x13b2" }]
         });
-
-        if (accounts.length > 0) {
-          const address = accounts[0];
-          connectWalletBtn.textContent =
-            address.slice(0, 6) + "..." + address.slice(-4);
-
-          connectWalletBtn.classList.add("connected");
-
-          alert("Wallet connected successfully.");
-        }
-      } catch (error) {
-        console.error("Wallet connection failed:", error);
-      }
-    });
-  }
-
-  // Launch Treasury
-  if (launchTreasuryBtn) {
-    launchTreasuryBtn.addEventListener("click", () => {
-      const treasurySection = document.querySelector("#treasury");
-
-      if (treasurySection) {
-        treasurySection.scrollIntoView({
-          behavior: "smooth"
-        });
-      }
-    });
-  }
-
-  // Watch Demo
-  if (watchDemoBtn) {
-    watchDemoBtn.addEventListener("click", () => {
-      alert(
-        "AskirawaFi demo: programmable USDC treasury management powered by Arc and Circle."
-      );
-    });
-  }
-
-  // Smooth navigation
-  document.querySelectorAll('a[href^="#"]').forEach((link) => {
-    link.addEventListener("click", (event) => {
-      const targetId = link.getAttribute("href");
-
-      if (targetId && targetId !== "#") {
-        const target = document.querySelector(targetId);
-
-        if (target) {
-          event.preventDefault();
-
-          target.scrollIntoView({
-            behavior: "smooth"
+      } catch (switchError) {
+        if (switchError.code === 4902) {
+          await window.ethereum.request({
+            method: "wallet_addEthereumChain",
+            params: [{
+              chainId: "0x13b2",
+              chainName: "Arc",
+              nativeCurrency: {
+                name: "USDC",
+                symbol: "USDC",
+                decimals: 6
+              },
+              rpcUrls: ["https://rpc.arc.network"],
+              blockExplorerUrls: ["https://explorer.arc.io"]
+            }]
           });
+        } else {
+          throw switchError;
         }
       }
-    });
+
+      connectButton.textContent =
+        address.slice(0, 6) + "..." + address.slice(-4);
+
+      connectButton.dataset.connected = "true";
+
+      console.log("AskirawaFi wallet connected:", address);
+
+    } catch (error) {
+      console.error("Wallet connection failed:", error);
+      alert("Wallet connection was cancelled or failed.");
+    }
   });
 });
-// =========================================
-// TREASURY CONTROL CENTER INTERACTIONS
-// =========================================
-
-const sendPaymentBtn = document.querySelector("#sendPayment");
-const schedulePaymentBtn = document.querySelector("#schedulePayment");
-const viewActivityBtn = document.querySelector("#viewActivity");
-
-// Send USDC
-if (sendPaymentBtn) {
-  sendPaymentBtn.addEventListener("click", () => {
-    const amount = prompt("Enter the USDC amount you want to send:");
-
-    if (amount === null) return;
-
-    const value = Number(amount);
-
-    if (!value || value <= 0) {
-      alert("Please enter a valid USDC amount.");
-      return;
-    }
-
-    alert(
-      `Payment request created for ${value.toLocaleString()} USDC.\n\nWallet confirmation will be required before the transaction is executed.`
-    );
-  });
-}
-
-// Schedule payment
-if (schedulePaymentBtn) {
-  schedulePaymentBtn.addEventListener("click", () => {
-    const amount = prompt("Enter the USDC amount to schedule:");
-
-    if (amount === null) return;
-
-    const value = Number(amount);
-
-    if (!value || value <= 0) {
-      alert("Please enter a valid USDC amount.");
-      return;
-    }
-
-    alert(
-      `Scheduled payment created for ${value.toLocaleString()} USDC.\n\nAutomation rules will determine when the payment is executed.`
-    );
-  });
-}
-
-// View activity
-if (viewActivityBtn) {
-  viewActivityBtn.addEventListener("click", () => {
-    const activitySection = document.querySelector("#activity");
-
-    if (activitySection) {
-      activitySection.scrollIntoView({
-        behavior: "smooth",
-        block: "start"
-      });
-    }
-  });
-}
