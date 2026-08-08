@@ -1,25 +1,33 @@
-
-/* =========================================
+/* =========================================================
    ASKIRAWAFI — PROFESSIONAL FINTECH UI
-   ========================================= */
+   ========================================================= */
 
 :root {
-  --bg: #070b12;
-  --bg-secondary: #0c111a;
-  --card: #101722;
-  --card-hover: #151e2b;
-  --border: #202b3a;
-  --text: #f5f7fa;
-  --muted: #9aa7b8;
-  --accent: #5ee6b0;
-  --accent-dark: #1d9b70;
-  --blue: #5c8cff;
-  --white: #ffffff;
+  --bg: #071016;
+  --surface: #0b151c;
+  --surface-2: #0e1a22;
+  --border: #1b303b;
+  --border-soft: #162730;
+
+  --text: #f4f7f8;
+  --text-secondary: #9baab3;
+  --text-muted: #6f808a;
+
+  --green: #35d98a;
+  --green-dark: #123b2c;
+  --green-soft: rgba(53, 217, 138, 0.10);
+
+  --warning: #e8b84c;
+  --warning-soft: rgba(232, 184, 76, 0.10);
+
+  --radius: 14px;
+  --radius-lg: 18px;
+  --container: 1240px;
 }
 
+/* ---------- RESET ---------- */
+
 * {
-  margin: 0;
-  padding: 0;
   box-sizing: border-box;
 }
 
@@ -28,12 +36,29 @@ html {
 }
 
 body {
-  font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI",
-    Roboto, Helvetica, Arial, sans-serif;
+  margin: 0;
   background: var(--bg);
   color: var(--text);
-  line-height: 1.6;
-  overflow-x: hidden;
+  font-family:
+    Inter,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+  font-size: 15px;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
 }
 
 a {
@@ -41,807 +66,682 @@ a {
   text-decoration: none;
 }
 
-button {
-  font: inherit;
+/* ---------- PAGE ---------- */
+
+body::selection {
+  background: rgba(53, 217, 138, 0.25);
 }
 
-
-/* =========================================
-   NAVIGATION
-   ========================================= */
-
-.navbar {
+/* Keep the main content comfortably centered */
+main,
+.container,
+.dashboard,
+.app,
+section {
   width: 100%;
-  max-width: 1200px;
-  margin: auto;
-  padding: 24px 28px;
-
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 30px;
 }
 
-.logo {
-  font-size: 22px;
-  font-weight: 800;
-  letter-spacing: -0.5px;
+/* ---------- HEADINGS ---------- */
+
+h1,
+h2,
+h3,
+h4,
+p {
+  margin-top: 0;
 }
 
-.navbar nav {
-  display: flex;
-  gap: 28px;
-  color: var(--muted);
-  font-size: 14px;
+h1,
+h2,
+h3,
+h4 {
+  color: var(--text);
+  letter-spacing: -0.025em;
 }
 
-.navbar nav a {
-  transition: color 0.2s ease;
-}
-
-.navbar nav a:hover {
-  color: var(--white);
-}
-
-.github-link {
-  border: 1px solid var(--border);
-  padding: 9px 16px;
-  border-radius: 10px;
-  font-size: 14px;
-  transition: 0.2s ease;
-}
-
-.github-link:hover {
-  background: var(--card);
-  border-color: #344154;
-}
-
-
-/* =========================================
-   HERO
-   ========================================= */
-
-.hero {
-  position: relative;
-  min-height: 680px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  padding: 100px 24px;
-
-  text-align: center;
-
-  background:
-    radial-gradient(
-      circle at 50% 20%,
-      rgba(50, 180, 130, 0.13),
-      transparent 35%
-    ),
-    var(--bg);
-}
-
-.hero-content {
-  max-width: 900px;
-}
-
-.badge,
-.section-label {
-  display: inline-block;
-
-  color: var(--accent);
-  font-size: 12px;
+h1 {
+  font-size: clamp(30px, 4vw, 46px);
+  line-height: 1.08;
   font-weight: 700;
-
-  letter-spacing: 1.5px;
-  text-transform: uppercase;
 }
 
-.badge {
-  padding: 8px 14px;
-  border: 1px solid rgba(94, 230, 176, 0.25);
-  border-radius: 999px;
-  background: rgba(94, 230, 176, 0.05);
+h2 {
+  font-size: 26px;
+  line-height: 1.2;
+  font-weight: 650;
+}
+
+h3 {
+  font-size: 18px;
+  font-weight: 600;
+}
+
+p {
+  color: var(--text-secondary);
+}
+
+/* ---------- HEADER ---------- */
+
+header,
+nav {
+  background: rgba(7, 16, 22, 0.94);
+  border-bottom: 1px solid var(--border);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+
+header {
+  min-height: 78px;
+  display: flex;
+  align-items: center;
+  padding: 0 32px;
+}
+
+nav {
+  min-height: 78px;
+  display: flex;
+  align-items: center;
+}
+
+/* ---------- BRAND ---------- */
+
+.logo,
+.brand,
+.brand-name {
+  color: var(--text);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.brand-subtitle {
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+/* ---------- NAVIGATION ---------- */
+
+nav a {
+  color: var(--text-secondary);
+  transition: color 160ms ease;
+}
+
+nav a:hover,
+nav a.active {
+  color: var(--green);
+}
+
+nav a.active {
+  font-weight: 600;
+}
+
+/* ---------- BUTTONS ---------- */
+
+button,
+.btn,
+button[type="button"],
+button[type="submit"] {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  min-height: 42px;
+  padding: 0 17px;
+  background: var(--surface-2);
+  color: var(--text);
+  font-weight: 600;
+  transition:
+    background 160ms ease,
+    border-color 160ms ease,
+    transform 160ms ease;
+}
+
+button:hover,
+.btn:hover {
+  border-color: #2b4653;
+  background: #12212a;
+}
+
+button:active,
+.btn:active {
+  transform: translateY(1px);
+}
+
+/* Green primary actions */
+
+button.primary,
+.btn-primary,
+.primary,
+.connect-wallet,
+button[data-action="connect"] {
+  background: var(--green);
+  border-color: var(--green);
+  color: #04130c;
+}
+
+button.primary:hover,
+.btn-primary:hover,
+.primary:hover,
+.connect-wallet:hover,
+button[data-action="connect"]:hover {
+  background: #4ae39a;
+  border-color: #4ae39a;
+}
+
+/* ---------- DASHBOARD WRAPPER ---------- */
+
+main {
+  max-width: var(--container);
+  margin: 0 auto;
+  padding: 42px 28px 70px;
+}
+
+/* ---------- SECTION SPACING ---------- */
+
+section {
   margin-bottom: 28px;
 }
 
-.hero h1 {
-  font-size: clamp(44px, 7vw, 78px);
-  line-height: 1.02;
-  letter-spacing: -3px;
-  font-weight: 800;
+section + section {
+  margin-top: 28px;
 }
 
-.hero h1 span {
-  display: block;
-  color: var(--accent);
-}
+/* ---------- CARDS ---------- */
 
-.hero p {
-  max-width: 700px;
-  margin: 30px auto 0;
-
-  color: var(--muted);
-  font-size: 18px;
-}
-
-.hero-buttons {
-  margin-top: 38px;
-
-  display: flex;
-  justify-content: center;
-  gap: 14px;
-  flex-wrap: wrap;
-}
-
-
-/* =========================================
-   BUTTONS
-   ========================================= */
-
-.primary-button,
-.secondary-button {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-
-  min-height: 48px;
-  padding: 0 22px;
-
-  border-radius: 10px;
-
-  font-weight: 700;
-  font-size: 14px;
-
-  transition:
-    transform 0.2s ease,
-    background 0.2s ease,
-    border-color 0.2s ease;
-}
-
-.primary-button {
-  border: none;
-  background: var(--accent);
-  color: #06110d;
-  cursor: pointer;
-}
-
-.primary-button:hover {
-  transform: translateY(-2px);
-  background: #79efc2;
-}
-
-.secondary-button {
+.card,
+.panel,
+.stat-card,
+.metric-card,
+.dashboard-card {
+  background: var(--surface);
   border: 1px solid var(--border);
-  background: var(--card);
+  border-radius: var(--radius);
+  box-shadow: none;
+}
+
+.card:hover,
+.panel:hover,
+.stat-card:hover,
+.metric-card:hover {
+  border-color: #25404c;
+}
+
+/* ---------- TREASURY OVERVIEW ---------- */
+
+.treasury,
+.treasury-card,
+.total-treasury {
+  background:
+    linear-gradient(
+      135deg,
+      rgba(18, 61, 45, 0.35),
+      rgba(11, 21, 28, 0.98) 58%
+    );
+  border: 1px solid #24483b;
+  border-radius: var(--radius-lg);
+  padding: 30px;
+}
+
+/* Large balance */
+
+.balance,
+.amount,
+.total-amount {
   color: var(--text);
+  font-size: clamp(34px, 5vw, 52px);
+  line-height: 1;
+  font-weight: 650;
+  letter-spacing: -0.04em;
 }
 
-.secondary-button:hover {
-  transform: translateY(-2px);
-  border-color: #3a485b;
-}
+/* Currency */
 
-
-/* =========================================
-   GENERAL SECTIONS
-   ========================================= */
-
-.section {
-  width: 100%;
-  max-width: 1200px;
-  margin: auto;
-
-  padding: 110px 28px;
-}
-
-.section-heading {
-  max-width: 700px;
-  margin-bottom: 48px;
-}
-
-.section-heading h2 {
-  margin-top: 12px;
-
-  font-size: clamp(32px, 5vw, 50px);
-  line-height: 1.1;
-  letter-spacing: -1.5px;
-}
-
-.section-heading p {
-  margin-top: 18px;
-  color: var(--muted);
+.currency,
+.symbol {
+  color: var(--text-secondary);
   font-size: 16px;
 }
 
+/* ---------- LABELS ---------- */
 
-/* =========================================
-   TREASURY DASHBOARD
-   ========================================= */
+.label,
+.card-label,
+.metric-label,
+.overline {
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
 
-.dashboard-grid {
+.green,
+.positive,
+.success {
+  color: var(--green);
+}
+
+/* ---------- GRID ---------- */
+
+.grid,
+.cards,
+.metrics,
+.stats-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 18px;
+  gap: 16px;
 }
 
+/* ---------- METRIC CARDS ---------- */
+
+.metric-card,
 .stat-card {
-  padding: 28px;
-
-  background:
-    linear-gradient(
-      145deg,
-      rgba(255, 255, 255, 0.025),
-      transparent
-    ),
-    var(--card);
-
-  border: 1px solid var(--border);
-  border-radius: 16px;
-
-  transition:
-    transform 0.2s ease,
-    border-color 0.2s ease;
+  padding: 22px;
+  min-height: 125px;
 }
 
-.stat-card:hover {
-  transform: translateY(-4px);
-  border-color: #334155;
+.metric-card .value,
+.stat-card .value {
+  margin: 8px 0 4px;
+  color: var(--text);
+  font-size: 25px;
+  font-weight: 650;
+  letter-spacing: -0.025em;
 }
 
-.stat-card span {
-  display: block;
-  color: var(--muted);
+.metric-card .description,
+.stat-card .description {
+  color: var(--text-muted);
   font-size: 13px;
 }
 
-.stat-card strong {
-  display: block;
+/* ---------- HEALTH ---------- */
 
-  margin-top: 12px;
-
-  font-size: 32px;
-  letter-spacing: -1px;
+.health,
+.treasury-health {
+  padding: 24px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
 }
 
-.stat-card small {
-  display: block;
-  margin-top: 8px;
-  color: #6f7d90;
+.health-status,
+.status-healthy {
+  color: var(--green);
+  font-size: 24px;
+  font-weight: 650;
 }
 
+/* ---------- RECENT ACTIVITY ---------- */
 
-/* =========================================
-   TREASURY ACTION PANEL
-   ========================================= */
+.activity,
+.recent-activity,
+.transactions {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
 
-.treasury-panel {
-  margin-top: 18px;
-
-  padding: 32px;
-
+.activity-header,
+.section-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 30px;
+  gap: 20px;
+  padding: 22px 24px;
+  border-bottom: 1px solid var(--border-soft);
+}
 
-  background:
-    radial-gradient(
-      circle at 80% 30%,
-      rgba(94, 230, 176, 0.08),
-      transparent 35%
-    ),
-    var(--card);
+.activity-header h2,
+.section-header h2 {
+  margin: 0;
+}
 
+/* ---------- TABLE ---------- */
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+thead {
+  background: rgba(255, 255, 255, 0.015);
+}
+
+th {
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 600;
+  text-align: left;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+th,
+td {
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border-soft);
+}
+
+td {
+  color: var(--text-secondary);
+}
+
+tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+tbody tr:hover {
+  background: rgba(255, 255, 255, 0.018);
+}
+
+td strong {
+  color: var(--text);
+  font-weight: 600;
+}
+
+/* ---------- STATUS ---------- */
+
+.status,
+.badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 27px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.status.completed,
+.badge.completed {
+  color: var(--green);
+  background: var(--green-soft);
+  border: 1px solid rgba(53, 217, 138, 0.15);
+}
+
+.status.pending,
+.badge.pending {
+  color: var(--warning);
+  background: var(--warning-soft);
+  border: 1px solid rgba(232, 184, 76, 0.15);
+}
+
+/* ---------- AUTOMATION ---------- */
+
+.automation,
+.payment-queue {
+  background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 18px;
+  border-radius: var(--radius-lg);
+  padding: 26px;
 }
 
-.panel-label {
-  color: var(--accent);
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 1.5px;
+.payment-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 18px 0;
+  border-bottom: 1px solid var(--border-soft);
 }
 
-.treasury-panel h3 {
-  margin-top: 8px;
-  font-size: 24px;
+.payment-item:last-child {
+  border-bottom: 0;
 }
 
-.treasury-panel p {
-  margin-top: 7px;
-  color: var(--muted);
+.payment-item strong {
+  color: var(--text);
 }
 
+/* ---------- WHY ASKIRAWAFI ---------- */
 
-/* =========================================
-   FEATURES
-   ========================================= */
+.why,
+.features,
+.feature-section {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 28px;
+}
 
 .feature-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 18px;
+  gap: 14px;
 }
 
 .feature-card {
-  min-height: 240px;
-  padding: 30px;
-
-  background: var(--card);
-
+  background: var(--surface-2);
   border: 1px solid var(--border);
-  border-radius: 16px;
-
-  transition:
-    transform 0.2s ease,
-    background 0.2s ease;
-}
-
-.feature-card:hover {
-  transform: translateY(-5px);
-  background: var(--card-hover);
-}
-
-.feature-number {
-  color: var(--accent);
-  font-size: 13px;
-  font-weight: 700;
+  border-radius: 12px;
+  padding: 22px;
 }
 
 .feature-card h3 {
-  margin-top: 35px;
-  font-size: 23px;
+  margin-bottom: 7px;
 }
 
 .feature-card p {
-  margin-top: 10px;
-  color: var(--muted);
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.65;
 }
 
+/* ---------- ICONS ---------- */
 
-/* =========================================
-   TECHNOLOGY
-   ========================================= */
+/*
+   Keep icons subtle.
+   No giant glowing circles, emojis or decorative symbols.
+*/
 
-.technology {
-  border-top: 1px solid var(--border);
+.icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  background: var(--green-soft);
+  color: var(--green);
+  border: 1px solid rgba(53, 217, 138, 0.12);
 }
 
-.technology-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 18px;
-}
+/* ---------- FORMS ---------- */
 
-.tech-card {
-  padding: 28px;
-
-  background: var(--card);
-
+input,
+select,
+textarea {
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 13px;
+  background: #09131a;
+  color: var(--text);
   border: 1px solid var(--border);
-  border-radius: 14px;
+  border-radius: 9px;
+  outline: none;
 }
 
-.tech-card strong {
+input:focus,
+select:focus,
+textarea:focus {
+  border-color: rgba(53, 217, 138, 0.55);
+  box-shadow: 0 0 0 3px rgba(53, 217, 138, 0.08);
+}
+
+label {
   display: block;
-  font-size: 22px;
+  margin-bottom: 7px;
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 500;
 }
 
-.tech-card span {
-  display: block;
-  margin-top: 8px;
-  color: var(--muted);
-  font-size: 14px;
+/* ---------- LINKS ---------- */
+
+a.green-link,
+.view-all {
+  color: var(--green);
+  font-weight: 600;
 }
 
-
-/* =========================================
-   CTA
-   ========================================= */
-
-.cta {
-  max-width: 1000px;
-  margin: 50px auto 110px;
-
-  padding: 80px 30px;
-
-  text-align: center;
-
-  border: 1px solid var(--border);
-  border-radius: 24px;
-
-  background:
-    radial-gradient(
-      circle at 50% 0%,
-      rgba(94, 230, 176, 0.12),
-      transparent 50%
-    ),
-    var(--card);
+a.green-link:hover,
+.view-all:hover {
+  text-decoration: underline;
 }
 
-.cta h2 {
-  max-width: 700px;
-  margin: 14px auto;
-
-  font-size: clamp(34px, 5vw, 54px);
-  line-height: 1.05;
-  letter-spacing: -1.5px;
-}
-
-.cta p {
-  max-width: 600px;
-  margin: 18px auto 30px;
-  color: var(--muted);
-}
-
-
-/* =========================================
-   FOOTER
-   ========================================= */
+/* ---------- FOOTER ---------- */
 
 footer {
-  max-width: 1200px;
-  margin: auto;
-
-  padding: 40px 28px 60px;
-
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 30px;
-
-  border-top: 1px solid var(--border);
-}
-
-footer strong {
-  font-size: 18px;
-}
-
-footer p {
-  margin-top: 5px;
-  color: var(--muted);
-  font-size: 13px;
-}
-
-footer a {
-  color: var(--accent);
-  font-size: 14px;
-}
-
-
-/* =========================================
-   MOBILE
-   ========================================= */
-
-@media (max-width: 800px) {
-
-  .navbar {
-    padding: 20px;
-  }
-
-  .navbar nav {
-    display: none;
-  }
-
-  .hero {
-    min-height: 620px;
-    padding: 80px 20px;
-  }
-
-  .hero h1 {
-    letter-spacing: -2px;
-  }
-
-  .hero p {
-    font-size: 16px;
-  }
-
-  .section {
-    padding: 80px 20px;
-  }
-
-  .dashboard-grid,
-  .feature-grid,
-  .technology-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .treasury-panel {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-
-  .treasury-panel .primary-button {
-    width: 100%;
-  }
-
-  .cta {
-    margin: 20px 20px 80px;
-    padding: 60px 20px;
-  }
-
-  footer {
-    margin: 0 20px;
-    padding-left: 0;
-    padding-right: 0;
-
-    align-items: flex-start;
-    flex-direction: column;
-  }
-}
-
-
-/* =========================================
-   ACCESSIBILITY
-   ========================================= */
-
-button:focus-visible,
-a:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 4px;
-}
-/* =========================================
-   ASKIRAWAFI — TREASURY CONTROL CENTER
-   ========================================= */
-
-.treasury-dashboard {
-  max-width: 1200px;
-  margin: 120px auto;
-  padding: 0 24px;
-}
-
-.section-label {
-  color: #63e6be;
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 2px;
-  text-transform: uppercase;
-}
-
-.treasury-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-end;
-  gap: 30px;
-  margin: 18px 0 42px;
-}
-
-.treasury-header h2 {
-  margin: 0 0 12px;
-  font-size: clamp(34px, 5vw, 58px);
-  line-height: 1;
-  letter-spacing: -2px;
-}
-
-.treasury-header p {
-  max-width: 650px;
-  margin: 0;
-  color: #94a3b8;
-  font-size: 17px;
-  line-height: 1.7;
-}
-
-.treasury-status {
-  display: flex;
-  align-items: center;
-  gap: 9px;
-  padding: 11px 16px;
-  border: 1px solid rgba(99, 230, 190, 0.25);
-  border-radius: 999px;
-  color: #cbd5e1;
-  background: rgba(99, 230, 190, 0.06);
-  white-space: nowrap;
-}
-
-.status-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: #63e6be;
-  box-shadow: 0 0 14px rgba(99, 230, 190, 0.8);
-}
-
-.treasury-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 16px;
-}
-
-.treasury-card {
-  min-height: 170px;
-  padding: 26px;
-  border: 1px solid rgba(148, 163, 184, 0.13);
-  border-radius: 22px;
-  background:
-    linear-gradient(
-      145deg,
-      rgba(255, 255, 255, 0.055),
-      rgba(255, 255, 255, 0.018)
-    );
-  box-shadow:
-    inset 0 1px rgba(255, 255, 255, 0.04),
-    0 20px 60px rgba(0, 0, 0, 0.18);
-  transition:
-    transform 0.25s ease,
-    border-color 0.25s ease;
-}
-
-.treasury-card:hover {
-  transform: translateY(-4px);
-  border-color: rgba(99, 230, 190, 0.3);
-}
-
-.card-label {
-  display: block;
-  margin-bottom: 24px;
-  color: #64748b;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 1.5px;
-}
-
-.treasury-card strong {
-  display: block;
-  margin-bottom: 10px;
-  color: #f8fafc;
-  font-size: 27px;
-  letter-spacing: -0.8px;
-}
-
-.treasury-balance strong {
-  font-size: 34px;
-}
-
-.card-change {
-  color: #63e6be;
-  font-size: 13px;
-}
-
-.card-muted {
-  color: #64748b;
-  font-size: 13px;
-}
-
-.treasury-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-  margin: 26px 0 55px;
-}
-
-.action-button {
-  padding: 14px 22px;
-  border: 1px solid rgba(148, 163, 184, 0.18);
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.04);
-  color: #f8fafc;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.action-button:hover {
-  transform: translateY(-2px);
-  border-color: rgba(99, 230, 190, 0.45);
-  background: rgba(99, 230, 190, 0.08);
-}
-
-.primary-action {
-  border-color: transparent;
-  background: #63e6be;
-  color: #06110e;
-}
-
-.primary-action:hover {
-  background: #7af0cb;
-  color: #06110e;
-}
-
-.activity-panel {
-  overflow: hidden;
-  border: 1px solid rgba(148, 163, 184, 0.13);
-  border-radius: 24px;
-  background: rgba(255, 255, 255, 0.025);
-}
-
-.activity-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
+  max-width: var(--container);
+  margin: 0 auto;
   padding: 28px;
-  border-bottom: 1px solid rgba(148, 163, 184, 0.1);
-}
-
-.activity-header h3 {
-  margin: 8px 0 0;
-  font-size: 24px;
-}
-
-.activity-live {
-  color: #63e6be;
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 1px;
-}
-
-.activity-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 20px;
-  padding: 22px 28px;
-  border-bottom: 1px solid rgba(148, 163, 184, 0.08);
-}
-
-.activity-row:last-child {
-  border-bottom: 0;
-}
-
-.activity-row div {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.activity-row span {
-  color: #64748b;
+  color: var(--text-muted);
+  border-top: 1px solid var(--border-soft);
   font-size: 13px;
 }
 
-.activity-row strong {
-  color: #e2e8f0;
+/* ---------- REMOVE DECORATIVE / AI-SLOP ELEMENTS ---------- */
+
+/*
+   These classes are hidden only when they already exist in the
+   page. Wallet functionality is NOT affected.
+*/
+
+.emoji,
+.decorative-icon,
+.ai-symbol,
+.symbol-decoration {
+  display: none !important;
 }
 
-@media (max-width: 900px) {
-  .treasury-grid {
+/* ---------- RESPONSIVE ---------- */
+
+@media (min-width: 900px) {
+  .stats-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+
+  .metrics {
     grid-template-columns: repeat(2, 1fr);
   }
 
-  .treasury-header {
-    align-items: flex-start;
-    flex-direction: column;
+  .dashboard-grid {
+    display: grid;
+    grid-template-columns: 1.4fr 1fr;
+    gap: 16px;
   }
 }
 
-@media (max-width: 600px) {
-  .treasury-dashboard {
-    margin: 80px auto;
-    padding: 0 16px;
+@media (max-width: 899px) {
+  header,
+  nav {
+    padding-left: 18px;
+    padding-right: 18px;
   }
 
-  .treasury-grid {
+  main {
+    padding: 28px 18px 55px;
+  }
+
+  .feature-grid {
     grid-template-columns: 1fr;
   }
 
-  .treasury-card {
-    min-height: auto;
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
   }
 
-  .treasury-header h2 {
-    letter-spacing: -1px;
+  .dashboard-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 16px;
   }
 
-  .treasury-actions {
-    flex-direction: column;
+  .treasury,
+  .treasury-card,
+  .total-treasury {
+    padding: 24px;
   }
 
-  .action-button {
-    width: 100%;
+  table {
+    min-width: 720px;
   }
 
-  .activity-header {
-    padding: 22px;
+  .activity,
+  .recent-activity,
+  .transactions {
+    overflow-x: auto;
+  }
+}
+
+@media (max-width: 560px) {
+  body {
+    font-size: 14px;
   }
 
-  .activity-row {
-    align-items: flex-start;
-    padding: 20px 22px;
+  main {
+    padding: 22px 12px 45px;
   }
 
-  .activity-row > strong {
-    text-align: right;
+  header,
+  nav {
+    min-height: 68px;
+  }
+
+  h1 {
+    font-size: 30px;
+  }
+
+  h2 {
+    font-size: 23px;
+  }
+
+  .stats-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+
+  .metric-card,
+  .stat-card {
+    min-height: 105px;
+    padding: 16px;
+  }
+
+  .metric-card .value,
+  .stat-card .value {
+    font-size: 21px;
+  }
+
+  .treasury,
+  .treasury-card,
+  .total-treasury,
+  .why,
+  .features,
+  .feature-section,
+  .automation {
+    padding: 20px;
+    border-radius: 14px;
+  }
+
+  .balance,
+  .amount,
+  .total-amount {
+    font-size: 34px;
+  }
+
+  .activity-header,
+  .section-header {
+    padding: 18px;
+  }
+
+  .feature-grid {
+    gap: 10px;
+  }
+
+  .feature-card {
+    padding: 18px;
+  }
+
+  footer {
+    padding: 22px 14px;
   }
 }
