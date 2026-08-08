@@ -390,6 +390,108 @@ Programmable USDC Treasury • Built on Arc • Powered by Circle
 
 
 <script src="script.js"></script>
+<section id="treasury" class="treasury-dashboard">
 
+  <div class="section-label">TREASURY CONTROL CENTER</div>
+
+  <div class="treasury-header">
+    <div>
+      <h2>Your USDC Treasury</h2>
+      <p>
+        Monitor balances, manage payments and automate financial operations
+        from one programmable treasury.
+      </p>
+    </div>
+
+    <div class="treasury-status">
+      <span class="status-dot"></span>
+      Treasury Active
+    </div>
+  </div>
+
+  <div class="treasury-grid">
+
+    <div class="treasury-card treasury-balance">
+      <span class="card-label">AVAILABLE USDC</span>
+      <strong>$245,000.00</strong>
+      <span class="card-change">+12.8% this month</span>
+    </div>
+
+    <div class="treasury-card">
+      <span class="card-label">AUTOMATED PAYMENTS</span>
+      <strong>128</strong>
+      <span class="card-muted">This month</span>
+    </div>
+
+    <div class="treasury-card">
+      <span class="card-label">NEXT PAYMENT</span>
+      <strong>2,500 USDC</strong>
+      <span class="card-muted">Due in 2 days</span>
+    </div>
+
+    <div class="treasury-card">
+      <span class="card-label">NETWORK</span>
+      <strong>Arc</strong>
+      <span class="card-muted">USDC-native infrastructure</span>
+    </div>
+
+  </div>
+
+  <div class="treasury-actions">
+
+    <button class="action-button primary-action" id="sendPayment">
+      Send USDC
+    </button>
+
+    <button class="action-button" id="schedulePayment">
+      Schedule Payment
+    </button>
+
+    <button class="action-button" id="viewActivity">
+      View Activity
+    </button>
+
+  </div>
+
+  <div class="activity-panel" id="activity">
+
+    <div class="activity-header">
+      <div>
+        <span class="section-label">RECENT ACTIVITY</span>
+        <h3>Treasury Transactions</h3>
+      </div>
+
+      <span class="activity-live">
+        ● LIVE
+      </span>
+    </div>
+
+    <div class="activity-row">
+      <div>
+        <strong>Payroll distribution</strong>
+        <span>USDC payment</span>
+      </div>
+      <strong>-12,500 USDC</strong>
+    </div>
+
+    <div class="activity-row">
+      <div>
+        <strong>Client settlement</strong>
+        <span>Incoming USDC</span>
+      </div>
+      <strong>+25,000 USDC</strong>
+    </div>
+
+    <div class="activity-row">
+      <div>
+        <strong>Vendor payment</strong>
+        <span>Automated transfer</span>
+      </div>
+      <strong>-4,250 USDC</strong>
+    </div>
+
+  </div>
+
+</section>
 </body>
 </html>
