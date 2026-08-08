@@ -1,1 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
+  <title>Activity | AskirawaFi</title>
+
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+<header>
+  <nav>
+    <a href="index.html" class="logo">AskirawaFi</a>
+
+    <div>
+      <a href="index.html">Dashboard</a>
+      <a href="activity.html" class="active">Activity</a>
+      <a href="#automations">Automations</a>
+      <a href="#transactions">Transactions</a>
+    </div>
+
+    <button class="connect-wallet">
+      Connect Wallet
+    </button>
+  </nav>
+</header>
+
+<main>
+
+  <section class="page-header">
+    <div>
+      <div class="label">TREASURY</div>
+
+      <h1>Activity</h1>
+
+      <p>
+        Track treasury movements and payment activity.
+      </p>
+    </div>
+  </section>
+
+
+  <section class="activity-controls">
+
+    <div class="filters">
+
+      <button class="filter active">
+        All
+      </button>
+
+      <button class="filter">
+        Payments
+      </button>
+
+      <button class="filter">
+        Deposits
+      </button>
+
+      <button class="filter">
+        Withdrawals
+      </button>
+
+    </div>
+
+    <input
+      type="search"
+      id="activitySearch"
+      placeholder="Search activity..."
+    >
+
+  </section>
+
+
+  <section class="activity">
+
+    <div class="activity-header">
+
+      <div>
+        <h2>Recent activity</h2>
+        <p>Latest treasury transactions</p>
+      </div>
+
+    </div>
+
+
+    <div class="activity-table">
+
+      <div class="activity-table-head">
+
+        <span>Type</span>
+        <span>Description</span>
+        <span>Amount</span>
+        <span>Network</span>
+        <span>Status</span>
+        <span>Date</span>
+
+      </div>
+
+
+      <div id="activityList">
+
+        <div class="empty-state">
+
+          <h3>No activity yet</h3>
+
+          <p>
+            Connect your wallet to view treasury activity.
+          </p>
+
+        </div>
+
+      </div>
+
+    </div>
+
+  </section>
+
+</main>
+
+
+<script src="script.js"></script>
+
+<script>
+const searchInput = document.getElementById("activitySearch");
+
+searchInput.addEventListener("input", function () {
+
+  const query = this.value.toLowerCase();
+
+  document.querySelectorAll(".activity-row").forEach(row => {
+
+    const text = row.textContent.toLowerCase();
+
+    row.style.display =
+      text.includes(query) ? "grid" : "none";
+
+  });
+
+});
+</script>
+
+</body>
+</html>
