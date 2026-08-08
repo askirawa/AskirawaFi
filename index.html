@@ -1,4 +1,4 @@
-DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -7,113 +7,218 @@ DOCTYPE html>
 <title>AskirawaFi | Programmable USDC Treasury</title>
 
 <link rel="stylesheet" href="style.css">
-
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-
 </head>
 
 <body>
 
 <header>
 
-<nav class="container">
+<div class="logo">AskirawaFi</div>
 
-<div class="logo">
-AskirawaFi
-</div>
-
-<ul class="nav-links">
-
-<li><a href="#about">About</a></li>
-
-<li><a href="#features">Features</a></li>
-
-<li><a href="#technology">Technology</a></li>
-
-<li><a href="#roadmap">Roadmap</a></li>
-
-</ul>
-
-<a href="https://github.com/askirawa/AskirawaFi" class="github-btn">
-GitHub
-</a>
-
+<nav>
+<a href="#dashboard">Dashboard</a>
+<a href="#features">Features</a>
+<a href="#activity">Activity</a>
 </nav>
+
+<button class="connect" onclick="connectWallet()">
+Connect Wallet
+</button>
 
 </header>
 
 
+<main>
 
 <section class="hero">
 
-<div class="container hero-grid">
+<div class="hero-content">
 
-<div class="hero-text">
-
-<p class="tag">
-Built on Arc • Powered by Circle
-</p>
+<div class="badge">
+● Built on Arc • Powered by Circle
+</div>
 
 <h1>
-
-Programmable USDC Treasury
-
-for the Next Generation of Business
-
+Programmable money for modern businesses.
 </h1>
 
-<p class="hero-description">
-
-AskirawaFi enables businesses to automate treasury management, streamline USDC payments, and build programmable financial workflows using Arc and Circle developer tools.
-
+<p>
+AskirawaFi gives businesses a programmable USDC treasury for automated payments, payroll and financial operations.
 </p>
 
 <div class="hero-buttons">
 
-<a href="#features" class="primary-btn">
-Explore Features
-</a>
+<button class="primary" onclick="scrollToDashboard()">
+Launch Treasury
+</button>
 
-<a href="https://github.com/askirawa/AskirawaFi" class="secondary-btn">
-View Source
-</a>
-
-</div>
+<button class="secondary" onclick="showMessage('AskirawaFi demo powered by USDC on Arc')">
+Watch Demo
+</button>
 
 </div>
 
-
+</div>
 
 <div class="hero-card">
 
-<h3>Live Treasury</h3>
+<div class="card-top">
+<span>USDC TREASURY</span>
+<span class="status">● LIVE</span>
+</div>
 
-<div class="stat">
+<h2>$245,000.00</h2>
 
-<span>$245,000</span>
+<div class="growth">
++12.8% this month
+</div>
 
-<p>USDC Managed</p>
+<div class="mini-chart">
+<div></div>
+<div></div>
+<div></div>
+<div></div>
+<div></div>
+<div></div>
+<div></div>
+<div></div>
+</div>
 
 </div>
 
-<div class="stat">
+</section>
 
-<span>128</span>
 
-<p>Automated Transactions</p>
+<section id="dashboard" class="dashboard">
+
+<div class="section-heading">
+
+<div>
+<span class="eyebrow">TREASURY OVERVIEW</span>
+<h2>Financial control center</h2>
+</div>
+
+<div class="network">
+<span>●</span> Arc Network Operational
+</div>
 
 </div>
 
-<div class="stat">
 
-<span>99.99%</span>
+<div class="stats">
 
-<p>Reliability</p>
+<div class="stat-card">
+<span>Available Balance</span>
+<h3>$245,000</h3>
+<p>USDC</p>
+</div>
+
+<div class="stat-card">
+<span>Automated Payments</span>
+<h3>128</h3>
+<p>This month</p>
+</div>
+
+<div class="stat-card">
+<span>Pending Payments</span>
+<h3>07</h3>
+<p>Awaiting execution</p>
+</div>
+
+<div class="stat-card">
+<span>Settlement</span>
+<h3>&lt;1 sec</h3>
+<p>Arc finality</p>
+</div>
 
 </div>
+
+
+<div class="dashboard-grid">
+
+<div class="panel">
+
+<div class="panel-header">
+
+<div>
+<span class="eyebrow">TREASURY ACTIVITY</span>
+<h3>Balance movement</h3>
+</div>
+
+<select>
+<option>Last 30 days</option>
+<option>Last 7 days</option>
+<option>This year</option>
+</select>
+
+</div>
+
+<div class="chart">
+
+<div class="chart-line"></div>
+
+<div class="chart-labels">
+<span>01</span>
+<span>07</span>
+<span>14</span>
+<span>21</span>
+<span>30</span>
+</div>
+
+</div>
+
+</div>
+
+
+<div class="panel">
+
+<div class="panel-header">
+
+<div>
+<span class="eyebrow">AUTOMATION</span>
+<h3>Payment queue</h3>
+</div>
+
+<span class="queue-count">07</span>
+
+</div>
+
+<div class="payment">
+
+<div>
+<strong>Team Payroll</strong>
+<span>12 recipients</span>
+</div>
+
+<strong>$18,450</strong>
+
+</div>
+
+<div class="payment">
+
+<div>
+<strong>Vendor Settlement</strong>
+<span>Scheduled today</span>
+</div>
+
+<strong>$7,250</strong>
+
+</div>
+
+<div class="payment">
+
+<div>
+<strong>Operations</strong>
+<span>Recurring payment</span>
+</div>
+
+<strong>$3,800</strong>
+
+</div>
+
+<button class="full-button" onclick="sendPayment()">
++ Create Payment
+</button>
 
 </div>
 
@@ -122,110 +227,83 @@ View Source
 </section>
 
 
+<section id="activity" class="activity">
 
-<section id="about" class="about">
+<div class="section-heading">
 
-<div class="container">
+<div>
+<span class="eyebrow">TRANSACTIONS</span>
+<h2>Recent activity</h2>
+</div>
 
-<h2>Why AskirawaFi?</h2>
-
-<p>
-
-Managing treasury manually slows businesses down.
-
-AskirawaFi introduces programmable treasury powered by USDC on Arc, helping organizations automate financial operations with speed, transparency and security.
-
-</p>
+<button class="secondary small" onclick="showMessage('Transaction history refreshed')">
+Refresh
+</button>
 
 </div>
 
-</section>
+
+<div class="table">
+
+<div class="table-head">
+<span>Transaction</span>
+<span>Amount</span>
+<span>Status</span>
+</div>
 
 
+<div class="transaction">
 
-<section id="features">
+<div>
+<strong>Payroll • August</strong>
+<span>Today • Arc</span>
+</div>
 
-<div class="container">
+<strong>$18,450 USDC</strong>
 
-<h2 class="section-title">
-
-Core Features
-
-</h2>
-
-<div class="features-grid">
-
-<div class="card">
-
-<h3>Programmable Treasury</h3>
-
-<p>
-
-Create automated financial rules for incoming and outgoing USDC.
-
-</p>
+<span class="success">Completed</span>
 
 </div>
 
-<div class="card">
 
-<h3>Smart Payments</h3>
+<div class="transaction">
 
-<p>
+<div>
+<strong>Vendor Settlement</strong>
+<span>Today • Arc</span>
+</div>
 
-Automate recurring business payments without manual intervention.
+<strong>$7,250 USDC</strong>
 
-</p>
+<span class="success">Completed</span>
 
 </div>
 
-<div class="card">
 
-<h3>Business Dashboard</h3>
+<div class="transaction">
 
-<p>
+<div>
+<strong>Operations Reserve</strong>
+<span>Yesterday • Arc</span>
+</div>
 
-Monitor treasury balances and payment history in real time.
+<strong>$3,800 USDC</strong>
 
-</p>
+<span class="pending">Pending</span>
 
 </div>
 
-<div class="card">
 
-<h3>Circle Developer Tools</h3>
+<div class="transaction">
 
-<p>
-
-Leverages Circle infrastructure to power enterprise-grade stablecoin workflows.
-
-</p>
-
+<div>
+<strong>Treasury Deposit</strong>
+<span>Yesterday • Arc</span>
 </div>
 
-<div class="card">
+<strong>+$50,000 USDC</strong>
 
-<h3>Arc Infrastructure</h3>
-
-<p>
-
-Built on Arc's stablecoin-native blockchain for predictable financial applications.
-
-</p>
-
-</div>
-
-<div class="card">
-
-<h3>Enterprise Ready</h3>
-
-<p>
-
-Designed with scalability, transparency and compliance in mind.
-
-</p>
-
-</div>
+<span class="success">Completed</span>
 
 </div>
 
@@ -234,35 +312,45 @@ Designed with scalability, transparency and compliance in mind.
 </section>
 
 
+<section id="features" class="features">
 
-<section id="technology">
+<div class="section-heading center">
 
-<div class="container">
+<span class="eyebrow">WHY ASKIRAWAFI</span>
 
-<h2 class="section-title">
+<h2>Money that works automatically.</h2>
 
-Technology Stack
+<p>
+Built around stablecoin-native financial operations.
+</p>
 
-</h2>
+</div>
 
-<div class="tech-grid">
 
-<div class="tech">Arc</div>
+<div class="feature-grid">
 
-<div class="tech">USDC</div>
+<div class="feature">
+<div class="icon">₮</div>
+<h3>USDC Native</h3>
+<p>Keep treasury operations denominated in a stable digital dollar.</p>
+</div>
 
-<div class="tech">Circle APIs</div>
+<div class="feature">
+<div class="icon">⚡</div>
+<h3>Arc Settlement</h3>
+<p>Fast and predictable settlement for programmable financial workflows.</p>
+</div>
 
-<div class="tech">HTML</div>
+<div class="feature">
+<div class="icon">↻</div>
+<h3>Automation</h3>
+<p>Schedule recurring payments and treasury rules without manual intervention.</p>
+</div>
 
-<div class="tech">CSS</div>
-
-<div class="tech">JavaScript</div>
-
-<div class="tech">GitHub</div>
-
-<div class="tech">Vercel</div>
-
+<div class="feature">
+<div class="icon">◎</div>
+<h3>Business Ready</h3>
+<p>Designed for organizations managing payroll, vendors and operational funds.</p>
 </div>
 
 </div>
@@ -270,82 +358,36 @@ Technology Stack
 </section>
 
 
+<section class="cta">
 
-<section id="roadmap">
+<h2>Make your treasury programmable.</h2>
 
-<div class="container">
+<p>
+AskirawaFi turns USDC into an automated financial operating layer.
+</p>
 
-<h2 class="section-title">
-
-Roadmap
-
-</h2>
-
-<div class="roadmap">
-
-<div>
-
-✅ MVP Completed
-
-</div>
-
-<div>
-
-🚀 Treasury Automation
-
-</div>
-
-<div>
-
-🔄 Wallet Integration
-
-</div>
-
-<div>
-
-🔄 Smart Rules Engine
-
-</div>
-
-<div>
-
-🔄 Analytics Dashboard
-
-</div>
-
-</div>
-
-</div>
+<button class="primary" onclick="scrollToDashboard()">
+Open Treasury
+</button>
 
 </section>
 
+</main>
 
 
 <footer>
 
-<div class="container">
-
-<h2>
-
-AskirawaFi
-
-</h2>
+<div class="logo">AskirawaFi</div>
 
 <p>
-
-Programmable USDC Treasury built on Arc using Circle developer tools.
-
+Programmable USDC Treasury • Built on Arc • Powered by Circle
 </p>
-
-<p class="hackathon">
-
-Built for the Arc Programmable Money Hackathon 2026
-
-</p>
-
-</div>
 
 </footer>
+
+
+<div id="toast" class="toast"></div>
+
 
 <script src="script.js"></script>
 
