@@ -15,26 +15,30 @@
     :root {
       --bg: #02080b;
       --panel: #071218;
-      --panel-2: #09161d;
       --border: #173039;
       --text: #f4f7f8;
       --muted: #87979f;
       --green: #35d98b;
-      --green-dark: #0b3828;
       --yellow: #e5b84b;
     }
 
     body {
-      font-family: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI",
-        sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", sans-serif;
       background: var(--bg);
       color: var(--text);
       min-height: 100vh;
       line-height: 1.5;
     }
 
-    button {
+    button,
+    input,
+    select,
+    textarea {
       font: inherit;
+    }
+
+    button {
+      cursor: pointer;
     }
 
     .app {
@@ -44,7 +48,7 @@
     /* HEADER */
 
     .header {
-      height: 78px;
+      min-height: 78px;
       border-bottom: 1px solid var(--border);
       display: flex;
       align-items: center;
@@ -53,7 +57,7 @@
       position: sticky;
       top: 0;
       z-index: 20;
-      background: rgba(2, 8, 11, 0.94);
+      background: rgba(2, 8, 11, 0.96);
       backdrop-filter: blur(18px);
     }
 
@@ -86,32 +90,29 @@
     .brand-subtitle {
       color: var(--muted);
       font-size: 11px;
-      margin-top: 1px;
     }
 
     .nav {
       display: flex;
       align-items: center;
-      gap: 6px;
+      gap: 5px;
     }
 
     .nav button {
       border: 0;
       background: transparent;
       color: #aeb9bd;
-      padding: 27px 16px;
-      cursor: pointer;
-      font-size: 14px;
+      padding: 27px 15px;
       border-bottom: 2px solid transparent;
+      font-size: 14px;
     }
 
     .nav button:hover,
     .nav button.active {
-      color: var(--text);
+      color: var(--green);
     }
 
     .nav button.active {
-      color: var(--green);
       border-bottom-color: var(--green);
     }
 
@@ -131,6 +132,8 @@
       background: #071116;
       color: #d9e1e3;
       font-size: 13px;
+      display: flex;
+      align-items: center;
     }
 
     .network span {
@@ -146,7 +149,6 @@
       background: var(--green);
       color: #03100a;
       font-weight: 700;
-      cursor: pointer;
     }
 
     /* MAIN */
@@ -186,13 +188,7 @@
       margin-bottom: 30px;
     }
 
-    /* DASHBOARD */
-
-    .dashboard-grid {
-      display: grid;
-      grid-template-columns: 1.4fr 1fr;
-      gap: 16px;
-    }
+    /* CARDS */
 
     .card {
       background: linear-gradient(145deg, #07151b, #061015);
@@ -201,8 +197,18 @@
       padding: 26px;
     }
 
-    .treasury-card {
+    .dashboard-grid {
+      display: grid;
+      grid-template-columns: 1.4fr 1fr;
+      gap: 16px;
+    }
+
+    .treasury-card,
+    .health-card {
       min-height: 238px;
+    }
+
+    .treasury-card {
       display: flex;
       flex-direction: column;
       justify-content: space-between;
@@ -228,13 +234,11 @@
     .currency {
       color: var(--muted);
       font-size: 17px;
-      margin-top: 2px;
     }
 
     .growth {
       display: inline-block;
       width: fit-content;
-      margin-top: 18px;
       padding: 7px 11px;
       border-radius: 7px;
       background: rgba(53, 217, 139, 0.09);
@@ -243,7 +247,6 @@
     }
 
     .health-card {
-      min-height: 238px;
       display: flex;
       flex-direction: column;
       justify-content: center;
@@ -312,7 +315,6 @@
       border: 0;
       background: transparent;
       color: var(--green);
-      cursor: pointer;
       font-size: 13px;
     }
 
@@ -403,7 +405,6 @@
       background: var(--green);
       color: #03100a;
       font-weight: 700;
-      cursor: pointer;
     }
 
     .automation-list {
@@ -451,6 +452,120 @@
       display: inline-block;
     }
 
+    /* AUTOMATION FORM */
+
+    .automation-form-card {
+      display: none;
+      margin-bottom: 24px;
+      background: linear-gradient(145deg, #08171d, #061015);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 26px;
+    }
+
+    .automation-form-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 24px;
+    }
+
+    .form-title {
+      font-size: 22px;
+      margin-bottom: 5px;
+    }
+
+    .form-description {
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .close-form {
+      width: 36px;
+      height: 36px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: #09161d;
+      color: #9ba9ae;
+      font-size: 22px;
+      line-height: 1;
+    }
+
+    .form-group {
+      margin-bottom: 17px;
+    }
+
+    .form-label {
+      display: block;
+      color: #cbd5d8;
+      font-size: 12px;
+      font-weight: 600;
+      margin-bottom: 7px;
+    }
+
+    .form-input,
+    .form-select,
+    .form-textarea {
+      width: 100%;
+      border: 1px solid var(--border);
+      border-radius: 9px;
+      background: #020b10;
+      color: var(--text);
+      outline: none;
+      font-size: 14px;
+    }
+
+    .form-input,
+    .form-select {
+      height: 46px;
+      padding: 0 13px;
+    }
+
+    .form-textarea {
+      padding: 12px 13px;
+      resize: vertical;
+      min-height: 90px;
+    }
+
+    .form-input:focus,
+    .form-select:focus,
+    .form-textarea:focus {
+      border-color: #287b59;
+    }
+
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+
+    .form-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      margin-top: 24px;
+    }
+
+    .cancel-btn {
+      height: 44px;
+      padding: 0 18px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: #09161d;
+      color: #cbd5d8;
+      font-weight: 600;
+    }
+
+    .submit-btn {
+      height: 44px;
+      padding: 0 20px;
+      border: 0;
+      border-radius: 8px;
+      background: var(--green);
+      color: #03100a;
+      font-weight: 700;
+    }
+
     /* FOOTER */
 
     footer {
@@ -470,8 +585,8 @@
     /* MOBILE */
 
     @media (max-width: 850px) {
+
       .header {
-        height: auto;
         min-height: 70px;
         padding: 12px 16px;
         flex-wrap: wrap;
@@ -558,13 +673,10 @@
       .automation {
         grid-template-columns: 1fr 1fr;
       }
-
-      footer {
-        padding: 20px 16px 30px;
-      }
     }
 
     @media (max-width: 520px) {
+
       .automation {
         grid-template-columns: 1fr;
         gap: 13px;
@@ -573,6 +685,20 @@
       .automation-toolbar {
         align-items: flex-start;
         gap: 12px;
+      }
+
+      .form-row {
+        grid-template-columns: 1fr;
+        gap: 0;
+      }
+
+      .form-actions {
+        flex-direction: column-reverse;
+      }
+
+      .cancel-btn,
+      .submit-btn {
+        width: 100%;
       }
 
       .stats {
@@ -590,6 +716,7 @@
       footer {
         flex-direction: column;
         gap: 8px;
+        padding: 20px 16px 30px;
       }
     }
   </style>
@@ -600,6 +727,7 @@
 <div class="app">
 
   <!-- HEADER -->
+
   <header class="header">
 
     <div class="brand">
@@ -624,7 +752,6 @@
         <span>●</span> Arc Mainnet
       </div>
 
-      <!-- IMPORTANT: Keep this button text for the wallet script -->
       <button id="connect-wallet">Connect Wallet</button>
 
     </div>
@@ -646,16 +773,13 @@
         Your programmable treasury in action.
       </p>
 
-
       <div class="dashboard-grid">
 
         <div class="card treasury-card">
 
           <div>
             <div class="card-label">TOTAL TREASURY</div>
-
             <div class="treasury-value">$245,000.00</div>
-
             <div class="currency">USDC</div>
           </div>
 
@@ -664,7 +788,6 @@
           </div>
 
         </div>
-
 
         <div class="card health-card">
 
@@ -787,7 +910,6 @@
           Built around stablecoin-native financial operations.
         </p>
 
-
         <div class="why-grid">
 
           <div class="why-item">
@@ -829,7 +951,6 @@
       <p class="page-description">
         Track everything happening across your treasury.
       </p>
-
 
       <div class="card section-card" style="margin-top:0;">
 
@@ -909,42 +1030,233 @@
       </p>
 
 
+      <!-- CREATE FORM -->
+
+      <div id="automation-form" class="automation-form-card">
+
+        <div class="automation-form-header">
+
+          <div>
+
+            <div class="eyebrow">
+              New Automation
+            </div>
+
+            <h2 class="form-title">
+              Create automation
+            </h2>
+
+            <p class="form-description">
+              Set the rules for an automated USDC payment.
+            </p>
+
+          </div>
+
+          <button
+            type="button"
+            id="close-automation-form"
+            class="close-form"
+          >
+            ×
+          </button>
+
+        </div>
+
+
+        <form id="automation-form-element">
+
+          <div class="form-group">
+
+            <label class="form-label">
+              Automation name
+            </label>
+
+            <input
+              id="automation-name"
+              class="form-input"
+              type="text"
+              placeholder="e.g. Team Payroll"
+              required
+            />
+
+          </div>
+
+
+          <div class="form-group">
+
+            <label class="form-label">
+              Recipient address
+            </label>
+
+            <input
+              id="automation-recipient"
+              class="form-input"
+              type="text"
+              placeholder="0x..."
+              required
+            />
+
+          </div>
+
+
+          <div class="form-row">
+
+            <div class="form-group">
+
+              <label class="form-label">
+                USDC amount
+              </label>
+
+              <input
+                id="automation-amount"
+                class="form-input"
+                type="number"
+                min="0.01"
+                step="0.01"
+                placeholder="1000"
+                required
+              />
+
+            </div>
+
+
+            <div class="form-group">
+
+              <label class="form-label">
+                Frequency
+              </label>
+
+              <select
+                id="automation-frequency"
+                class="form-select"
+                required
+              >
+                <option value="Once">Once</option>
+                <option value="Daily">Daily</option>
+                <option value="Weekly">Weekly</option>
+                <option value="Monthly" selected>Monthly</option>
+              </select>
+
+            </div>
+
+          </div>
+
+
+          <div class="form-group">
+
+            <label class="form-label">
+              Execution date
+            </label>
+
+            <input
+              id="automation-date"
+              class="form-input"
+              type="date"
+              required
+            />
+
+          </div>
+
+
+          <div class="form-group">
+
+            <label class="form-label">
+              Optional note
+            </label>
+
+            <textarea
+              id="automation-note"
+              class="form-textarea"
+              placeholder="Add a note about this payment..."
+            ></textarea>
+
+          </div>
+
+
+          <div class="form-actions">
+
+            <button
+              type="button"
+              id="cancel-automation"
+              class="cancel-btn"
+            >
+              Cancel
+            </button>
+
+            <button
+              type="submit"
+              class="submit-btn"
+            >
+              Create Automation
+            </button>
+
+          </div>
+
+        </form>
+
+      </div>
+
+
+      <!-- TOOLBAR -->
+
       <div class="automation-toolbar">
 
         <div style="color:var(--muted);font-size:13px;">
-          3 active automations
+          <span id="automation-count">3</span>
+          active automations
         </div>
 
-        <button class="primary-btn">
+        <button
+          id="create-automation-button"
+          class="primary-btn"
+          type="button"
+        >
           Create Automation
         </button>
 
       </div>
 
 
-      <div class="automation-list">
+      <!-- AUTOMATION LIST -->
+
+      <div id="automation-list" class="automation-list">
 
         <div class="automation">
 
           <div>
-            <div class="automation-name">Team Payroll</div>
+            <div class="automation-name">
+              Team Payroll
+            </div>
+
             <div class="automation-meta">
               12 recipients · Monthly
             </div>
           </div>
 
           <div>
-            <div class="automation-small">Amount</div>
-            <div class="automation-amount">$18,450 USDC</div>
+            <div class="automation-small">
+              Amount
+            </div>
+
+            <div class="automation-amount">
+              $18,450 USDC
+            </div>
           </div>
 
           <div>
-            <div class="automation-small">Next execution</div>
-            <div>August 30, 2026</div>
+            <div class="automation-small">
+              Next execution
+            </div>
+
+            <div>
+              August 30, 2026
+            </div>
           </div>
 
           <div>
-            <span class="active-pill">Active</span>
+            <span class="active-pill">
+              Active
+            </span>
           </div>
 
         </div>
@@ -953,24 +1265,39 @@
         <div class="automation">
 
           <div>
-            <div class="automation-name">Vendor Settlement</div>
+            <div class="automation-name">
+              Vendor Settlement
+            </div>
+
             <div class="automation-meta">
               Arc Project Services · Weekly
             </div>
           </div>
 
           <div>
-            <div class="automation-small">Amount</div>
-            <div class="automation-amount">$7,250 USDC</div>
+            <div class="automation-small">
+              Amount
+            </div>
+
+            <div class="automation-amount">
+              $7,250 USDC
+            </div>
           </div>
 
           <div>
-            <div class="automation-small">Next execution</div>
-            <div>August 10, 2026</div>
+            <div class="automation-small">
+              Next execution
+            </div>
+
+            <div>
+              August 10, 2026
+            </div>
           </div>
 
           <div>
-            <span class="active-pill">Active</span>
+            <span class="active-pill">
+              Active
+            </span>
           </div>
 
         </div>
@@ -979,24 +1306,39 @@
         <div class="automation">
 
           <div>
-            <div class="automation-name">Operations Reserve</div>
+            <div class="automation-name">
+              Operations Reserve
+            </div>
+
             <div class="automation-meta">
               Recurring treasury payment · Monthly
             </div>
           </div>
 
           <div>
-            <div class="automation-small">Amount</div>
-            <div class="automation-amount">$3,800 USDC</div>
+            <div class="automation-small">
+              Amount
+            </div>
+
+            <div class="automation-amount">
+              $3,800 USDC
+            </div>
           </div>
 
           <div>
-            <div class="automation-small">Next execution</div>
-            <div>August 15, 2026</div>
+            <div class="automation-small">
+              Next execution
+            </div>
+
+            <div>
+              August 15, 2026
+            </div>
           </div>
 
           <div>
-            <span class="active-pill">Active</span>
+            <span class="active-pill">
+              Active
+            </span>
           </div>
 
         </div>
@@ -1017,7 +1359,6 @@
       <p class="page-description">
         Review payments, deposits and settlements made through AskirawaFi.
       </p>
-
 
       <div class="card section-card" style="margin-top:0;">
 
@@ -1086,75 +1427,356 @@
 </div>
 
 
+<!-- PAGE NAVIGATION -->
+
 <script>
-  document.addEventListener("DOMContentLoaded", function () {
+document.addEventListener("DOMContentLoaded", function () {
 
-    const navButtons = document.querySelectorAll(".nav-btn");
-    const pages = document.querySelectorAll(".page");
-    const pageLinks = document.querySelectorAll("[data-page-link]");
+  const navButtons = document.querySelectorAll(".nav-btn");
+  const pages = document.querySelectorAll(".page");
+  const pageLinks = document.querySelectorAll("[data-page-link]");
 
-    function showPage(pageName) {
 
-      pages.forEach(function (page) {
-        page.classList.remove("active");
-      });
+  function showPage(pageName) {
 
-      navButtons.forEach(function (button) {
-        button.classList.remove("active");
-      });
-
-      const selectedPage = document.getElementById(pageName);
-
-      if (selectedPage) {
-        selectedPage.classList.add("active");
-      }
-
-      const selectedButton =
-        document.querySelector(
-          '.nav-btn[data-page="' + pageName + '"]'
-        );
-
-      if (selectedButton) {
-        selectedButton.classList.add("active");
-      }
-
-      window.scrollTo({
-        top: 0,
-        behavior: "smooth"
-      });
-    }
-
+    pages.forEach(function (page) {
+      page.classList.remove("active");
+    });
 
     navButtons.forEach(function (button) {
-
-      button.addEventListener("click", function () {
-
-        const pageName = button.getAttribute("data-page");
-
-        showPage(pageName);
-
-      });
-
+      button.classList.remove("active");
     });
 
 
-    pageLinks.forEach(function (link) {
+    const selectedPage =
+      document.getElementById(pageName);
 
-      link.addEventListener("click", function () {
+    if (selectedPage) {
+      selectedPage.classList.add("active");
+    }
 
-        const pageName = link.getAttribute("data-page-link");
 
-        showPage(pageName);
+    const selectedButton =
+      document.querySelector(
+        '.nav-btn[data-page="' + pageName + '"]'
+      );
 
-      });
+    if (selectedButton) {
+      selectedButton.classList.add("active");
+    }
+
+
+    window.scrollTo({
+      top: 0,
+      behavior: "smooth"
+    });
+
+  }
+
+
+  navButtons.forEach(function (button) {
+
+    button.addEventListener("click", function () {
+
+      showPage(
+        button.getAttribute("data-page")
+      );
 
     });
 
   });
+
+
+  pageLinks.forEach(function (link) {
+
+    link.addEventListener("click", function () {
+
+      showPage(
+        link.getAttribute("data-page-link")
+      );
+
+    });
+
+  });
+
+});
 </script>
 
 
-<!-- YOUR EXISTING WALLET CONNECTION SCRIPT -->
+<!-- AUTOMATION FUNCTIONALITY -->
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+
+  const createButton =
+    document.getElementById("create-automation-button");
+
+  const formBox =
+    document.getElementById("automation-form");
+
+  const form =
+    document.getElementById("automation-form-element");
+
+  const cancelButton =
+    document.getElementById("cancel-automation");
+
+  const closeButton =
+    document.getElementById("close-automation-form");
+
+  const list =
+    document.getElementById("automation-list");
+
+  const count =
+    document.getElementById("automation-count");
+
+
+  function openForm() {
+
+    formBox.style.display = "block";
+
+    createButton.style.display = "none";
+
+    formBox.scrollIntoView({
+      behavior: "smooth",
+      block: "start"
+    });
+
+  }
+
+
+  function closeForm() {
+
+    formBox.style.display = "none";
+
+    createButton.style.display = "block";
+
+    form.reset();
+
+  }
+
+
+  createButton.addEventListener(
+    "click",
+    openForm
+  );
+
+
+  cancelButton.addEventListener(
+    "click",
+    closeForm
+  );
+
+
+  closeButton.addEventListener(
+    "click",
+    closeForm
+  );
+
+
+  form.addEventListener(
+    "submit",
+    function (event) {
+
+      event.preventDefault();
+
+
+      const name =
+        document
+          .getElementById("automation-name")
+          .value
+          .trim();
+
+
+      const recipient =
+        document
+          .getElementById("automation-recipient")
+          .value
+          .trim();
+
+
+      const amount =
+        document
+          .getElementById("automation-amount")
+          .value;
+
+
+      const frequency =
+        document
+          .getElementById("automation-frequency")
+          .value;
+
+
+      const date =
+        document
+          .getElementById("automation-date")
+          .value;
+
+
+      const note =
+        document
+          .getElementById("automation-note")
+          .value
+          .trim();
+
+
+      if (
+        !name ||
+        !recipient ||
+        !amount ||
+        !frequency ||
+        !date
+      ) {
+
+        alert(
+          "Please complete all required fields."
+        );
+
+        return;
+
+      }
+
+
+      const formattedDate =
+        new Date(
+          date + "T00:00:00"
+        ).toLocaleDateString(
+          "en-US",
+          {
+            month: "long",
+            day: "numeric",
+            year: "numeric"
+          }
+        );
+
+
+      const shortRecipient =
+        recipient.length > 18
+          ? recipient.slice(0, 8) +
+            "..." +
+            recipient.slice(-6)
+          : recipient;
+
+
+      const formattedAmount =
+        Number(amount).toLocaleString(
+          "en-US",
+          {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+          }
+        );
+
+
+      const automation =
+        document.createElement("div");
+
+
+      automation.className =
+        "automation";
+
+
+      automation.innerHTML = `
+
+        <div>
+
+          <div class="automation-name">
+            ${escapeHtml(name)}
+          </div>
+
+          <div class="automation-meta">
+            ${escapeHtml(shortRecipient)}
+            ·
+            ${escapeHtml(frequency)}
+          </div>
+
+          ${
+            note
+              ? `
+                <div
+                  class="automation-meta"
+                  style="margin-top:4px;"
+                >
+                  ${escapeHtml(note)}
+                </div>
+              `
+              : ""
+          }
+
+        </div>
+
+
+        <div>
+
+          <div class="automation-small">
+            Amount
+          </div>
+
+          <div class="automation-amount">
+            $${formattedAmount} USDC
+          </div>
+
+        </div>
+
+
+        <div>
+
+          <div class="automation-small">
+            Next execution
+          </div>
+
+          <div>
+            ${formattedDate}
+          </div>
+
+        </div>
+
+
+        <div>
+
+          <span class="active-pill">
+            Active
+          </span>
+
+        </div>
+
+      `;
+
+
+      list.appendChild(
+        automation
+      );
+
+
+      count.textContent =
+        list.querySelectorAll(
+          ".automation"
+        ).length;
+
+
+      closeForm();
+
+    }
+  );
+
+
+  function escapeHtml(value) {
+
+    const div =
+      document.createElement("div");
+
+    div.textContent = value;
+
+    return div.innerHTML;
+
+  }
+
+});
+</script>
+
+
+<!-- EXISTING WALLET CONNECTION -->
+<!-- DO NOT REMOVE OR MODIFY THIS -->
+
 <script src="script.js"></script>
 
 </body>
