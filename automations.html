@@ -13,90 +13,344 @@
 
 <header>
   <nav>
-    <a href="index.html" class="logo">AskirawaFi</a>
 
-    <div>
+    <a href="index.html" class="logo">
+      AskirawaFi
+    </a>
+
+    <div class="nav-links">
       <a href="index.html">Dashboard</a>
       <a href="activity.html">Activity</a>
-      <a href="automations.html" class="active">Automations</a>
-      <a href="#transactions">Transactions</a>
+      <a href="automations.html" class="active">
+        Automations
+      </a>
     </div>
 
     <button class="connect-wallet">
       Connect Wallet
     </button>
+
   </nav>
 </header>
 
 
 <main>
 
+  <!-- PAGE HEADER -->
+
   <section class="page-header">
 
     <div>
-      <div class="label">PROGRAMMABLE TREASURY</div>
 
-      <h1>Automations</h1>
+      <div class="label">
+        PROGRAMMABLE TREASURY
+      </div>
+
+      <h1>
+        Automations
+      </h1>
 
       <p>
-        Schedule recurring USDC payments without manual intervention.
+        Create rules that automate recurring USDC treasury payments.
       </p>
+
     </div>
 
-    <button class="primary" id="createAutomation">
-      Create automation
+    <button
+      class="primary"
+      id="createAutomation"
+    >
+      New automation
     </button>
 
   </section>
 
 
+  <!-- SUMMARY -->
+
   <section class="stats-grid">
 
     <div class="stat-card">
-      <div class="label">ACTIVE</div>
-      <div class="value">0</div>
-      <div class="description">
-        Active payment rules
+
+      <div class="label">
+        ACTIVE RULES
       </div>
+
+      <div
+        class="value"
+        id="activeRules"
+      >
+        0
+      </div>
+
+      <div class="description">
+        Currently active
+      </div>
+
     </div>
 
+
     <div class="stat-card">
-      <div class="label">SCHEDULED</div>
-      <div class="value">$0</div>
+
+      <div class="label">
+        SCHEDULED
+      </div>
+
+      <div
+        class="value"
+        id="scheduledAmount"
+      >
+        $0
+      </div>
+
       <div class="description">
         Upcoming USDC payments
       </div>
+
     </div>
 
+
     <div class="stat-card">
-      <div class="label">COMPLETED</div>
-      <div class="value">0</div>
+
+      <div class="label">
+        COMPLETED
+      </div>
+
+      <div
+        class="value"
+        id="completedPayments"
+      >
+        0
+      </div>
+
       <div class="description">
         Automated payments
       </div>
+
     </div>
 
+
     <div class="stat-card">
-      <div class="label">NEXT PAYMENT</div>
-      <div class="value">—</div>
-      <div class="description">
-        No payment scheduled
+
+      <div class="label">
+        NEXT PAYMENT
       </div>
+
+      <div
+        class="value"
+        id="nextPayment"
+      >
+        —
+      </div>
+
+      <div class="description">
+        Upcoming execution
+      </div>
+
     </div>
 
   </section>
 
+
+  <!-- AUTOMATION BUILDER -->
+
+  <section
+    class="automation-form"
+    id="automationForm"
+    hidden
+  >
+
+    <div class="section-header">
+
+      <div>
+
+        <div class="label">
+          NEW RULE
+        </div>
+
+        <h2>
+          Create automation
+        </h2>
+
+        <p>
+          Define how your treasury should make recurring payments.
+        </p>
+
+      </div>
+
+    </div>
+
+
+    <form id="automationBuilder">
+
+      <div class="form-grid">
+
+        <div>
+
+          <label for="recipient">
+            Recipient wallet
+          </label>
+
+          <input
+            id="recipient"
+            type="text"
+            placeholder="0x..."
+            autocomplete="off"
+            required
+          >
+
+        </div>
+
+
+        <div>
+
+          <label for="amount">
+            Amount
+          </label>
+
+          <input
+            id="amount"
+            type="number"
+            min="0.01"
+            step="0.01"
+            placeholder="100.00"
+            required
+          >
+
+        </div>
+
+
+        <div>
+
+          <label for="frequency">
+            Payment frequency
+          </label>
+
+          <select
+            id="frequency"
+            required
+          >
+
+            <option value="weekly">
+              Weekly
+            </option>
+
+            <option value="monthly">
+              Monthly
+            </option>
+
+            <option value="quarterly">
+              Quarterly
+            </option>
+
+          </select>
+
+        </div>
+
+
+        <div>
+
+          <label for="startDate">
+            First payment
+          </label>
+
+          <input
+            id="startDate"
+            type="date"
+            required
+          >
+
+        </div>
+
+      </div>
+
+
+      <div class="automation-preview">
+
+        <div>
+
+          <span class="label">
+            PAYMENT
+          </span>
+
+          <strong id="previewAmount">
+            0 USDC
+          </strong>
+
+        </div>
+
+
+        <div>
+
+          <span class="label">
+            FREQUENCY
+          </span>
+
+          <strong id="previewFrequency">
+            Weekly
+          </strong>
+
+        </div>
+
+
+        <div>
+
+          <span class="label">
+            RECIPIENT
+          </span>
+
+          <strong id="previewRecipient">
+            Not set
+          </strong>
+
+        </div>
+
+      </div>
+
+
+      <div class="form-actions">
+
+        <button
+          type="button"
+          id="cancelAutomation"
+        >
+          Cancel
+        </button>
+
+        <button
+          type="submit"
+          class="primary"
+        >
+          Save automation
+        </button>
+
+      </div>
+
+    </form>
+
+  </section>
+
+
+  <!-- AUTOMATION LIST -->
 
   <section class="automation">
 
     <div class="section-header">
 
       <div>
-        <h2>Payment automations</h2>
+
+        <div class="label">
+          PAYMENT RULES
+        </div>
+
+        <h2>
+          Your automations
+        </h2>
 
         <p>
-          Rules that control recurring treasury payments.
+          Recurring treasury rules configured for this account.
         </p>
+
       </div>
 
     </div>
@@ -106,14 +360,23 @@
 
       <div class="empty-state">
 
-        <h3>No automations yet</h3>
+        <div class="icon">
+          $
+        </div>
+
+        <h3>
+          No automations yet
+        </h3>
 
         <p>
-          Create your first automated USDC payment rule.
+          Create a rule to schedule recurring USDC payments.
         </p>
 
-        <button class="primary" id="emptyCreate">
-          Create automation
+        <button
+          class="primary"
+          id="emptyCreate"
+        >
+          Create your first automation
         </button>
 
       </div>
@@ -123,19 +386,26 @@
   </section>
 
 
+  <!-- HOW IT WORKS -->
+
   <section class="feature-section">
 
     <div class="section-header">
 
       <div>
-        <div class="label">HOW IT WORKS</div>
 
-        <h2>Programmable payments</h2>
+        <div class="label">
+          HOW IT WORKS
+        </div>
+
+        <h2>
+          Programmable treasury payments
+        </h2>
 
         <p>
-          AskirawaFi turns treasury rules into predictable
-          payment workflows.
+          Set the rule once and let the treasury follow it.
         </p>
+
       </div>
 
     </div>
@@ -144,30 +414,53 @@
     <div class="feature-grid">
 
       <div class="feature-card">
-        <h3>1. Set the rule</h3>
+
+        <div class="label">
+          01
+        </div>
+
+        <h3>
+          Define the rule
+        </h3>
 
         <p>
-          Choose a recipient, amount and payment frequency.
+          Choose the recipient, payment amount and frequency.
         </p>
+
       </div>
 
 
       <div class="feature-card">
-        <h3>2. Approve once</h3>
+
+        <div class="label">
+          02
+        </div>
+
+        <h3>
+          Approve the payment
+        </h3>
 
         <p>
-          Define the treasury conditions before payments begin.
+          Review the treasury rule before activating it.
         </p>
+
       </div>
 
 
       <div class="feature-card">
-        <h3>3. Let it run</h3>
+
+        <div class="label">
+          03
+        </div>
+
+        <h3>
+          Automate execution
+        </h3>
 
         <p>
-          Payments follow the configured rule instead of
-          requiring repeated manual actions.
+          Payments can follow the configured rule without repeated manual setup.
         </p>
+
       </div>
 
     </div>
@@ -182,40 +475,225 @@
 
 <script>
 
-const createAutomation =
+const createButton =
   document.getElementById("createAutomation");
 
 const emptyCreate =
   document.getElementById("emptyCreate");
 
+const form =
+  document.getElementById("automationForm");
 
-function openAutomationForm() {
+const builder =
+  document.getElementById("automationBuilder");
 
-  alert(
-    "Automation builder coming next."
-  );
+const cancelButton =
+  document.getElementById("cancelAutomation");
+
+const recipient =
+  document.getElementById("recipient");
+
+const amount =
+  document.getElementById("amount");
+
+const frequency =
+  document.getElementById("frequency");
+
+const previewAmount =
+  document.getElementById("previewAmount");
+
+const previewFrequency =
+  document.getElementById("previewFrequency");
+
+const previewRecipient =
+  document.getElementById("previewRecipient");
+
+
+function showForm() {
+
+  form.hidden = false;
+
+  form.scrollIntoView({
+    behavior: "smooth",
+    block: "start"
+  });
 
 }
 
 
-if (createAutomation) {
+function hideForm() {
 
-  createAutomation.addEventListener(
-    "click",
-    openAutomationForm
-  );
+  form.hidden = true;
+
+  builder.reset();
+
+  updatePreview();
+
+}
+
+
+function updatePreview() {
+
+  const value =
+    amount.value || "0";
+
+  previewAmount.textContent =
+    `${value} USDC`;
+
+
+  previewFrequency.textContent =
+    frequency.options[
+      frequency.selectedIndex
+    ].text;
+
+
+  if (recipient.value.length > 12) {
+
+    previewRecipient.textContent =
+      `${recipient.value.slice(0, 6)}...${recipient.value.slice(-4)}`;
+
+  } else {
+
+    previewRecipient.textContent =
+      "Not set";
+
+  }
 
 }
 
 
-if (emptyCreate) {
+createButton.addEventListener(
+  "click",
+  showForm
+);
 
-  emptyCreate.addEventListener(
-    "click",
-    openAutomationForm
-  );
 
-}
+emptyCreate.addEventListener(
+  "click",
+  showForm
+);
+
+
+cancelButton.addEventListener(
+  "click",
+  hideForm
+);
+
+
+amount.addEventListener(
+  "input",
+  updatePreview
+);
+
+
+recipient.addEventListener(
+  "input",
+  updatePreview
+);
+
+
+frequency.addEventListener(
+  "change",
+  updatePreview
+);
+
+
+builder.addEventListener(
+  "submit",
+  function(event) {
+
+    event.preventDefault();
+
+    const recipientValue =
+      recipient.value.trim();
+
+    const amountValue =
+      amount.value;
+
+    const frequencyValue =
+      frequency.value;
+
+    const startDate =
+      document.getElementById(
+        "startDate"
+      ).value;
+
+
+    if (!recipientValue ||
+        !amountValue ||
+        !startDate) {
+
+      return;
+
+    }
+
+
+    /*
+     * Temporary local rule.
+     *
+     * Blockchain execution will be
+     * connected in the next stage.
+     */
+
+    const automationList =
+      document.getElementById(
+        "automationList"
+      );
+
+
+    automationList.innerHTML = `
+
+      <div class="payment-item">
+
+        <div>
+
+          <strong>
+            ${amountValue} USDC
+          </strong>
+
+          <div class="description">
+            ${recipientValue.slice(0, 6)}...
+            ${recipientValue.slice(-4)}
+          </div>
+
+        </div>
+
+
+        <div>
+
+          <span class="status pending">
+            Pending
+          </span>
+
+        </div>
+
+      </div>
+
+    `;
+
+
+    document.getElementById(
+      "activeRules"
+    ).textContent = "1";
+
+
+    document.getElementById(
+      "scheduledAmount"
+    ).textContent =
+      `$${amountValue}`;
+
+
+    document.getElementById(
+      "nextPayment"
+    ).textContent =
+      startDate;
+
+
+    hideForm();
+
+  }
+
+);
 
 </script>
 
