@@ -745,3 +745,17 @@ footer {
     padding: 22px 14px;
   }
 }
+.wallet-connected {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.wallet-connected::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #35d07f;
+}
