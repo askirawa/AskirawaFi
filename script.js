@@ -96,14 +96,30 @@ document.addEventListener("DOMContentLoaded", async () => {
           enableReconnect: true,
         });
       }
+      // Listen for wallet connection changes
+      modal.subscribeState((state) => {
+        if (state.isConnected && state.address) {
+          const address = state.address;
 
+          connectButton.textContent =
+            `${address.slice(0, 6)}...${address.slice(-4)}`;
+
+          connectButton.disabled = false;
+          connectButton.classList.add("wallet-connected");
+
+          console.log("Wallet connected:", address);
+        } else {
+          connectButton.textContent = "Connect Wallet";
+          connectButton.disabled = false;
+          connectButton.classList.remove("wallet-connected");
+        }
+      });
       // Open the wallet connection interface
       await modal.open({
         view: "Connect",
       });
 
-      connectButton.textContent = "Connect Wallet";
-      connectButton.disabled = false;
+      
 
     } catch (error) {
       console.error("Wallet connection error:", error);
