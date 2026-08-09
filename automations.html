@@ -1,1 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
+  <title>Automations | AskirawaFi</title>
+
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+<header>
+  <nav>
+    <a href="index.html" class="logo">AskirawaFi</a>
+
+    <div>
+      <a href="index.html">Dashboard</a>
+      <a href="activity.html">Activity</a>
+      <a href="automations.html" class="active">Automations</a>
+      <a href="#transactions">Transactions</a>
+    </div>
+
+    <button class="connect-wallet">
+      Connect Wallet
+    </button>
+  </nav>
+</header>
+
+
+<main>
+
+  <section class="page-header">
+
+    <div>
+      <div class="label">PROGRAMMABLE TREASURY</div>
+
+      <h1>Automations</h1>
+
+      <p>
+        Schedule recurring USDC payments without manual intervention.
+      </p>
+    </div>
+
+    <button class="primary" id="createAutomation">
+      Create automation
+    </button>
+
+  </section>
+
+
+  <section class="stats-grid">
+
+    <div class="stat-card">
+      <div class="label">ACTIVE</div>
+      <div class="value">0</div>
+      <div class="description">
+        Active payment rules
+      </div>
+    </div>
+
+    <div class="stat-card">
+      <div class="label">SCHEDULED</div>
+      <div class="value">$0</div>
+      <div class="description">
+        Upcoming USDC payments
+      </div>
+    </div>
+
+    <div class="stat-card">
+      <div class="label">COMPLETED</div>
+      <div class="value">0</div>
+      <div class="description">
+        Automated payments
+      </div>
+    </div>
+
+    <div class="stat-card">
+      <div class="label">NEXT PAYMENT</div>
+      <div class="value">—</div>
+      <div class="description">
+        No payment scheduled
+      </div>
+    </div>
+
+  </section>
+
+
+  <section class="automation">
+
+    <div class="section-header">
+
+      <div>
+        <h2>Payment automations</h2>
+
+        <p>
+          Rules that control recurring treasury payments.
+        </p>
+      </div>
+
+    </div>
+
+
+    <div id="automationList">
+
+      <div class="empty-state">
+
+        <h3>No automations yet</h3>
+
+        <p>
+          Create your first automated USDC payment rule.
+        </p>
+
+        <button class="primary" id="emptyCreate">
+          Create automation
+        </button>
+
+      </div>
+
+    </div>
+
+  </section>
+
+
+  <section class="feature-section">
+
+    <div class="section-header">
+
+      <div>
+        <div class="label">HOW IT WORKS</div>
+
+        <h2>Programmable payments</h2>
+
+        <p>
+          AskirawaFi turns treasury rules into predictable
+          payment workflows.
+        </p>
+      </div>
+
+    </div>
+
+
+    <div class="feature-grid">
+
+      <div class="feature-card">
+        <h3>1. Set the rule</h3>
+
+        <p>
+          Choose a recipient, amount and payment frequency.
+        </p>
+      </div>
+
+
+      <div class="feature-card">
+        <h3>2. Approve once</h3>
+
+        <p>
+          Define the treasury conditions before payments begin.
+        </p>
+      </div>
+
+
+      <div class="feature-card">
+        <h3>3. Let it run</h3>
+
+        <p>
+          Payments follow the configured rule instead of
+          requiring repeated manual actions.
+        </p>
+      </div>
+
+    </div>
+
+  </section>
+
+</main>
+
+
+<script src="script.js"></script>
+
+
+<script>
+
+const createAutomation =
+  document.getElementById("createAutomation");
+
+const emptyCreate =
+  document.getElementById("emptyCreate");
+
+
+function openAutomationForm() {
+
+  alert(
+    "Automation builder coming next."
+  );
+
+}
+
+
+if (createAutomation) {
+
+  createAutomation.addEventListener(
+    "click",
+    openAutomationForm
+  );
+
+}
+
+
+if (emptyCreate) {
+
+  emptyCreate.addEventListener(
+    "click",
+    openAutomationForm
+  );
+
+}
+
+</script>
+
+</body>
+</html>
