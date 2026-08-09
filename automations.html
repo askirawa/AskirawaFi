@@ -36,144 +36,43 @@
 
 <main>
 
-  <!-- PAGE HEADER -->
-
   <section class="page-header">
 
     <div>
 
       <div class="label">
-        PROGRAMMABLE TREASURY
+        ARC TESTNET
       </div>
 
       <h1>
-        Automations
+        USDC Payments
       </h1>
 
       <p>
-        Create rules that automate recurring USDC treasury payments.
+        Create and execute a USDC treasury payment on Arc Testnet.
       </p>
 
     </div>
 
-    <button
-      class="primary"
-      id="createAutomation"
-    >
-      New automation
-    </button>
-
   </section>
 
 
-  <!-- SUMMARY -->
-
-  <section class="stats-grid">
-
-    <div class="stat-card">
-
-      <div class="label">
-        ACTIVE RULES
-      </div>
-
-      <div
-        class="value"
-        id="activeRules"
-      >
-        0
-      </div>
-
-      <div class="description">
-        Currently active
-      </div>
-
-    </div>
-
-
-    <div class="stat-card">
-
-      <div class="label">
-        SCHEDULED
-      </div>
-
-      <div
-        class="value"
-        id="scheduledAmount"
-      >
-        $0
-      </div>
-
-      <div class="description">
-        Upcoming USDC payments
-      </div>
-
-    </div>
-
-
-    <div class="stat-card">
-
-      <div class="label">
-        COMPLETED
-      </div>
-
-      <div
-        class="value"
-        id="completedPayments"
-      >
-        0
-      </div>
-
-      <div class="description">
-        Automated payments
-      </div>
-
-    </div>
-
-
-    <div class="stat-card">
-
-      <div class="label">
-        NEXT PAYMENT
-      </div>
-
-      <div
-        class="value"
-        id="nextPayment"
-      >
-        —
-      </div>
-
-      <div class="description">
-        Upcoming execution
-      </div>
-
-    </div>
-
-  </section>
-
-
-  <!-- AUTOMATION BUILDER -->
-
-  <section
-    class="automation-form"
-    id="automationForm"
-    hidden
-  >
+  <section class="automation-form">
 
     <div class="section-header">
 
       <div>
 
         <div class="label">
-          NEW RULE
+          PAYMENT
         </div>
 
         <h2>
-          Create automation
+          Send USDC
         </h2>
 
         <p>
-          Define how your treasury should make recurring payments.
+          Review the payment before approving it in your wallet.
         </p>
 
       </div>
@@ -181,7 +80,7 @@
     </div>
 
 
-    <form id="automationBuilder">
+    <form id="paymentForm">
 
       <div class="form-grid">
 
@@ -205,7 +104,7 @@
         <div>
 
           <label for="amount">
-            Amount
+            Amount (USDC)
           </label>
 
           <input
@@ -213,50 +112,7 @@
             type="number"
             min="0.01"
             step="0.01"
-            placeholder="100.00"
-            required
-          >
-
-        </div>
-
-
-        <div>
-
-          <label for="frequency">
-            Payment frequency
-          </label>
-
-          <select
-            id="frequency"
-            required
-          >
-
-            <option value="weekly">
-              Weekly
-            </option>
-
-            <option value="monthly">
-              Monthly
-            </option>
-
-            <option value="quarterly">
-              Quarterly
-            </option>
-
-          </select>
-
-        </div>
-
-
-        <div>
-
-          <label for="startDate">
-            First payment
-          </label>
-
-          <input
-            id="startDate"
-            type="date"
+            placeholder="1.00"
             required
           >
 
@@ -270,37 +126,37 @@
         <div>
 
           <span class="label">
-            PAYMENT
+            NETWORK
+          </span>
+
+          <strong>
+            Arc Testnet
+          </strong>
+
+        </div>
+
+
+        <div>
+
+          <span class="label">
+            ASSET
+          </span>
+
+          <strong>
+            USDC
+          </strong>
+
+        </div>
+
+
+        <div>
+
+          <span class="label">
+            AMOUNT
           </span>
 
           <strong id="previewAmount">
             0 USDC
-          </strong>
-
-        </div>
-
-
-        <div>
-
-          <span class="label">
-            FREQUENCY
-          </span>
-
-          <strong id="previewFrequency">
-            Weekly
-          </strong>
-
-        </div>
-
-
-        <div>
-
-          <span class="label">
-            RECIPIENT
-          </span>
-
-          <strong id="previewRecipient">
-            Not set
           </strong>
 
         </div>
@@ -311,17 +167,11 @@
       <div class="form-actions">
 
         <button
-          type="button"
-          id="cancelAutomation"
-        >
-          Cancel
-        </button>
-
-        <button
           type="submit"
           class="primary"
+          id="sendButton"
         >
-          Save automation
+          Review payment
         </button>
 
       </div>
@@ -331,24 +181,26 @@
   </section>
 
 
-  <!-- AUTOMATION LIST -->
-
-  <section class="automation">
+  <section
+    class="automation"
+    id="reviewSection"
+    hidden
+  >
 
     <div class="section-header">
 
       <div>
 
         <div class="label">
-          PAYMENT RULES
+          REVIEW
         </div>
 
         <h2>
-          Your automations
+          Confirm payment
         </h2>
 
         <p>
-          Recurring treasury rules configured for this account.
+          Check the details before approving the transaction.
         </p>
 
       </div>
@@ -356,54 +208,99 @@
     </div>
 
 
-    <div id="automationList">
+    <div class="payment-item">
 
-      <div class="empty-state">
+      <div>
 
-        <div class="icon">
-          $
-        </div>
+        <span class="label">
+          RECIPIENT
+        </span>
 
-        <h3>
-          No automations yet
-        </h3>
-
-        <p>
-          Create a rule to schedule recurring USDC payments.
-        </p>
-
-        <button
-          class="primary"
-          id="emptyCreate"
-        >
-          Create your first automation
-        </button>
+        <strong id="reviewRecipient">
+          —
+        </strong>
 
       </div>
+
+    </div>
+
+
+    <div class="payment-item">
+
+      <div>
+
+        <span class="label">
+          AMOUNT
+        </span>
+
+        <strong id="reviewAmount">
+          —
+        </strong>
+
+      </div>
+
+    </div>
+
+
+    <div class="payment-item">
+
+      <div>
+
+        <span class="label">
+          NETWORK
+        </span>
+
+        <strong>
+          Arc Testnet
+        </strong>
+
+      </div>
+
+    </div>
+
+
+    <div class="form-actions">
+
+      <button
+        type="button"
+        id="cancelReview"
+      >
+        Cancel
+      </button>
+
+      <button
+        type="button"
+        class="primary"
+        id="confirmPayment"
+      >
+        Approve in wallet
+      </button>
 
     </div>
 
   </section>
 
 
-  <!-- HOW IT WORKS -->
-
-  <section class="feature-section">
+  <section
+    class="automation"
+    id="resultSection"
+    hidden
+  >
 
     <div class="section-header">
 
       <div>
 
         <div class="label">
-          HOW IT WORKS
+          TRANSACTION
         </div>
 
-        <h2>
-          Programmable treasury payments
+        <h2 id="resultTitle">
+          Payment submitted
         </h2>
 
-        <p>
-          Set the rule once and let the treasury follow it.
+        <p id="resultMessage">
+          Your transaction has been submitted to Arc Testnet.
         </p>
 
       </div>
@@ -411,57 +308,37 @@
     </div>
 
 
-    <div class="feature-grid">
+    <div class="payment-item">
 
-      <div class="feature-card">
+      <div>
 
-        <div class="label">
-          01
-        </div>
+        <span class="label">
+          TRANSACTION HASH
+        </span>
 
-        <h3>
-          Define the rule
-        </h3>
-
-        <p>
-          Choose the recipient, payment amount and frequency.
-        </p>
-
-      </div>
-
-
-      <div class="feature-card">
-
-        <div class="label">
-          02
-        </div>
-
-        <h3>
-          Approve the payment
-        </h3>
-
-        <p>
-          Review the treasury rule before activating it.
-        </p>
+        <strong
+          id="transactionHash"
+          style="word-break: break-all;"
+        >
+          —
+        </strong>
 
       </div>
 
+    </div>
 
-      <div class="feature-card">
 
-        <div class="label">
-          03
-        </div>
+    <div class="form-actions">
 
-        <h3>
-          Automate execution
-        </h3>
-
-        <p>
-          Payments can follow the configured rule without repeated manual setup.
-        </p>
-
-      </div>
+      <a
+        id="explorerLink"
+        class="btn primary"
+        href="#"
+        target="_blank"
+        rel="noopener"
+      >
+        View on Explorer
+      </a>
 
     </div>
 
@@ -475,224 +352,382 @@
 
 <script>
 
-const createButton =
-  document.getElementById("createAutomation");
+const USDC_ADDRESS =
+  "0x3600000000000000000000000000000000000000";
 
-const emptyCreate =
-  document.getElementById("emptyCreate");
 
-const form =
-  document.getElementById("automationForm");
+const ARC_CHAIN_ID =
+  5042002;
 
-const builder =
-  document.getElementById("automationBuilder");
 
-const cancelButton =
-  document.getElementById("cancelAutomation");
+const ARC_EXPLORER =
+  "https://testnet.arcscan.app";
 
-const recipient =
-  document.getElementById("recipient");
 
-const amount =
+const paymentForm =
+  document.getElementById("paymentForm");
+
+
+const amountInput =
   document.getElementById("amount");
 
-const frequency =
-  document.getElementById("frequency");
+
+const recipientInput =
+  document.getElementById("recipient");
+
 
 const previewAmount =
   document.getElementById("previewAmount");
 
-const previewFrequency =
-  document.getElementById("previewFrequency");
 
-const previewRecipient =
-  document.getElementById("previewRecipient");
+const reviewSection =
+  document.getElementById("reviewSection");
 
 
-function showForm() {
-
-  form.hidden = false;
-
-  form.scrollIntoView({
-    behavior: "smooth",
-    block: "start"
-  });
-
-}
+const resultSection =
+  document.getElementById("resultSection");
 
 
-function hideForm() {
-
-  form.hidden = true;
-
-  builder.reset();
-
-  updatePreview();
-
-}
+const reviewRecipient =
+  document.getElementById("reviewRecipient");
 
 
-function updatePreview() {
-
-  const value =
-    amount.value || "0";
-
-  previewAmount.textContent =
-    `${value} USDC`;
+const reviewAmount =
+  document.getElementById("reviewAmount");
 
 
-  previewFrequency.textContent =
-    frequency.options[
-      frequency.selectedIndex
-    ].text;
+const confirmPayment =
+  document.getElementById("confirmPayment");
 
 
-  if (recipient.value.length > 12) {
+const cancelReview =
+  document.getElementById("cancelReview");
 
-    previewRecipient.textContent =
-      `${recipient.value.slice(0, 6)}...${recipient.value.slice(-4)}`;
 
-  } else {
+const transactionHash =
+  document.getElementById("transactionHash");
 
-    previewRecipient.textContent =
-      "Not set";
+
+const explorerLink =
+  document.getElementById("explorerLink");
+
+
+let paymentDetails = null;
+
+
+amountInput.addEventListener(
+  "input",
+  () => {
+
+    const amount =
+      amountInput.value || "0";
+
+    previewAmount.textContent =
+      `${amount} USDC`;
 
   }
-
-}
-
-
-createButton.addEventListener(
-  "click",
-  showForm
 );
 
 
-emptyCreate.addEventListener(
-  "click",
-  showForm
-);
-
-
-cancelButton.addEventListener(
-  "click",
-  hideForm
-);
-
-
-amount.addEventListener(
-  "input",
-  updatePreview
-);
-
-
-recipient.addEventListener(
-  "input",
-  updatePreview
-);
-
-
-frequency.addEventListener(
-  "change",
-  updatePreview
-);
-
-
-builder.addEventListener(
+paymentForm.addEventListener(
   "submit",
-  function(event) {
+  (event) => {
 
     event.preventDefault();
 
-    const recipientValue =
-      recipient.value.trim();
 
-    const amountValue =
-      amount.value;
-
-    const frequencyValue =
-      frequency.value;
-
-    const startDate =
-      document.getElementById(
-        "startDate"
-      ).value;
+    const recipient =
+      recipientInput.value.trim();
 
 
-    if (!recipientValue ||
-        !amountValue ||
-        !startDate) {
+    const amount =
+      amountInput.value;
+
+
+    if (!/^0x[a-fA-F0-9]{40}$/.test(recipient)) {
+
+      alert(
+        "Enter a valid EVM wallet address."
+      );
 
       return;
 
     }
 
 
-    /*
-     * Temporary local rule.
-     *
-     * Blockchain execution will be
-     * connected in the next stage.
-     */
+    if (
+      !amount ||
+      Number(amount) <= 0
+    ) {
 
-    const automationList =
-      document.getElementById(
-        "automationList"
+      alert(
+        "Enter a valid USDC amount."
+      );
+
+      return;
+
+    }
+
+
+    paymentDetails = {
+      recipient,
+      amount
+    };
+
+
+    reviewRecipient.textContent =
+      `${recipient.slice(0, 8)}...${recipient.slice(-6)}`;
+
+
+    reviewAmount.textContent =
+      `${amount} USDC`;
+
+
+    reviewSection.hidden = false;
+
+
+    reviewSection.scrollIntoView({
+      behavior: "smooth",
+      block: "start"
+    });
+
+  }
+);
+
+
+cancelReview.addEventListener(
+  "click",
+  () => {
+
+    reviewSection.hidden = true;
+
+  }
+);
+
+
+confirmPayment.addEventListener(
+  "click",
+  async () => {
+
+    if (!paymentDetails) {
+      return;
+    }
+
+
+    if (!window.ethereum) {
+
+      alert(
+        "Open AskirawaFi inside a compatible EVM wallet browser."
+      );
+
+      return;
+
+    }
+
+
+    try {
+
+      confirmPayment.disabled = true;
+
+      confirmPayment.textContent =
+        "Connecting...";
+
+
+      const accounts =
+        await window.ethereum.request({
+          method: "eth_requestAccounts"
+        });
+
+
+      if (
+        !accounts ||
+        accounts.length === 0
+      ) {
+
+        throw new Error(
+          "No wallet account connected."
+        );
+
+      }
+
+
+      const chainId =
+        await window.ethereum.request({
+          method: "eth_chainId"
+        });
+
+
+      if (
+        parseInt(chainId, 16) !== ARC_CHAIN_ID
+      ) {
+
+        try {
+
+          await window.ethereum.request({
+            method: "wallet_switchEthereumChain",
+            params: [
+              {
+                chainId:
+                  "0x4cf7f2"
+              }
+            ]
+          });
+
+        } catch (switchError) {
+
+          if (
+            switchError.code === 4902
+          ) {
+
+            await window.ethereum.request({
+              method:
+                "wallet_addEthereumChain",
+
+              params: [
+                {
+                  chainId:
+                    "0x4cf7f2",
+
+                  chainName:
+                    "Arc Testnet",
+
+                  nativeCurrency: {
+                    name: "USDC",
+                    symbol: "USDC",
+                    decimals: 6
+                  },
+
+                  rpcUrls: [
+                    "https://rpc.testnet.arc.network"
+                  ],
+
+                  blockExplorerUrls: [
+                    ARC_EXPLORER
+                  ]
+                }
+              ]
+            });
+
+          } else {
+
+            throw switchError;
+
+          }
+
+        }
+
+      }
+
+
+      confirmPayment.textContent =
+        "Waiting for approval...";
+
+
+      const amountInUnits =
+        BigInt(
+          Math.round(
+            Number(paymentDetails.amount) *
+            1_000_000
+          )
+        );
+
+
+      const hexAmount =
+        "0x" +
+        amountInUnits.toString(16);
+
+
+      /*
+       * ERC-20 transfer(address,uint256)
+       *
+       * Function selector:
+       * a9059cbb
+       */
+
+      const recipient =
+        paymentDetails.recipient
+          .slice(2)
+          .padStart(64, "0");
+
+
+      const value =
+        hexAmount
+          .slice(2)
+          .padStart(64, "0");
+
+
+      const data =
+        "0xa9059cbb" +
+        recipient +
+        value;
+
+
+      const hash =
+        await window.ethereum.request({
+
+          method: "eth_sendTransaction",
+
+          params: [
+            {
+              from: accounts[0],
+
+              to: USDC_ADDRESS,
+
+              data
+
+            }
+          ]
+
+        });
+
+
+      transactionHash.textContent =
+        hash;
+
+
+      explorerLink.href =
+        `${ARC_EXPLORER}/tx/${hash}`;
+
+
+      resultSection.hidden = false;
+
+
+      resultSection.scrollIntoView({
+        behavior: "smooth",
+        block: "start"
+      });
+
+
+      confirmPayment.textContent =
+        "Transaction submitted";
+
+
+    } catch (error) {
+
+      console.error(
+        "Payment failed:",
+        error
       );
 
 
-    automationList.innerHTML = `
-
-      <div class="payment-item">
-
-        <div>
-
-          <strong>
-            ${amountValue} USDC
-          </strong>
-
-          <div class="description">
-            ${recipientValue.slice(0, 6)}...
-            ${recipientValue.slice(-4)}
-          </div>
-
-        </div>
+      alert(
+        error?.message ||
+        "The payment could not be completed."
+      );
 
 
-        <div>
-
-          <span class="status pending">
-            Pending
-          </span>
-
-        </div>
-
-      </div>
-
-    `;
+      confirmPayment.textContent =
+        "Approve in wallet";
 
 
-    document.getElementById(
-      "activeRules"
-    ).textContent = "1";
+    } finally {
 
+      confirmPayment.disabled =
+        false;
 
-    document.getElementById(
-      "scheduledAmount"
-    ).textContent =
-      `$${amountValue}`;
-
-
-    document.getElementById(
-      "nextPayment"
-    ).textContent =
-      startDate;
-
-
-    hideForm();
+    }
 
   }
-
 );
 
 </script>
