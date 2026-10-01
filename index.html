@@ -418,7 +418,7 @@
       border-radius: 12px;
       padding: 20px;
       display: grid;
-      grid-template-columns: 1.5fr 1fr 1fr 120px;
+      grid-template-columns: 1.5fr 1fr 1fr 160px;
       gap: 20px;
       align-items: center;
     }
@@ -564,6 +564,15 @@
       background: var(--green);
       color: #03100a;
       font-weight: 700;
+    }
+
+    .onchain-empty {
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 28px;
+      text-align: center;
+      color: var(--muted);
+      background: #071218;
     }
 
     /* FOOTER */
@@ -929,7 +938,7 @@
           <div class="why-item">
             <h3>Automation</h3>
             <p>
-              Schedule recurring payments and treasury rules without manual intervention.
+              Create programmable treasury rules directly on Arc.
             </p>
           </div>
 
@@ -1000,14 +1009,6 @@
               <td><span class="status pending">Pending</span></td>
             </tr>
 
-            <tr>
-              <td>Vendor Settlement</td>
-              <td>Marketing Services</td>
-              <td>5,600 USDC</td>
-              <td>2 days ago</td>
-              <td><span class="status">Completed</span></td>
-            </tr>
-
           </tbody>
 
         </table>
@@ -1026,7 +1027,7 @@
       <h1 class="page-title">Automations</h1>
 
       <p class="page-description">
-        Schedule payments and treasury rules that execute automatically.
+        Create programmable USDC treasury rules on Arc.
       </p>
 
 
@@ -1047,7 +1048,7 @@
             </h2>
 
             <p class="form-description">
-              Set the rules for an automated USDC payment.
+              Create a programmable USDC treasury rule on Arc.
             </p>
 
           </div>
@@ -1075,7 +1076,7 @@
               id="automation-name"
               class="form-input"
               type="text"
-              placeholder="e.g. Team Payroll"
+              placeholder="e.g. Treasury Reserve"
               required
             />
 
@@ -1167,7 +1168,7 @@
             <textarea
               id="automation-note"
               class="form-textarea"
-              placeholder="Add a note about this payment..."
+              placeholder="Describe the treasury rule..."
             ></textarea>
 
           </div>
@@ -1202,8 +1203,8 @@
       <div class="automation-toolbar">
 
         <div style="color:var(--muted);font-size:13px;">
-          <span id="automation-count">3</span>
-          active automations
+          <span id="automation-count">0</span>
+          on-chain automations
         </div>
 
         <button
@@ -1211,136 +1212,18 @@
           class="primary-btn"
           type="button"
         >
-          Create Automation
+          New Automation
         </button>
 
       </div>
 
 
-      <!-- AUTOMATION LIST -->
+      <!-- REAL ON-CHAIN AUTOMATIONS -->
 
       <div id="automation-list" class="automation-list">
 
-        <div class="automation">
-
-          <div>
-            <div class="automation-name">
-              Team Payroll
-            </div>
-
-            <div class="automation-meta">
-              12 recipients · Monthly
-            </div>
-          </div>
-
-          <div>
-            <div class="automation-small">
-              Amount
-            </div>
-
-            <div class="automation-amount">
-              $18,450 USDC
-            </div>
-          </div>
-
-          <div>
-            <div class="automation-small">
-              Next execution
-            </div>
-
-            <div>
-              August 30, 2026
-            </div>
-          </div>
-
-          <div>
-            <span class="active-pill">
-              Active
-            </span>
-          </div>
-
-        </div>
-
-
-        <div class="automation">
-
-          <div>
-            <div class="automation-name">
-              Vendor Settlement
-            </div>
-
-            <div class="automation-meta">
-              Arc Project Services · Weekly
-            </div>
-          </div>
-
-          <div>
-            <div class="automation-small">
-              Amount
-            </div>
-
-            <div class="automation-amount">
-              $7,250 USDC
-            </div>
-          </div>
-
-          <div>
-            <div class="automation-small">
-              Next execution
-            </div>
-
-            <div>
-              August 10, 2026
-            </div>
-          </div>
-
-          <div>
-            <span class="active-pill">
-              Active
-            </span>
-          </div>
-
-        </div>
-
-
-        <div class="automation">
-
-          <div>
-            <div class="automation-name">
-              Operations Reserve
-            </div>
-
-            <div class="automation-meta">
-              Recurring treasury payment · Monthly
-            </div>
-          </div>
-
-          <div>
-            <div class="automation-small">
-              Amount
-            </div>
-
-            <div class="automation-amount">
-              $3,800 USDC
-            </div>
-          </div>
-
-          <div>
-            <div class="automation-small">
-              Next execution
-            </div>
-
-            <div>
-              August 15, 2026
-            </div>
-          </div>
-
-          <div>
-            <span class="active-pill">
-              Active
-            </span>
-          </div>
-
+        <div class="onchain-empty">
+          Connect your Arc wallet to load your on-chain automations.
         </div>
 
       </div>
@@ -1432,9 +1315,14 @@
 <script>
 document.addEventListener("DOMContentLoaded", function () {
 
-  const navButtons = document.querySelectorAll(".nav-btn");
-  const pages = document.querySelectorAll(".page");
-  const pageLinks = document.querySelectorAll("[data-page-link]");
+  const navButtons =
+    document.querySelectorAll(".nav-btn");
+
+  const pages =
+    document.querySelectorAll(".page");
+
+  const pageLinks =
+    document.querySelectorAll("[data-page-link]");
 
 
   function showPage(pageName) {
@@ -1458,7 +1346,9 @@ document.addEventListener("DOMContentLoaded", function () {
 
     const selectedButton =
       document.querySelector(
-        '.nav-btn[data-page="' + pageName + '"]'
+        '.nav-btn[data-page="' +
+        pageName +
+        '"]'
       );
 
     if (selectedButton) {
@@ -1476,26 +1366,36 @@ document.addEventListener("DOMContentLoaded", function () {
 
   navButtons.forEach(function (button) {
 
-    button.addEventListener("click", function () {
+    button.addEventListener(
+      "click",
+      function () {
 
-      showPage(
-        button.getAttribute("data-page")
-      );
+        showPage(
+          button.getAttribute(
+            "data-page"
+          )
+        );
 
-    });
+      }
+    );
 
   });
 
 
   pageLinks.forEach(function (link) {
 
-    link.addEventListener("click", function () {
+    link.addEventListener(
+      "click",
+      function () {
 
-      showPage(
-        link.getAttribute("data-page-link")
-      );
+        showPage(
+          link.getAttribute(
+            "data-page-link"
+          )
+        );
 
-    });
+      }
+    );
 
   });
 
@@ -1503,38 +1403,45 @@ document.addEventListener("DOMContentLoaded", function () {
 </script>
 
 
-<!-- AUTOMATION FUNCTIONALITY -->
+<!-- AUTOMATION FORM UI ONLY
+     Blockchain creation is handled by script.js -->
 
 <script>
 document.addEventListener("DOMContentLoaded", function () {
 
   const createButton =
-    document.getElementById("create-automation-button");
+    document.getElementById(
+      "create-automation-button"
+    );
 
   const formBox =
-    document.getElementById("automation-form");
+    document.getElementById(
+      "automation-form"
+    );
 
   const form =
-    document.getElementById("automation-form-element");
+    document.getElementById(
+      "automation-form-element"
+    );
 
   const cancelButton =
-    document.getElementById("cancel-automation");
+    document.getElementById(
+      "cancel-automation"
+    );
 
   const closeButton =
-    document.getElementById("close-automation-form");
-
-  const list =
-    document.getElementById("automation-list");
-
-  const count =
-    document.getElementById("automation-count");
+    document.getElementById(
+      "close-automation-form"
+    );
 
 
   function openForm() {
 
-    formBox.style.display = "block";
+    formBox.style.display =
+      "block";
 
-    createButton.style.display = "none";
+    createButton.style.display =
+      "none";
 
     formBox.scrollIntoView({
       behavior: "smooth",
@@ -1546,9 +1453,11 @@ document.addEventListener("DOMContentLoaded", function () {
 
   function closeForm() {
 
-    formBox.style.display = "none";
+    formBox.style.display =
+      "none";
 
-    createButton.style.display = "block";
+    createButton.style.display =
+      "block";
 
     form.reset();
 
@@ -1573,209 +1482,28 @@ document.addEventListener("DOMContentLoaded", function () {
   );
 
 
+  /*
+   * IMPORTANT:
+   * We do NOT create a frontend automation here.
+   *
+   * The submit event is intentionally left for
+   * script.js to handle the blockchain transaction.
+   */
+
   form.addEventListener(
     "submit",
     function (event) {
 
       event.preventDefault();
 
-
-      const name =
-        document
-          .getElementById("automation-name")
-          .value
-          .trim();
-
-
-      const recipient =
-        document
-          .getElementById("automation-recipient")
-          .value
-          .trim();
-
-
-      const amount =
-        document
-          .getElementById("automation-amount")
-          .value;
-
-
-      const frequency =
-        document
-          .getElementById("automation-frequency")
-          .value;
-
-
-      const date =
-        document
-          .getElementById("automation-date")
-          .value;
-
-
-      const note =
-        document
-          .getElementById("automation-note")
-          .value
-          .trim();
-
-
-      if (
-        !name ||
-        !recipient ||
-        !amount ||
-        !frequency ||
-        !date
-      ) {
-
-        alert(
-          "Please complete all required fields."
-        );
-
-        return;
-
-      }
-
-
-      const formattedDate =
-        new Date(
-          date + "T00:00:00"
-        ).toLocaleDateString(
-          "en-US",
-          {
-            month: "long",
-            day: "numeric",
-            year: "numeric"
-          }
-        );
-
-
-      const shortRecipient =
-        recipient.length > 18
-          ? recipient.slice(0, 8) +
-            "..." +
-            recipient.slice(-6)
-          : recipient;
-
-
-      const formattedAmount =
-        Number(amount).toLocaleString(
-          "en-US",
-          {
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 2
-          }
-        );
-
-
-      const automation =
-        document.createElement("div");
-
-
-      automation.className =
-        "automation";
-
-
-      automation.innerHTML = `
-
-        <div>
-
-          <div class="automation-name">
-            ${escapeHtml(name)}
-          </div>
-
-          <div class="automation-meta">
-            ${escapeHtml(shortRecipient)}
-            ·
-            ${escapeHtml(frequency)}
-          </div>
-
-          ${
-            note
-              ? `
-                <div
-                  class="automation-meta"
-                  style="margin-top:4px;"
-                >
-                  ${escapeHtml(note)}
-                </div>
-              `
-              : ""
-          }
-
-        </div>
-
-
-        <div>
-
-          <div class="automation-small">
-            Amount
-          </div>
-
-          <div class="automation-amount">
-            $${formattedAmount} USDC
-          </div>
-
-        </div>
-
-
-        <div>
-
-          <div class="automation-small">
-            Next execution
-          </div>
-
-          <div>
-            ${formattedDate}
-          </div>
-
-        </div>
-
-
-        <div>
-
-          <span class="active-pill">
-            Active
-          </span>
-
-        </div>
-
-      `;
-
-
-      list.appendChild(
-        automation
-      );
-
-
-      count.textContent =
-        list.querySelectorAll(
-          ".automation"
-        ).length;
-
-
-      closeForm();
-
     }
   );
-
-
-  function escapeHtml(value) {
-
-    const div =
-      document.createElement("div");
-
-    div.textContent = value;
-
-    return div.innerHTML;
-
-  }
 
 });
 </script>
 
 
-<!-- EXISTING WALLET CONNECTION -->
-<!-- DO NOT REMOVE OR MODIFY THIS -->
+<!-- REAL WALLET + ARC AUTOMATION CONTRACT -->
 
 <script src="script.js"></script>
 
