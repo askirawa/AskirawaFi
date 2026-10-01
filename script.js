@@ -1,14 +1,13 @@
 document.addEventListener("DOMContentLoaded", async () => {
-  // =========================================================
-  // ASKIRAWAFI CONFIG
-  // =========================================================
 
-  const PROJECT_ID = "c7bb3a991b675f05777c830bac0f18de";
+  const PROJECT_ID =
+    "c7bb3a991b675f05777c830bac0f18de";
 
   const ARC_CHAIN_ID = 5042;
 
   const AUTOMATION_CONTRACT =
     "0x5E13b82A35Ac827b368215141F4a4F8ADfb1F434";
+
 
   const AUTOMATION_ABI = [
     "function automationCount() view returns (uint256)",
@@ -20,6 +19,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     "function setAutomationStatus(uint256 id,bool active)"
   ];
 
+
   const ARC_NETWORK = {
     id: ARC_CHAIN_ID,
 
@@ -28,37 +28,27 @@ document.addEventListener("DOMContentLoaded", async () => {
     nativeCurrency: {
       name: "USDC",
       symbol: "USDC",
-      decimals: 6,
+      decimals: 6
     },
 
     rpcUrls: {
       default: {
-        http: ["https://rpc.arc.network"],
-      },
+        http: ["https://rpc.arc.network"]
+      }
     },
 
     blockExplorers: {
       default: {
         name: "Arc Explorer",
-        url: "https://explorer.arc.io",
-      },
-    },
+        url: "https://explorer.arc.io"
+      }
+    }
   };
 
 
-  // =========================================================
-  // FIND BUTTONS
-  // =========================================================
+  const connectButton =
+    document.getElementById("connect-wallet");
 
-  const buttons = Array.from(
-    document.querySelectorAll("button")
-  );
-
-  const connectButton = buttons.find(
-    (button) =>
-      button.textContent.trim().toLowerCase() ===
-      "connect wallet"
-  );
 
   if (!connectButton) {
     console.error("Connect Wallet button not found.");
@@ -66,41 +56,56 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
 
-  // =========================================================
-  // VARIABLES
-  // =========================================================
-
   let modal = null;
+
   let walletProvider = null;
+
   let ethersProvider = null;
+
   let signer = null;
+
   let automationContract = null;
 
 
-  // =========================================================
-  // LOAD APPKIT
-  // =========================================================
+  /* =========================================
+     LOAD APPKIT
+  ========================================= */
 
   async function loadAppKit() {
-    if (modal) return modal;
 
-    const { createAppKit } = await import(
-      "https://esm.sh/@reown/appkit"
-    );
+    if (modal) {
+      return modal;
+    }
 
-    const { EthersAdapter } = await import(
-      "https://esm.sh/@reown/appkit-adapter-ethers"
-    );
 
-    const { defineChain } = await import(
-      "https://esm.sh/@reown/appkit/networks"
-    );
+    const { createAppKit } =
+      await import(
+        "https://esm.sh/@reown/appkit"
+      );
 
-    const arc = defineChain(ARC_NETWORK);
 
-    const adapter = new EthersAdapter();
+    const { EthersAdapter } =
+      await import(
+        "https://esm.sh/@reown/appkit-adapter-ethers"
+      );
+
+
+    const { defineChain } =
+      await import(
+        "https://esm.sh/@reown/appkit/networks"
+      );
+
+
+    const arc =
+      defineChain(ARC_NETWORK);
+
+
+    const adapter =
+      new EthersAdapter();
+
 
     modal = createAppKit({
+
       adapters: [adapter],
 
       networks: [arc],
@@ -111,14 +116,17 @@ document.addEventListener("DOMContentLoaded", async () => {
 
       metadata: {
         name: "AskirawaFi",
+
         description:
           "Programmable USDC Treasury built on Arc",
+
         url: window.location.origin,
-        icons: [],
+
+        icons: []
       },
 
       features: {
-        analytics: true,
+        analytics: true
       },
 
       allWallets: "SHOW",
@@ -127,62 +135,123 @@ document.addEventListener("DOMContentLoaded", async () => {
 
       enableNetworkSwitch: true,
 
-      enableReconnect: true,
+      enableReconnect: true
+
     });
 
 
-    // =======================================================
-    // WALLET STATE
-    // =======================================================
+    /*
+     * AppKit state listener
+     */
 
-    modal.subscribeState(async (state) => {
-      if (state.isConnected && state.address) {
-
-        const address = state.address;
-
-        connectButton.textContent =
-          `${address.slice(0, 6)}...${address.slice(-4)}`;
-
-        connectButton.disabled = false;
-
-        connectButton.classList.add(
-          "wallet-connected"
-        );
+    modal.subscribeState(
+      async (state) => {
 
         console.log(
-          "Wallet connected:",
-          address
+          "AppKit state:",
+          state
         );
 
-        await updateAutomationCount();
 
-        await loadRealAutomations();
+        if (
+          state.isConnected &&
+          state.address
+        ) {
 
-      } else {
+          const address =
+            state.address;
 
-        connectButton.textContent =
-          "Connect Wallet";
 
-        connectButton.disabled = false;
+          connectButton.textContent =
+            `${address.slice(0, 6)}...${address.slice(-4)}`;
 
-        connectButton.classList.remove(
-          "wallet-connected"
-        );
 
-        walletProvider = null;
-        ethersProvider = null;
-        signer = null;
-        automationContract = null;
+          connectButton.disabled = false;
+
+
+          connectButton.classList.add(
+            "wallet-connected"
+          );
+
+
+          console.log(
+            "Wallet connected:",
+            address
+          );
+
+
+          /*
+           * IMPORTANT:
+           * Wait a moment for AppKit
+           * provider to become available.
+           */
+
+          setTimeout(
+            async () => {
+
+              try {
+
+                await loadRealAutomations();
+
+              } catch (error) {
+
+                console.error(
+                  "Automation loading failed:",
+                  error
+                );
+
+              }
+
+            },
+            500
+          );
+
+        } else {
+
+          connectButton.textContent =
+            "Connect Wallet";
+
+          connectButton.disabled =
+            false;
+
+          connectButton.classList.remove(
+            "wallet-connected"
+          );
+
+
+          walletProvider = null;
+
+          ethersProvider = null;
+
+          signer = null;
+
+          automationContract = null;
+
+
+          const countElement =
+            document.getElementById(
+              "automation-count"
+            );
+
+
+          if (countElement) {
+            countElement.textContent = "0";
+          }
+
+        }
+
       }
-    });
+    );
+
 
     return modal;
+
   }
 
 
-  // =========================================================
-  // CONNECT WALLET
-  // =========================================================
+  /* =========================================
+     CONNECT WALLET
+  ========================================= */
 
   connectButton.addEventListener(
     "click",
@@ -190,17 +259,21 @@ document.addEventListener("DOMContentLoaded", async () => {
 
       try {
 
-        connectButton.disabled = true;
+        connectButton.disabled =
+          true;
 
         connectButton.textContent =
           "Connecting...";
 
+
         const appKit =
           await loadAppKit();
 
+
         await appKit.open({
-          view: "Connect",
+          view: "Connect"
         });
+
 
       } catch (error) {
 
@@ -209,68 +282,159 @@ document.addEventListener("DOMContentLoaded", async () => {
           error
         );
 
+
         connectButton.textContent =
           "Connect Wallet";
 
-        connectButton.disabled = false;
+        connectButton.disabled =
+          false;
+
 
         alert(
           "Unable to open the wallet connection window."
         );
+
       }
+
     }
   );
 
 
-  // =========================================================
-  // CONTRACT CONNECTION
-  // =========================================================
+  /* =========================================
+     GET WALLET PROVIDER
+  ========================================= */
 
-  async function setupContract() {
+  async function getWalletProvider() {
 
     if (!modal) {
       await loadAppKit();
     }
 
-    if (!modal.getWalletProvider) {
-      throw new Error(
-        "Wallet provider is not available yet."
-      );
+
+    /*
+     * AppKit exposes the connected
+     * wallet provider through getWalletProvider.
+     */
+
+    if (
+      typeof modal.getWalletProvider ===
+      "function"
+    ) {
+
+      const provider =
+        await modal.getWalletProvider();
+
+
+      if (provider) {
+
+        console.log(
+          "AppKit wallet provider found."
+        );
+
+        return provider;
+
+      }
+
     }
 
-    walletProvider =
-      await modal.getWalletProvider();
 
-    if (!walletProvider) {
-      throw new Error(
-        "Please connect your wallet first."
+    /*
+     * Fallback for injected wallets.
+     */
+
+    if (
+      window.ethereum &&
+      typeof window.ethereum.request ===
+      "function"
+    ) {
+
+      console.log(
+        "Using injected wallet provider."
       );
+
+      return window.ethereum;
+
     }
+
+
+    throw new Error(
+      "Wallet provider is not available."
+    );
+
+  }
+
+
+  /* =========================================
+     SETUP ETHERS + CONTRACT
+  ========================================= */
+
+  async function setupContract() {
 
     const ethers =
       await import(
         "https://esm.sh/ethers@6.15.0"
       );
 
+
+    walletProvider =
+      await getWalletProvider();
+
+
+    if (!walletProvider) {
+
+      throw new Error(
+        "Please connect your wallet first."
+      );
+
+    }
+
+
+    /*
+     * Ethers v6 BrowserProvider
+     * wraps the EIP-1193 provider.
+     */
+
     ethersProvider =
       new ethers.BrowserProvider(
         walletProvider
       );
 
-    signer =
-      await ethersProvider.getSigner();
 
     const network =
       await ethersProvider.getNetwork();
+
+
+    console.log(
+      "Connected chain:",
+      network.chainId.toString()
+    );
+
 
     if (
       Number(network.chainId) !==
       ARC_CHAIN_ID
     ) {
+
       throw new Error(
         "Please switch your wallet to Arc Mainnet."
       );
+
     }
+
+
+    signer =
+      await ethersProvider.getSigner();
+
+
+    const address =
+      await signer.getAddress();
+
+
+    console.log(
+      "Signer address:",
+      address
+    );
+
 
     automationContract =
       new ethers.Contract(
@@ -279,51 +443,56 @@ document.addEventListener("DOMContentLoaded", async () => {
         signer
       );
 
+
     return {
       ethers,
-      contract: automationContract,
+      provider: ethersProvider,
       signer,
+      contract: automationContract
     };
+
   }
 
 
-  // =========================================================
-  // AUTOMATION COUNT
-  // =========================================================
+  /* =========================================
+     UPDATE AUTOMATION COUNT
+  ========================================= */
 
   async function updateAutomationCount() {
 
     try {
 
-      if (!modal) return;
-
-      const state =
-        modal.getState();
-
-      if (
-        !state ||
-        !state.isConnected
-      ) {
-        return;
-      }
-
       const connection =
         await setupContract();
+
 
       const count =
         await connection.contract
           .automationCount();
+
 
       const countElement =
         document.getElementById(
           "automation-count"
         );
 
+
       if (countElement) {
 
         countElement.textContent =
           count.toString();
+
       }
+
+
+      console.log(
+        "On-chain automation count:",
+        count.toString()
+      );
+
+
+      return Number(count);
+
 
     } catch (error) {
 
@@ -331,214 +500,164 @@ document.addEventListener("DOMContentLoaded", async () => {
         "Unable to read automation count:",
         error
       );
+
+
+      return 0;
+
     }
+
   }
 
 
-  // =========================================================
-  // FIND AUTOMATION CONTAINER
-  // =========================================================
+  /* =========================================
+     FIND AUTOMATION CONTAINER
+  ========================================= */
 
   function findAutomationContainer() {
 
-    const possibleIds = [
-      "automation-list",
-      "automations-list",
-      "automation-grid",
-      "automations-grid",
-      "automation-container",
-      "automations-container"
-    ];
-
-    for (
-      const id of possibleIds
-    ) {
-
-      const element =
-        document.getElementById(id);
-
-      if (element) {
-        return element;
-      }
-    }
-
-
-    // Look for common automation classes
-
-    const classSelectors = [
-      ".automation-list",
-      ".automations-list",
-      ".automation-grid",
-      ".automations-grid",
-      ".automation-container",
-      ".automations-container"
-    ];
-
-    for (
-      const selector of classSelectors
-    ) {
-
-      const element =
-        document.querySelector(
-          selector
-        );
-
-      if (element) {
-        return element;
-      }
-    }
-
-
-    // Create our own container
-
     const container =
-      document.createElement("div");
-
-    container.id =
-      "askirawafi-onchain-automations";
-
-    container.style.width =
-      "100%";
-
-    container.style.display =
-      "grid";
-
-    container.style.gridTemplateColumns =
-      "repeat(auto-fit, minmax(280px, 1fr))";
-
-    container.style.gap =
-      "16px";
-
-    container.style.marginTop =
-      "24px";
-
-
-    const headings =
-      Array.from(
-        document.querySelectorAll(
-          "h1,h2,h3,h4"
-        )
+      document.getElementById(
+        "automation-list"
       );
 
-    const automationHeading =
-      headings.find(
-        (heading) =>
-          heading.textContent
-            .toLowerCase()
-            .includes("automation")
+
+    if (!container) {
+
+      throw new Error(
+        "automation-list element not found."
       );
 
-    if (
-      automationHeading &&
-      automationHeading.parentElement
-    ) {
-
-      automationHeading.parentElement
-        .appendChild(container);
-
-    } else {
-
-      document.body.appendChild(
-        container
-      );
     }
+
 
     return container;
+
   }
 
 
-  // =========================================================
-  // FORMAT FREQUENCY
-  // =========================================================
+  /* =========================================
+     FREQUENCY
+  ========================================= */
 
   function formatFrequency(seconds) {
 
     const value =
       Number(seconds);
 
+
     if (value === 0) {
       return "Once";
     }
 
-    if (
-      value === 86400
-    ) {
+
+    if (value === 86400) {
       return "Daily";
     }
 
-    if (
-      value === 604800
-    ) {
+
+    if (value === 604800) {
       return "Weekly";
     }
 
-    if (
-      value === 2592000
-    ) {
+
+    if (value === 2592000) {
       return "Monthly";
     }
 
+
     if (
-      value % 86400 === 0
+      value % 86400 ===
+      0
     ) {
 
       return `${value / 86400} days`;
+
     }
 
+
     return `${value} seconds`;
+
   }
 
 
-  // =========================================================
-  // FORMAT DATE
-  // =========================================================
+  /* =========================================
+     EXECUTION TIME
+  ========================================= */
 
   function formatExecutionTime(timestamp) {
 
     const value =
       Number(timestamp);
 
+
     if (!value) {
       return "Not scheduled";
     }
+
 
     const date =
       new Date(
         value * 1000
       );
 
+
     return date.toLocaleString();
+
   }
 
 
-  // =========================================================
-  // CREATE AUTOMATION CARD
-  // =========================================================
+  /* =========================================
+     ESCAPE HTML
+  ========================================= */
+
+  function escapeHtml(value) {
+
+    return String(value)
+
+      .replace(
+        /&/g,
+        "&amp;"
+      )
+
+      .replace(
+        /</g,
+        "&lt;"
+      )
+
+      .replace(
+        />/g,
+        "&gt;"
+      )
+
+      .replace(
+        /"/g,
+        "&quot;"
+      )
+
+      .replace(
+        /'/g,
+        "&#039;"
+      );
+
+  }
+
+
+  /* =========================================
+     CREATE AUTOMATION CARD
+  ========================================= */
 
   function createAutomationCard(
     automation
   ) {
 
     const card =
-      document.createElement("div");
+      document.createElement(
+        "div"
+      );
+
 
     card.className =
-      "askirawafi-onchain-automation";
-
-    card.style.padding =
-      "22px";
-
-    card.style.border =
-      "1px solid rgba(255,255,255,0.10)";
-
-    card.style.borderRadius =
-      "16px";
-
-    card.style.background =
-      "rgba(255,255,255,0.03)";
-
-    card.style.boxSizing =
-      "border-box";
+      "automation";
 
 
     const statusText =
@@ -549,172 +668,100 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     const statusColor =
       automation.active
-        ? "#39d98a"
+        ? "#35d98b"
         : "#888";
 
 
-    const amount =
-      automation.amount;
-
-
     card.innerHTML = `
-      <div style="
-        display:flex;
-        justify-content:space-between;
-        align-items:center;
-        gap:12px;
-        margin-bottom:18px;
-      ">
 
-        <strong style="
-          font-size:18px;
-        ">
+      <div>
+
+        <div class="automation-name">
           ${escapeHtml(
             automation.name
           )}
-        </strong>
+        </div>
 
-        <span style="
-          color:${statusColor};
-          font-size:13px;
-          font-weight:600;
-        ">
-          ${statusText}
-        </span>
+        <div class="automation-meta">
+          ${escapeHtml(
+            automation.note ||
+            "Programmable treasury automation"
+          )}
+        </div>
 
       </div>
 
 
-      <div style="
-        margin-bottom:14px;
-      ">
+      <div>
 
-        <div style="
-          font-size:12px;
-          opacity:.55;
-          margin-bottom:5px;
-        ">
+        <div class="automation-small">
           Amount
         </div>
 
-        <div style="
-          font-size:24px;
-          font-weight:700;
-        ">
-          ${amount} USDC
+        <div class="automation-amount">
+          ${automation.amount} USDC
         </div>
 
       </div>
 
 
-      <div style="
-        margin-bottom:12px;
-      ">
+      <div>
 
-        <div style="
-          font-size:12px;
-          opacity:.55;
-          margin-bottom:5px;
-        ">
+        <div class="automation-small">
           Recipient
         </div>
 
-        <div style="
-          font-size:13px;
-          word-break:break-all;
-          opacity:.8;
-        ">
+        <div
+          style="
+            font-size:12px;
+            word-break:break-all;
+            opacity:.8;
+          "
+        >
           ${automation.recipient}
         </div>
 
       </div>
 
 
-      <div style="
-        display:grid;
-        grid-template-columns:1fr;
-        gap:10px;
-        margin-bottom:18px;
-      ">
+      <div>
 
-        <div>
-
-          <div style="
-            font-size:12px;
-            opacity:.55;
-          ">
-            Frequency
-          </div>
-
-          <div style="
-            margin-top:3px;
-          ">
-            ${formatFrequency(
-              automation.frequency
-            )}
-          </div>
-
+        <div class="automation-small">
+          ${formatFrequency(
+            automation.frequency
+          )}
         </div>
 
-
-        <div>
-
-          <div style="
-            font-size:12px;
-            opacity:.55;
-          ">
-            Next execution
-          </div>
-
-          <div style="
-            margin-top:3px;
-          ">
-            ${formatExecutionTime(
-              automation.executionTime
-            )}
-          </div>
-
+        <div
+          style="
+            font-size:11px;
+            color:var(--muted);
+            margin-bottom:8px;
+          "
+        >
+          Next:
+          ${formatExecutionTime(
+            automation.executionTime
+          )}
         </div>
+
+        <button
+          class="automation-status-button"
+          data-automation-id="${automation.id}"
+          style="
+            border:0;
+            background:transparent;
+            padding:0;
+            color:${statusColor};
+            font-size:11px;
+            font-weight:600;
+          "
+        >
+          ${statusText}
+        </button>
 
       </div>
 
-
-      ${
-        automation.note
-          ? `
-            <div style="
-              font-size:13px;
-              opacity:.7;
-              margin-bottom:18px;
-            ">
-              ${escapeHtml(
-                automation.note
-              )}
-            </div>
-          `
-          : ""
-      }
-
-
-      <button
-        class="automation-status-button"
-        data-automation-id="${automation.id}"
-        style="
-          width:100%;
-          padding:10px 14px;
-          border-radius:10px;
-          border:1px solid rgba(255,255,255,.12);
-          background:transparent;
-          color:inherit;
-          cursor:pointer;
-        "
-      >
-        ${
-          automation.active
-            ? "Pause Automation"
-            : "Activate Automation"
-        }
-      </button>
     `;
 
 
@@ -734,106 +781,83 @@ document.addEventListener("DOMContentLoaded", async () => {
             automation.id,
             !automation.active
           );
+
         }
       );
+
     }
 
 
     return card;
+
   }
 
 
-  // =========================================================
-  // ESCAPE HTML
-  // =========================================================
-
-  function escapeHtml(value) {
-
-    return String(value)
-      .replace(
-        /&/g,
-        "&amp;"
-      )
-      .replace(
-        /</g,
-        "&lt;"
-      )
-      .replace(
-        />/g,
-        "&gt;"
-      )
-      .replace(
-        /"/g,
-        "&quot;"
-      )
-      .replace(
-        /'/g,
-        "&#039;"
-      );
-  }
-
-
-  // =========================================================
-  // LOAD REAL ON-CHAIN AUTOMATIONS
-  // =========================================================
+  /* =========================================
+     LOAD REAL ON-CHAIN AUTOMATIONS
+  ========================================= */
 
   async function loadRealAutomations() {
 
+    const container =
+      findAutomationContainer();
+
+
+    container.innerHTML = `
+
+      <div class="onchain-empty">
+        Loading on-chain automations...
+      </div>
+
+    `;
+
+
     try {
-
-      if (!modal) {
-        return;
-      }
-
-      const state =
-        modal.getState();
-
-      if (
-        !state ||
-        !state.isConnected
-      ) {
-        return;
-      }
-
 
       const connection =
         await setupContract();
 
+
       const contract =
         connection.contract;
+
 
       const ethers =
         connection.ethers;
 
 
-      const container =
-        findAutomationContainer();
-
-
-      container.innerHTML = "";
-
-
-      const loading =
-        document.createElement("div");
-
-      loading.textContent =
-        "Loading on-chain automations...";
-
-      loading.style.opacity =
-        "0.6";
-
-      container.appendChild(
-        loading
+      console.log(
+        "Reading automation contract:",
+        AUTOMATION_CONTRACT
       );
 
 
       const count =
-        await contract
-          .automationCount();
+        await contract.automationCount();
 
 
       const total =
         Number(count);
+
+
+      console.log(
+        "Automation count:",
+        total
+      );
+
+
+      const countElement =
+        document.getElementById(
+          "automation-count"
+        );
+
+
+      if (countElement) {
+
+        countElement.textContent =
+          total.toString();
+
+      }
 
 
       container.innerHTML = "";
@@ -841,20 +865,18 @@ document.addEventListener("DOMContentLoaded", async () => {
 
       if (total === 0) {
 
-        const empty =
-          document.createElement("div");
+        container.innerHTML = `
 
-        empty.textContent =
-          "No on-chain automations created yet.";
+          <div class="onchain-empty">
 
-        empty.style.opacity =
-          "0.6";
+            No on-chain automations created yet.
 
-        container.appendChild(
-          empty
-        );
+          </div>
+
+        `;
 
         return;
+
       }
 
 
@@ -866,9 +888,15 @@ document.addEventListener("DOMContentLoaded", async () => {
 
         try {
 
+          console.log(
+            `Reading automation ${id}...`
+          );
+
+
           const result =
-            await contract
-              .getAutomation(id);
+            await contract.getAutomation(
+              id
+            );
 
 
           const automation = {
@@ -902,24 +930,22 @@ document.addEventListener("DOMContentLoaded", async () => {
 
             active:
               result[8]
+
           };
 
 
           console.log(
-            "On-chain automation:",
+            "Loaded automation:",
             automation
           );
 
 
-          const card =
+          container.appendChild(
             createAutomationCard(
               automation
-            );
-
-
-          container.appendChild(
-            card
+            )
           );
+
 
         } catch (error) {
 
@@ -927,8 +953,11 @@ document.addEventListener("DOMContentLoaded", async () => {
             `Unable to load automation ${id}:`,
             error
           );
+
         }
+
       }
+
 
     } catch (error) {
 
@@ -937,27 +966,34 @@ document.addEventListener("DOMContentLoaded", async () => {
         error
       );
 
-      const container =
-        findAutomationContainer();
 
       container.innerHTML = `
-        <div style="
-          padding:20px;
-          border:1px solid rgba(255,255,255,.10);
-          border-radius:14px;
-          opacity:.7;
-        ">
-          Unable to load on-chain automations.
-          Connect your wallet to Arc Mainnet and try again.
+
+        <div class="onchain-empty">
+
+          Unable to read your on-chain automations.
+
+          <br><br>
+
+          <span style="font-size:12px;">
+            ${escapeHtml(
+              error.message ||
+              "Unknown wallet or network error."
+            )}
+          </span>
+
         </div>
+
       `;
+
     }
+
   }
 
 
-  // =========================================================
-  // TOGGLE AUTOMATION STATUS
-  // =========================================================
+  /* =========================================
+     TOGGLE AUTOMATION
+  ========================================= */
 
   async function toggleAutomation(
     id,
@@ -969,21 +1005,19 @@ document.addEventListener("DOMContentLoaded", async () => {
       const connection =
         await setupContract();
 
-      const contract =
-        connection.contract;
+
+      const transaction =
+        await connection.contract
+          .setAutomationStatus(
+            id,
+            active
+          );
 
 
       console.log(
-        `Changing automation ${id} status to:`,
-        active
+        "Status transaction:",
+        transaction.hash
       );
-
-
-      const transaction =
-        await contract.setAutomationStatus(
-          id,
-          active
-        );
 
 
       await transaction.wait();
@@ -1007,33 +1041,19 @@ document.addEventListener("DOMContentLoaded", async () => {
       );
 
 
-      if (
-        error &&
-        error.message &&
-        error.message
-          .toLowerCase()
-          .includes(
-            "user rejected"
-          )
-      ) {
+      alert(
+        error.message ||
+        "Unable to change automation status."
+      );
 
-        alert(
-          "Transaction was rejected in your wallet."
-        );
-
-      } else {
-
-        alert(
-          "Unable to change automation status."
-        );
-      }
     }
+
   }
 
 
-  // =========================================================
-  // FREQUENCY
-  // =========================================================
+  /* =========================================
+     FREQUENCY VALUE
+  ========================================= */
 
   function getFrequencyValue(
     value
@@ -1055,134 +1075,159 @@ document.addEventListener("DOMContentLoaded", async () => {
       case "once":
       default:
         return 0;
+
     }
+
   }
 
 
-  // =========================================================
-  // CREATE AUTOMATION
-  // =========================================================
+  /* =========================================
+     CREATE AUTOMATION
+  ========================================= */
 
   async function createAutomation() {
 
+    const form =
+      document.getElementById(
+        "automation-form-element"
+      );
+
+
+    const nameInput =
+      document.getElementById(
+        "automation-name"
+      );
+
+
+    const recipientInput =
+      document.getElementById(
+        "automation-recipient"
+      );
+
+
+    const amountInput =
+      document.getElementById(
+        "automation-amount"
+      );
+
+
+    const frequencyInput =
+      document.getElementById(
+        "automation-frequency"
+      );
+
+
+    const dateInput =
+      document.getElementById(
+        "automation-date"
+      );
+
+
+    const noteInput =
+      document.getElementById(
+        "automation-note"
+      );
+
+
+    if (
+      !nameInput ||
+      !recipientInput ||
+      !amountInput ||
+      !frequencyInput ||
+      !dateInput
+    ) {
+
+      alert(
+        "Automation form fields could not be found."
+      );
+
+      return;
+
+    }
+
+
+    const name =
+      nameInput.value.trim();
+
+
+    const recipient =
+      recipientInput.value.trim();
+
+
+    const amount =
+      amountInput.value.trim();
+
+
+    const frequency =
+      frequencyInput.value;
+
+
+    const date =
+      dateInput.value;
+
+
+    const note =
+      noteInput
+        ? noteInput.value.trim()
+        : "";
+
+
+    if (!name) {
+
+      alert(
+        "Please enter an automation name."
+      );
+
+      return;
+
+    }
+
+
+    if (!recipient) {
+
+      alert(
+        "Please enter a recipient address."
+      );
+
+      return;
+
+    }
+
+
+    if (
+      !amount ||
+      Number(amount) <= 0
+    ) {
+
+      alert(
+        "Please enter a valid USDC amount."
+      );
+
+      return;
+
+    }
+
+
+    if (!date) {
+
+      alert(
+        "Please select an execution date."
+      );
+
+      return;
+
+    }
+
+
     try {
-
-      const nameInput =
-        document.getElementById(
-          "automation-name"
-        );
-
-      const recipientInput =
-        document.getElementById(
-          "automation-recipient"
-        );
-
-      const amountInput =
-        document.getElementById(
-          "automation-amount"
-        );
-
-      const frequencyInput =
-        document.getElementById(
-          "automation-frequency"
-        );
-
-      const dateInput =
-        document.getElementById(
-          "automation-date"
-        );
-
-      const noteInput =
-        document.getElementById(
-          "automation-note"
-        );
-
-
-      if (
-        !nameInput ||
-        !recipientInput ||
-        !amountInput ||
-        !frequencyInput ||
-        !dateInput
-      ) {
-
-        alert(
-          "Automation form fields could not be found."
-        );
-
-        return;
-      }
-
-
-      const name =
-        nameInput.value.trim();
-
-      const recipient =
-        recipientInput.value.trim();
-
-      const amount =
-        amountInput.value.trim();
-
-      const frequency =
-        frequencyInput.value;
-
-      const date =
-        dateInput.value;
-
-      const note =
-        noteInput
-          ? noteInput.value.trim()
-          : "";
-
-
-      if (!name) {
-
-        alert(
-          "Please enter an automation name."
-        );
-
-        return;
-      }
-
-
-      if (!recipient) {
-
-        alert(
-          "Please enter a recipient address."
-        );
-
-        return;
-      }
-
-
-      if (
-        !amount ||
-        Number(amount) <= 0
-      ) {
-
-        alert(
-          "Please enter a valid USDC amount."
-        );
-
-        return;
-      }
-
-
-      if (!date) {
-
-        alert(
-          "Please select an execution date."
-        );
-
-        return;
-      }
-
 
       const connection =
         await setupContract();
 
+
       const ethers =
         connection.ethers;
+
 
       const contract =
         connection.contract;
@@ -1199,6 +1244,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         );
 
         return;
+
       }
 
 
@@ -1217,8 +1263,9 @@ document.addEventListener("DOMContentLoaded", async () => {
 
       const executionTimestamp =
         Math.floor(
-          new Date(date)
-            .getTime() / 1000
+          new Date(
+            date
+          ).getTime() / 1000
         );
 
 
@@ -1234,50 +1281,51 @@ document.addEventListener("DOMContentLoaded", async () => {
       ) {
 
         alert(
-          "Please select a future date and time."
+          "Please select a future execution date."
         );
 
         return;
+
       }
 
 
-      const createButton =
-        Array.from(
-          document.querySelectorAll(
-            "button"
-          )
-        ).find(
-          (button) =>
-            button.textContent
-              .trim()
-              .toLowerCase() ===
-            "create automation"
+      const submitButton =
+        form.querySelector(
+          'button[type="submit"]'
         );
 
 
-      if (createButton) {
+      if (submitButton) {
 
-        createButton.disabled =
+        submitButton.disabled =
           true;
 
-        createButton.textContent =
+        submitButton.textContent =
           "Creating...";
+
       }
 
 
       console.log(
-        "Creating real on-chain automation..."
+        "Creating automation..."
       );
 
 
       const transaction =
         await contract.createAutomation(
+
           name,
+
           recipient,
+
           amountInUSDC,
+
           frequencyValue,
+
           executionTimestamp,
+
           note
+
         );
 
 
@@ -1287,10 +1335,11 @@ document.addEventListener("DOMContentLoaded", async () => {
       );
 
 
-      if (createButton) {
+      if (submitButton) {
 
-        createButton.textContent =
+        submitButton.textContent =
           "Confirming...";
+
       }
 
 
@@ -1313,25 +1362,56 @@ document.addEventListener("DOMContentLoaded", async () => {
 
       amountInput.value = "";
 
-
       if (noteInput) {
         noteInput.value = "";
       }
 
 
-      await updateAutomationCount();
+      /*
+       * Reload blockchain data.
+       */
 
       await loadRealAutomations();
 
 
-      if (createButton) {
+      /*
+       * Close form.
+       */
 
-        createButton.textContent =
+      const formBox =
+        document.getElementById(
+          "automation-form"
+        );
+
+
+      const newAutomationButton =
+        document.getElementById(
+          "create-automation-button"
+        );
+
+
+      if (formBox) {
+        formBox.style.display =
+          "none";
+      }
+
+
+      if (newAutomationButton) {
+        newAutomationButton.style.display =
+          "block";
+      }
+
+
+      if (submitButton) {
+
+        submitButton.textContent =
           "Create Automation";
 
-        createButton.disabled =
+        submitButton.disabled =
           false;
+
       }
+
 
     } catch (error) {
 
@@ -1341,128 +1421,62 @@ document.addEventListener("DOMContentLoaded", async () => {
       );
 
 
-      let message =
-        "Unable to create automation.";
+      alert(
+        error.message ||
+        "Unable to create automation."
+      );
 
 
-      if (
-        error &&
-        error.message
-      ) {
-
-        const errorMessage =
-          error.message
-            .toLowerCase();
-
-
-        if (
-          errorMessage.includes(
-            "user rejected"
-          )
-        ) {
-
-          message =
-            "Transaction was rejected in your wallet.";
-
-        } else if (
-          errorMessage.includes(
-            "execution time must be future"
-          )
-        ) {
-
-          message =
-            "Please select a future execution time.";
-
-        } else if (
-          errorMessage.includes(
-            "invalid recipient"
-          )
-        ) {
-
-          message =
-            "The recipient address is invalid.";
-
-        } else if (
-          errorMessage.includes(
-            "insufficient"
-          )
-        ) {
-
-          message =
-            "Your wallet does not have enough USDC for the transaction.";
-        }
-      }
-
-
-      alert(message);
-
-
-      const createButton =
-        Array.from(
-          document.querySelectorAll(
-            "button"
-          )
-        ).find(
-          (button) =>
-            button.textContent
-              .trim()
-              .toLowerCase()
-              .includes(
-                "automation"
-              )
+      const submitButton =
+        form.querySelector(
+          'button[type="submit"]'
         );
 
 
-      if (createButton) {
+      if (submitButton) {
 
-        createButton.textContent =
+        submitButton.textContent =
           "Create Automation";
 
-        createButton.disabled =
+        submitButton.disabled =
           false;
+
       }
+
     }
+
   }
 
 
-  // =========================================================
-  // CREATE BUTTON
-  // =========================================================
+  /* =========================================
+     FORM SUBMIT
+  ========================================= */
 
-  const createAutomationButton =
-    Array.from(
-      document.querySelectorAll(
-        "button"
-      )
-    ).find(
-      (button) =>
-        button.textContent
-          .trim()
-          .toLowerCase() ===
-        "create automation"
+  const form =
+    document.getElementById(
+      "automation-form-element"
     );
 
 
-  if (
-    createAutomationButton
-  ) {
+  if (form) {
 
-    createAutomationButton
-      .addEventListener(
-        "click",
-        async (event) => {
+    form.addEventListener(
+      "submit",
+      async (event) => {
 
-          event.preventDefault();
+        event.preventDefault();
 
-          await createAutomation();
-        }
-      );
+        await createAutomation();
+
+      }
+    );
+
   }
 
 
-  // =========================================================
-  // INITIALIZE
-  // =========================================================
+  /* =========================================
+     INITIALIZE APPKIT
+  ========================================= */
 
   try {
 
@@ -1472,12 +1486,14 @@ document.addEventListener("DOMContentLoaded", async () => {
       "AskirawaFi wallet system ready."
     );
 
+
   } catch (error) {
 
     console.error(
       "AppKit initialization error:",
       error
     );
+
   }
 
 });
