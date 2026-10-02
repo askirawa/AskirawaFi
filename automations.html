@@ -20,14 +20,8 @@
 
     <div class="nav-links">
       <a href="index.html">Dashboard</a>
-
-      <a href="activity.html">
-        Activity
-      </a>
-
-      <a href="automations.html" class="active">
-        Automations
-      </a>
+      <a href="activity.html">Activity</a>
+      <a href="automations.html" class="active">Automations</a>
     </div>
 
     <button class="connect-wallet">
@@ -39,10 +33,6 @@
 
 
 <main>
-
-  <!-- =====================================================
-       PAGE HEADER
-  ====================================================== -->
 
   <section class="page-header">
 
@@ -57,17 +47,13 @@
       </h1>
 
       <p>
-        Create programmable USDC treasury rules that are recorded on-chain.
+        Create programmable USDC treasury rules on Arc.
       </p>
 
     </div>
 
   </section>
 
-
-  <!-- =====================================================
-       AUTOMATION STATS
-  ====================================================== -->
 
   <section class="automation">
 
@@ -84,7 +70,7 @@
         </h2>
 
         <p>
-          Automations created through AskirawaFi are recorded on Arc.
+          Your programmable treasury rules are stored on Arc Mainnet.
         </p>
 
       </div>
@@ -95,51 +81,24 @@
     <div class="automation-preview">
 
       <div>
-
-        <span class="label">
-          NETWORK
-        </span>
-
-        <strong>
-          Arc Mainnet
-        </strong>
-
+        <span class="label">NETWORK</span>
+        <strong>Arc Mainnet</strong>
       </div>
 
-
       <div>
-
-        <span class="label">
-          ASSET
-        </span>
-
-        <strong>
-          USDC
-        </strong>
-
+        <span class="label">ASSET</span>
+        <strong>USDC</strong>
       </div>
 
-
       <div>
-
-        <span class="label">
-          AUTOMATIONS
-        </span>
-
-        <strong id="automation-count">
-          0
-        </strong>
-
+        <span class="label">ON-CHAIN AUTOMATIONS</span>
+        <strong id="automation-count">0</strong>
       </div>
 
     </div>
 
   </section>
 
-
-  <!-- =====================================================
-       CREATE AUTOMATION
-  ====================================================== -->
 
   <section class="automation-form">
 
@@ -166,9 +125,6 @@
 
     <form id="automationForm">
 
-
-      <!-- AUTOMATION NAME -->
-
       <div>
 
         <label for="automation-name">
@@ -179,14 +135,11 @@
           id="automation-name"
           type="text"
           placeholder="Monthly Treasury Payment"
-          autocomplete="off"
           required
         >
 
       </div>
 
-
-      <!-- RECIPIENT -->
 
       <div>
 
@@ -198,14 +151,11 @@
           id="automation-recipient"
           type="text"
           placeholder="0x..."
-          autocomplete="off"
           required
         >
 
       </div>
 
-
-      <!-- AMOUNT -->
 
       <div>
 
@@ -224,8 +174,6 @@
 
       </div>
 
-
-      <!-- FREQUENCY -->
 
       <div>
 
@@ -256,8 +204,6 @@
       </div>
 
 
-      <!-- EXECUTION DATE -->
-
       <div>
 
         <label for="automation-date">
@@ -273,8 +219,6 @@
       </div>
 
 
-      <!-- NOTE -->
-
       <div>
 
         <label for="automation-note">
@@ -285,58 +229,30 @@
           id="automation-note"
           type="text"
           placeholder="Treasury operating expense"
-          autocomplete="off"
         >
 
       </div>
 
 
-      <!-- NETWORK PREVIEW -->
-
       <div class="automation-preview">
 
         <div>
-
-          <span class="label">
-            NETWORK
-          </span>
-
-          <strong>
-            Arc Mainnet
-          </strong>
-
+          <span class="label">NETWORK</span>
+          <strong>Arc Mainnet</strong>
         </div>
 
-
         <div>
-
-          <span class="label">
-            ASSET
-          </span>
-
-          <strong>
-            USDC
-          </strong>
-
+          <span class="label">ASSET</span>
+          <strong>USDC</strong>
         </div>
 
-
         <div>
-
-          <span class="label">
-            STATUS
-          </span>
-
-          <strong>
-            On-chain
-          </strong>
-
+          <span class="label">REGISTRY</span>
+          <strong>On-chain</strong>
         </div>
 
       </div>
 
-
-      <!-- CREATE BUTTON -->
 
       <div class="form-actions">
 
@@ -355,10 +271,6 @@
   </section>
 
 
-  <!-- =====================================================
-       ON-CHAIN AUTOMATIONS
-  ====================================================== -->
-
   <section class="automation">
 
     <div class="section-header">
@@ -373,8 +285,8 @@
           Your Automations
         </h2>
 
-        <p>
-          Automation rules registered on Arc Mainnet.
+        <p id="automation-status">
+          Connect your wallet to view your automations.
         </p>
 
       </div>
@@ -389,15 +301,15 @@
         <div>
 
           <span class="label">
-            AUTOMATION
+            AUTOMATIONS
           </span>
 
           <strong>
-            No automations loaded yet
+            Connect your wallet
           </strong>
 
           <p>
-            Create your first automation above.
+            Your Arc automations will appear here after your wallet is connected.
           </p>
 
         </div>
@@ -408,10 +320,6 @@
 
   </section>
 
-
-  <!-- =====================================================
-       INFORMATION
-  ====================================================== -->
 
   <section class="automation">
 
@@ -429,7 +337,7 @@
 
         <p>
           Automation rules are registered on-chain through the
-          AskirawaFi Automation Registry deployed on Arc Mainnet.
+          AskirawaFi Automation Registry on Arc Mainnet.
         </p>
 
       </div>
@@ -440,10 +348,6 @@
 
 </main>
 
-
-<!-- =======================================================
-     WALLET + AUTOMATION LOGIC
-======================================================== -->
 
 <script src="script.js"></script>
 
