@@ -1,41 +1,29 @@
 document.addEventListener("DOMContentLoaded", async () => {
-  // =========================================================
-  // ASKIRAWAFI
-  // =========================================================
+
+  /* =====================================================
+     CONFIG
+  ====================================================== */
 
   const PROJECT_ID = "c7bb3a991b675f05777c830bac0f18de";
 
   const ARC_CHAIN_ID = 5042;
 
-  const AUTOMATION_CONTRACT =
+  const CONTRACT_ADDRESS =
     "0x5E13b82A35Ac827b368215141F4a4F8ADfb1F434";
-
-  const AUTOMATION_ABI = [
-    "function automationCount() view returns (uint256)",
-
-    "function createAutomation(string,address,uint256,uint256,uint256,string)",
-
-    "function getAutomation(uint256) view returns (uint256,string,address,address,uint256,uint256,uint256,string,bool)",
-
-    "function setAutomationStatus(uint256,bool)"
-  ];
 
   const ARC_NETWORK = {
     id: ARC_CHAIN_ID,
     name: "Arc Mainnet",
-
     nativeCurrency: {
       name: "USDC",
       symbol: "USDC",
       decimals: 6
     },
-
     rpcUrls: {
       default: {
         http: ["https://rpc.arc.network"]
       }
     },
-
     blockExplorers: {
       default: {
         name: "Arc Explorer",
@@ -45,13 +33,28 @@ document.addEventListener("DOMContentLoaded", async () => {
   };
 
 
-  // =========================================================
-  // FIND BUTTONS
-  // =========================================================
+  /* =====================================================
+     CONTRACT ABI
+  ====================================================== */
 
-  const buttons = Array.from(
-    document.querySelectorAll("button")
-  );
+  const CONTRACT_ABI = [
+
+    "function automationCount() view returns (uint256)",
+
+    "function createAutomation(string name,address recipient,uint256 amount,uint256 frequency,uint256 executionTime,string note)",
+
+    "function getAutomation(uint256 id) view returns (uint256,string,address,address,uint256,uint256,uint256,string,bool)",
+
+    "function setAutomationStatus(uint256 id,bool active)"
+
+  ];
+
+
+  /* =====================================================
+     PAGE ELEMENTS
+  ====================================================== */
+
+  const buttons = Array.from(document.querySelectorAll("button"));
 
   const connectButton = buttons.find(
     (button) =>
@@ -65,717 +68,744 @@ document.addEventListener("DOMContentLoaded", async () => {
       "create automation"
   );
 
-  if (!connectButton) {
-    console.error(
-      "AskirawaFi: Connect Wallet button not found."
+  const automationCountElement =
+    document.getElementById("automation-count");
+
+  const automationList =
+    document.getElementById("automation-list");
+
+  const automationStatus =
+    document.getElementById("automation-status");
+
+
+  /* =====================================================
+     LOAD LIBRARIES
+  ====================================================== */
+
+  let createAppKit;
+  let EthersAdapter;
+  let defineChain;
+  let ethers;
+
+  try {
+
+    ({ createAppKit } = await import(
+      "https://esm.sh/@reown/appkit"
+    ));
+
+    ({ EthersAdapter } = await import(
+      "https://esm.sh/@reown/appkit-adapter-ethers"
+    ));
+
+    ({ defineChain } = await import(
+      "https://esm.sh/@reown/appkit/networks"
+    ));
+
+    ethers = await import(
+      "https://esm.sh/ethers@6.15.0"
     );
+
+  } catch (error) {
+
+    console.error("Library loading error:", error);
 
     return;
   }
 
 
-  // =========================================================
-  // VARIABLES
-  // =========================================================
+  /* =====================================================
+     CREATE APPKIT
+  ====================================================== */
 
-  let modal = null;
-  let ethers = null;
-  let provider = null;
-  let signer = null;
-  let contract = null;
+  const arc = defineChain(ARC_NETWORK);
+
+  const adapter = new EthersAdapter();
+
+  const modal = createAppKit({
+
+    adapters: [adapter],
+
+    networks: [arc],
+
+    defaultNetwork: arc,
+
+    projectId: PROJECT_ID,
+
+    metadata: {
+      name: "AskirawaFi",
+      description: "Programmable USDC Treasury built on Arc",
+      url: window.location.origin,
+      icons: []
+    },
+
+    features: {
+      analytics: true
+    },
+
+    allWallets: "SHOW",
+
+    enableWallets: true,
+
+    enableNetworkSwitch: true,
+
+    enableReconnect: true
+
+  });
 
 
-  // =========================================================
-  // LOAD ETHERS
-  // =========================================================
+  /* =====================================================
+     UPDATE WALLET BUTTON
+  ====================================================== */
 
-  async function loadEthers() {
-    if (!ethers) {
-      ethers = await import(
-        "https://esm.sh/ethers@6.15.0"
+  function updateWalletButton(address) {
+
+    if (!connectButton) return;
+
+    if (address) {
+
+      connectButton.textContent =
+        `${address.slice(0, 6)}...${address.slice(-4)}`;
+
+      connectButton.disabled = false;
+
+      connectButton.classList.add(
+        "wallet-connected"
+      );
+
+    } else {
+
+      connectButton.textContent =
+        "Connect Wallet";
+
+      connectButton.disabled = false;
+
+      connectButton.classList.remove(
+        "wallet-connected"
       );
     }
-
-    return ethers;
   }
 
 
-  // =========================================================
-  // INITIALIZE APPKIT
-  // =========================================================
+  /* =====================================================
+     LOAD AUTOMATIONS
+  ====================================================== */
 
-  async function initializeAppKit() {
-    if (modal) {
-      return modal;
-    }
+  async function loadAutomations(address) {
 
-    const { createAppKit } = await import(
-      "https://esm.sh/@reown/appkit"
-    );
+    if (!automationList) return;
 
-    const { EthersAdapter } = await import(
-      "https://esm.sh/@reown/appkit-adapter-ethers"
-    );
-
-    const { defineChain } = await import(
-      "https://esm.sh/@reown/appkit/networks"
-    );
-
-    const arc = defineChain(ARC_NETWORK);
-
-    const adapter = new EthersAdapter();
-
-    modal = createAppKit({
-      adapters: [adapter],
-
-      networks: [arc],
-
-      defaultNetwork: arc,
-
-      projectId: PROJECT_ID,
-
-      metadata: {
-        name: "AskirawaFi",
-
-        description:
-          "Programmable USDC Treasury built on Arc",
-
-        url: window.location.origin,
-
-        icons: []
-      },
-
-      features: {
-        analytics: true
-      },
-
-      allWallets: "SHOW",
-
-      enableWallets: true,
-
-      enableNetworkSwitch: true,
-
-      enableReconnect: true
-    });
-
-    console.log(
-      "AskirawaFi AppKit initialized."
-    );
-
-    return modal;
-  }
-
-
-  // =========================================================
-  // UPDATE WALLET DISPLAY
-  // =========================================================
-
-  function displayWalletAddress(address) {
     if (!address) {
+
+      if (automationStatus) {
+        automationStatus.textContent =
+          "Connect your Arc wallet to load your on-chain automations.";
+      }
+
+      automationList.innerHTML = `
+        <div class="payment-item">
+          <div>
+            <span class="label">AUTOMATIONS</span>
+            <strong>Connect your wallet</strong>
+            <p>
+              Your Arc automations will appear here after your wallet is connected.
+            </p>
+          </div>
+        </div>
+      `;
+
+      if (automationCountElement) {
+        automationCountElement.textContent = "0";
+      }
+
       return;
     }
 
-    connectButton.textContent =
-      `${address.slice(0, 6)}...${address.slice(-4)}`;
 
-    connectButton.disabled = false;
+    try {
 
-    connectButton.classList.add(
-      "wallet-connected"
-    );
+      if (automationStatus) {
+        automationStatus.textContent =
+          "Loading your on-chain automations...";
+      }
 
-    console.log(
-      "AskirawaFi wallet:",
-      address
-    );
+      const provider =
+        new ethers.JsonRpcProvider(
+          "https://rpc.arc.network"
+        );
+
+      const contract =
+        new ethers.Contract(
+          CONTRACT_ADDRESS,
+          CONTRACT_ABI,
+          provider
+        );
+
+
+      const total =
+        await contract.automationCount();
+
+      const totalNumber =
+        Number(total);
+
+
+      if (automationCountElement) {
+        automationCountElement.textContent =
+          totalNumber.toString();
+      }
+
+
+      const userAutomations = [];
+
+
+      for (
+        let id = 1;
+        id <= totalNumber;
+        id++
+      ) {
+
+        try {
+
+          const automation =
+            await contract.getAutomation(id);
+
+
+          const owner =
+            automation[2];
+
+          if (
+            owner &&
+            owner.toLowerCase() ===
+            address.toLowerCase()
+          ) {
+
+            userAutomations.push({
+              id: Number(automation[0]),
+              name: automation[1],
+              owner: automation[2],
+              recipient: automation[3],
+              amount: automation[4],
+              frequency: Number(automation[5]),
+              executionTime: Number(automation[6]),
+              note: automation[7],
+              active: automation[8]
+            });
+
+          }
+
+        } catch (error) {
+
+          console.error(
+            `Unable to load automation ${id}:`,
+            error
+          );
+
+        }
+
+      }
+
+
+      if (userAutomations.length === 0) {
+
+        if (automationStatus) {
+          automationStatus.textContent =
+            "No automations found for this wallet.";
+        }
+
+        automationList.innerHTML = `
+          <div class="payment-item">
+            <div>
+              <span class="label">AUTOMATIONS</span>
+              <strong>No automations yet</strong>
+              <p>
+                Create your first automation above.
+              </p>
+            </div>
+          </div>
+        `;
+
+        return;
+      }
+
+
+      if (automationStatus) {
+        automationStatus.textContent =
+          `${userAutomations.length} automation(s) found on Arc.`;
+      }
+
+
+      automationList.innerHTML =
+        userAutomations.map(
+          (automation) => {
+
+            const amount =
+              ethers.formatUnits(
+                automation.amount,
+                6
+              );
+
+            const executionDate =
+              new Date(
+                automation.executionTime * 1000
+              ).toLocaleString();
+
+
+            let frequencyText =
+              "Once";
+
+            if (
+              automation.frequency === 86400
+            ) {
+              frequencyText = "Daily";
+            }
+
+            if (
+              automation.frequency === 604800
+            ) {
+              frequencyText = "Weekly";
+            }
+
+            if (
+              automation.frequency === 2592000
+            ) {
+              frequencyText = "Monthly";
+            }
+
+
+            return `
+              <div class="payment-item">
+
+                <div>
+
+                  <span class="label">
+                    AUTOMATION #${automation.id}
+                  </span>
+
+                  <strong>
+                    ${escapeHtml(automation.name)}
+                  </strong>
+
+                  <p>
+                    ${amount} USDC → ${automation.recipient}
+                  </p>
+
+                  <p>
+                    Frequency: ${frequencyText}
+                  </p>
+
+                  <p>
+                    First execution: ${executionDate}
+                  </p>
+
+                  ${
+                    automation.note
+                      ? `<p>${escapeHtml(automation.note)}</p>`
+                      : ""
+                  }
+
+                </div>
+
+                <div>
+
+                  <span class="label">
+                    STATUS
+                  </span>
+
+                  <strong>
+                    ${
+                      automation.active
+                        ? "Active"
+                        : "Paused"
+                    }
+                  </strong>
+
+                </div>
+
+              </div>
+            `;
+
+          }
+        ).join("");
+
+
+    } catch (error) {
+
+      console.error(
+        "Automation loading error:",
+        error
+      );
+
+      if (automationStatus) {
+        automationStatus.textContent =
+          "Unable to load automations.";
+      }
+
+    }
+
   }
 
 
-  // =========================================================
-  // CONNECT WALLET
-  // =========================================================
+  /* =====================================================
+     ESCAPE HTML
+  ====================================================== */
 
-  connectButton.addEventListener(
-    "click",
-    async () => {
-      try {
-        connectButton.disabled = true;
+  function escapeHtml(value) {
 
-        connectButton.textContent =
-          "Connecting...";
+    return String(value)
+      .replaceAll("&", "&amp;")
+      .replaceAll("<", "&lt;")
+      .replaceAll(">", "&gt;")
+      .replaceAll('"', "&quot;")
+      .replaceAll("'", "&#039;");
+  }
 
-        const appKit =
-          await initializeAppKit();
 
-        await appKit.open({
-          view: "Connect"
-        });
+  /* =====================================================
+     WALLET STATE
+  ====================================================== */
 
-        console.log(
-          "Wallet interface opened."
-        );
+  async function handleWalletState(state) {
 
-      } catch (error) {
-        console.error(
-          "Wallet connection error:",
-          error
-        );
+    console.log("AppKit wallet state:", state);
 
-        connectButton.textContent =
-          "Connect Wallet";
+    if (
+      state &&
+      state.isConnected &&
+      state.address
+    ) {
 
-        connectButton.disabled = false;
+      const address = state.address;
 
-        alert(
-          "Unable to open the wallet connection window."
-        );
-      }
+      updateWalletButton(address);
+
+      await loadAutomations(address);
+
+    } else {
+
+      updateWalletButton(null);
+
+      await loadAutomations(null);
+
+    }
+
+  }
+
+
+  /* =====================================================
+     SUBSCRIBE TO WALLET CHANGES
+  ====================================================== */
+
+  modal.subscribeState(
+    async (state) => {
+
+      await handleWalletState(state);
+
     }
   );
 
 
-  // =========================================================
-  // GET WALLET CONNECTION
-  // =========================================================
+  /* =====================================================
+     CHECK EXISTING CONNECTION
+  ====================================================== */
 
-  async function getWalletConnection() {
-    const appKit =
-      await initializeAppKit();
+  try {
 
-    /*
-     * AppKit's wallet provider gives us access
-     * to the connected EVM wallet.
-     */
+    const currentState =
+      modal.getState();
 
-    let walletProvider = null;
+    console.log(
+      "Existing AppKit state:",
+      currentState
+    );
 
-    if (
-      typeof appKit.getWalletProvider ===
-      "function"
-    ) {
-      walletProvider =
-        await appKit.getWalletProvider();
-    }
+    await handleWalletState(
+      currentState
+    );
 
-    if (!walletProvider) {
-      throw new Error(
-        "Please connect your wallet first."
-      );
-    }
+  } catch (error) {
 
-    const loadedEthers =
-      await loadEthers();
+    console.error(
+      "Unable to restore wallet state:",
+      error
+    );
 
-    provider =
-      new loadedEthers.BrowserProvider(
-        walletProvider
-      );
-
-    signer =
-      await provider.getSigner();
-
-    const network =
-      await provider.getNetwork();
-
-    if (
-      Number(network.chainId) !==
-      ARC_CHAIN_ID
-    ) {
-      throw new Error(
-        "Please switch your wallet to Arc Mainnet."
-      );
-    }
-
-    contract =
-      new loadedEthers.Contract(
-        AUTOMATION_CONTRACT,
-        AUTOMATION_ABI,
-        signer
-      );
-
-    const address =
-      await signer.getAddress();
-
-    displayWalletAddress(address);
-
-    return {
-      provider,
-      signer,
-      contract,
-      address,
-      ethers: loadedEthers
-    };
   }
 
 
-  // =========================================================
-  // AUTOMATION COUNT
-  // =========================================================
+  /* =====================================================
+     CONNECT WALLET BUTTON
+  ====================================================== */
 
-  async function loadAutomationCount() {
-    try {
-      const connection =
-        await getWalletConnection();
+  if (connectButton) {
 
-      const count =
-        await connection.contract
-          .automationCount();
+    connectButton.addEventListener(
+      "click",
+      async () => {
 
-      const countElement =
-        document.getElementById(
-          "automation-count"
-        );
+        try {
 
-      if (countElement) {
-        countElement.textContent =
-          count.toString();
+          connectButton.disabled = true;
+
+          connectButton.textContent =
+            "Connecting...";
+
+          await modal.open({
+            view: "Connect"
+          });
+
+        } catch (error) {
+
+          console.error(
+            "Wallet connection error:",
+            error
+          );
+
+          connectButton.textContent =
+            "Connect Wallet";
+
+          connectButton.disabled = false;
+
+        }
+
       }
+    );
 
-      console.log(
-        "Automation count:",
-        count.toString()
-      );
-
-    } catch (error) {
-      console.log(
-        "Automation count not loaded:",
-        error.message
-      );
-    }
   }
 
 
-  // =========================================================
-  // FREQUENCY
-  // =========================================================
-
-  function frequencyToSeconds(
-    frequency
-  ) {
-    const value =
-      frequency.toLowerCase();
-
-    if (value === "daily") {
-      return 86400;
-    }
-
-    if (value === "weekly") {
-      return 604800;
-    }
-
-    if (value === "monthly") {
-      return 2592000;
-    }
-
-    return 0;
-  }
-
-
-  // =========================================================
-  // CREATE AUTOMATION
-  // =========================================================
+  /* =====================================================
+     CREATE AUTOMATION
+  ====================================================== */
 
   async function handleCreateAutomation() {
+
     try {
-      const nameInput =
-        document.getElementById(
-          "automation-name"
-        );
 
-      const recipientInput =
-        document.getElementById(
-          "automation-recipient"
-        );
-
-      const amountInput =
-        document.getElementById(
-          "automation-amount"
-        );
-
-      const frequencyInput =
-        document.getElementById(
-          "automation-frequency"
-        );
-
-      const dateInput =
-        document.getElementById(
-          "automation-date"
-        );
-
-      const noteInput =
-        document.getElementById(
-          "automation-note"
-        );
-
-
-      // -----------------------------------------
-      // CHECK FORM
-      // -----------------------------------------
+      const state =
+        modal.getState();
 
       if (
-        !nameInput ||
-        !recipientInput ||
-        !amountInput ||
-        !frequencyInput ||
-        !dateInput
+        !state ||
+        !state.isConnected ||
+        !state.address
       ) {
+
         alert(
-          "Automation form could not be found."
+          "Please connect your Arc wallet first."
         );
+
+        await modal.open({
+          view: "Connect"
+        });
 
         return;
       }
 
 
       const name =
-        nameInput.value.trim();
+        document
+          .getElementById("automation-name")
+          .value
+          .trim();
 
       const recipient =
-        recipientInput.value.trim();
+        document
+          .getElementById("automation-recipient")
+          .value
+          .trim();
 
       const amount =
-        amountInput.value.trim();
+        document
+          .getElementById("automation-amount")
+          .value
+          .trim();
 
       const frequency =
-        frequencyInput.value;
+        document
+          .getElementById("automation-frequency")
+          .value;
 
       const date =
-        dateInput.value;
+        document
+          .getElementById("automation-date")
+          .value;
 
       const note =
-        noteInput
-          ? noteInput.value.trim()
-          : "";
+        document
+          .getElementById("automation-note")
+          .value
+          .trim();
 
 
       if (!name) {
-        alert(
-          "Enter an automation name."
-        );
-
+        alert("Enter an automation name.");
         return;
       }
 
-
-      if (!recipient) {
-        alert(
-          "Enter a recipient wallet address."
-        );
-
+      if (!ethers.isAddress(recipient)) {
+        alert("Enter a valid recipient wallet address.");
         return;
       }
-
 
       if (!amount || Number(amount) <= 0) {
-        alert(
-          "Enter a valid USDC amount."
-        );
-
+        alert("Enter a valid USDC amount.");
         return;
       }
-
 
       if (!date) {
+        alert("Select an execution date.");
+        return;
+      }
+
+
+      const executionTime =
+        Math.floor(
+          new Date(date).getTime() / 1000
+        );
+
+
+      if (
+        executionTime <=
+        Math.floor(Date.now() / 1000)
+      ) {
+
         alert(
-          "Select an execution date and time."
+          "Execution time must be in the future."
         );
 
         return;
       }
 
 
-      // -----------------------------------------
-      // CONNECT TO ARC
-      // -----------------------------------------
+      let frequencySeconds = 0;
 
-      if (createButton) {
-        createButton.disabled = true;
+      if (frequency === "Daily") {
+        frequencySeconds = 86400;
+      }
 
-        createButton.textContent =
-          "Connecting...";
+      if (frequency === "Weekly") {
+        frequencySeconds = 604800;
+      }
+
+      if (frequency === "Monthly") {
+        frequencySeconds = 2592000;
       }
 
 
-      const connection =
-        await getWalletConnection();
+      const provider =
+        await modal.getWalletProvider();
 
+      const browserProvider =
+        new ethers.BrowserProvider(
+          provider
+        );
 
-      // -----------------------------------------
-      // VALIDATE ADDRESS
-      // -----------------------------------------
+      const network =
+        await browserProvider.getNetwork();
+
 
       if (
-        !connection.ethers.isAddress(
-          recipient
-        )
+        Number(network.chainId) !==
+        ARC_CHAIN_ID
       ) {
-        throw new Error(
-          "Invalid recipient wallet address."
+
+        alert(
+          "Please switch your wallet to Arc Mainnet."
         );
+
+        return;
       }
 
 
-      // -----------------------------------------
-      // USDC = 6 DECIMALS
-      // -----------------------------------------
+      const signer =
+        await browserProvider.getSigner();
 
-      const amountInUSDC =
-        connection.ethers.parseUnits(
+
+      const contract =
+        new ethers.Contract(
+          CONTRACT_ADDRESS,
+          CONTRACT_ABI,
+          signer
+        );
+
+
+      const parsedAmount =
+        ethers.parseUnits(
           amount,
           6
         );
 
 
-      // -----------------------------------------
-      // FREQUENCY
-      // -----------------------------------------
-
-      const frequencyValue =
-        frequencyToSeconds(
-          frequency
-        );
-
-
-      // -----------------------------------------
-      // EXECUTION TIME
-      // -----------------------------------------
-
-      const executionTime =
-        Math.floor(
-          new Date(date).getTime() /
-          1000
-        );
-
-      const now =
-        Math.floor(
-          Date.now() / 1000
-        );
-
-      if (
-        executionTime <= now
-      ) {
-        throw new Error(
-          "Execution time must be in the future."
-        );
-      }
-
-
-      // -----------------------------------------
-      // SEND TRANSACTION
-      // -----------------------------------------
-
-      if (createButton) {
-        createButton.textContent =
-          "Confirm in Wallet...";
-      }
-
-      console.log(
-        "Sending automation transaction..."
+      alert(
+        "Confirm the automation transaction in your wallet."
       );
 
+
       const transaction =
-        await connection.contract
-          .createAutomation(
-            name,
-            recipient,
-            amountInUSDC,
-            frequencyValue,
-            executionTime,
-            note
-          );
+        await contract.createAutomation(
+          name,
+          recipient,
+          parsedAmount,
+          frequencySeconds,
+          executionTime,
+          note
+        );
 
 
       console.log(
-        "Transaction submitted:",
+        "Automation transaction:",
         transaction.hash
       );
 
 
-      if (createButton) {
-        createButton.textContent =
-          "Confirming...";
-      }
+      await transaction.wait();
 
-
-      // -----------------------------------------
-      // WAIT FOR ARC
-      // -----------------------------------------
-
-      const receipt =
-        await transaction.wait();
-
-
-      console.log(
-        "Automation confirmed on Arc:",
-        receipt.hash
-      );
-
-
-      // -----------------------------------------
-      // UPDATE COUNT
-      // -----------------------------------------
-
-      const count =
-        await connection.contract
-          .automationCount();
-
-      const countElement =
-        document.getElementById(
-          "automation-count"
-        );
-
-      if (countElement) {
-        countElement.textContent =
-          count.toString();
-      }
-
-
-      // -----------------------------------------
-      // SUCCESS
-      // -----------------------------------------
 
       alert(
         "Automation created successfully on Arc."
       );
 
 
-      // -----------------------------------------
-      // RESET FORM
-      // -----------------------------------------
-
-      nameInput.value = "";
-      recipientInput.value = "";
-      amountInput.value = "";
-
-      if (noteInput) {
-        noteInput.value = "";
-      }
+      document
+        .getElementById("automationForm")
+        ?.reset();
 
 
-      if (createButton) {
-        createButton.textContent =
-          "Create Automation";
-
-        createButton.disabled = false;
-      }
-
-
-      console.log(
-        "Arc transaction:",
-        `https://explorer.arc.io/tx/${receipt.hash}`
+      await loadAutomations(
+        state.address
       );
 
+
     } catch (error) {
+
       console.error(
-        "Automation error:",
+        "Create automation error:",
         error
       );
 
+      alert(
+        error?.shortMessage ||
+        error?.reason ||
+        "Unable to create automation."
+      );
 
-      let message =
-        "Unable to create automation.";
-
-
-      if (error.message) {
-        if (
-          error.message
-            .toLowerCase()
-            .includes("user rejected")
-        ) {
-          message =
-            "Transaction rejected in your wallet.";
-        }
-
-        else if (
-          error.message
-            .toLowerCase()
-            .includes("invalid recipient")
-        ) {
-          message =
-            "The recipient wallet address is invalid.";
-        }
-
-        else if (
-          error.message
-            .toLowerCase()
-            .includes("future")
-        ) {
-          message =
-            "Please choose a future execution time.";
-        }
-
-        else if (
-          error.message
-            .toLowerCase()
-            .includes("arc mainnet")
-        ) {
-          message =
-            "Please switch your wallet to Arc Mainnet.";
-        }
-
-        else if (
-          error.message
-            .toLowerCase()
-            .includes("connect your wallet")
-        ) {
-          message =
-            "Please connect your wallet first.";
-        }
-      }
-
-
-      alert(message);
-
-
-      if (createButton) {
-        createButton.textContent =
-          "Create Automation";
-
-        createButton.disabled = false;
-      }
     }
+
   }
 
 
-  // =========================================================
-  // CREATE AUTOMATION BUTTON
-  // =========================================================
-
   if (createButton) {
+
     createButton.addEventListener(
       "click",
       async (event) => {
+
         event.preventDefault();
 
         await handleCreateAutomation();
+
       }
     );
 
-    console.log(
-      "Create Automation button ready."
-    );
-  } else {
-    console.warn(
-      "Create Automation button not found."
-    );
   }
 
-
-  // =========================================================
-  // START
-  // =========================================================
-
-  try {
-    await initializeAppKit();
-
-    console.log(
-      "AskirawaFi is ready."
-    );
-
-  } catch (error) {
-    console.error(
-      "AskirawaFi initialization error:",
-      error
-    );
-  }
 });
