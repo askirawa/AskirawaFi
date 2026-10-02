@@ -1,11 +1,6 @@
 document.addEventListener("DOMContentLoaded", async () => {
 
-  /* =====================================================
-     CONFIG
-  ====================================================== */
-
   const PROJECT_ID = "c7bb3a991b675f05777c830bac0f18de";
-
   const ARC_CHAIN_ID = 5042;
 
   const CONTRACT_ADDRESS =
@@ -32,40 +27,23 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   };
 
-
-  /* =====================================================
-     CONTRACT ABI
-  ====================================================== */
-
   const CONTRACT_ABI = [
-
     "function automationCount() view returns (uint256)",
-
-    "function createAutomation(string name,address recipient,uint256 amount,uint256 frequency,uint256 executionTime,string note)",
-
-    "function getAutomation(uint256 id) view returns (uint256,string,address,address,uint256,uint256,uint256,string,bool)",
-
-    "function setAutomationStatus(uint256 id,bool active)"
-
+    "function createAutomation(string,address,uint256,uint256,uint256,string)",
+    "function getAutomation(uint256) view returns (uint256,string,address,address,uint256,uint256,uint256,string,bool)",
+    "function setAutomationStatus(uint256,bool)"
   ];
-
-
-  /* =====================================================
-     PAGE ELEMENTS
-  ====================================================== */
 
   const buttons = Array.from(document.querySelectorAll("button"));
 
   const connectButton = buttons.find(
-    (button) =>
-      button.textContent.trim().toLowerCase() ===
-      "connect wallet"
+    button =>
+      button.textContent.trim().toLowerCase() === "connect wallet"
   );
 
   const createButton = buttons.find(
-    (button) =>
-      button.textContent.trim().toLowerCase() ===
-      "create automation"
+    button =>
+      button.textContent.trim().toLowerCase() === "create automation"
   );
 
   const automationCountElement =
@@ -82,39 +60,21 @@ document.addEventListener("DOMContentLoaded", async () => {
      LOAD LIBRARIES
   ====================================================== */
 
-  let createAppKit;
-  let EthersAdapter;
-  let defineChain;
-  let ethers;
+  const { createAppKit } =
+    await import("https://esm.sh/@reown/appkit");
 
-  try {
+  const { EthersAdapter } =
+    await import("https://esm.sh/@reown/appkit-adapter-ethers");
 
-    ({ createAppKit } = await import(
-      "https://esm.sh/@reown/appkit"
-    ));
+  const { defineChain } =
+    await import("https://esm.sh/@reown/appkit/networks");
 
-    ({ EthersAdapter } = await import(
-      "https://esm.sh/@reown/appkit-adapter-ethers"
-    ));
-
-    ({ defineChain } = await import(
-      "https://esm.sh/@reown/appkit/networks"
-    ));
-
-    ethers = await import(
-      "https://esm.sh/ethers@6.15.0"
-    );
-
-  } catch (error) {
-
-    console.error("Library loading error:", error);
-
-    return;
-  }
+  const ethers =
+    await import("https://esm.sh/ethers@6.15.0");
 
 
   /* =====================================================
-     CREATE APPKIT
+     APPKIT
   ====================================================== */
 
   const arc = defineChain(ARC_NETWORK);
@@ -122,13 +82,9 @@ document.addEventListener("DOMContentLoaded", async () => {
   const adapter = new EthersAdapter();
 
   const modal = createAppKit({
-
     adapters: [adapter],
-
     networks: [arc],
-
     defaultNetwork: arc,
-
     projectId: PROJECT_ID,
 
     metadata: {
@@ -143,18 +99,14 @@ document.addEventListener("DOMContentLoaded", async () => {
     },
 
     allWallets: "SHOW",
-
     enableWallets: true,
-
     enableNetworkSwitch: true,
-
     enableReconnect: true
-
   });
 
 
   /* =====================================================
-     UPDATE WALLET BUTTON
+     WALLET BUTTON
   ====================================================== */
 
   function updateWalletButton(address) {
@@ -167,10 +119,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         `${address.slice(0, 6)}...${address.slice(-4)}`;
 
       connectButton.disabled = false;
-
-      connectButton.classList.add(
-        "wallet-connected"
-      );
+      connectButton.classList.add("wallet-connected");
 
     } else {
 
@@ -178,10 +127,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         "Connect Wallet";
 
       connectButton.disabled = false;
-
-      connectButton.classList.remove(
-        "wallet-connected"
-      );
+      connectButton.classList.remove("wallet-connected");
     }
   }
 
@@ -213,10 +159,6 @@ document.addEventListener("DOMContentLoaded", async () => {
         </div>
       `;
 
-      if (automationCountElement) {
-        automationCountElement.textContent = "0";
-      }
-
       return;
     }
 
@@ -240,67 +182,46 @@ document.addEventListener("DOMContentLoaded", async () => {
           provider
         );
 
-
       const total =
         await contract.automationCount();
 
       const totalNumber =
         Number(total);
 
-
-      if (automationCountElement) {
-        automationCountElement.textContent =
-          totalNumber.toString();
-      }
-
-
       const userAutomations = [];
 
 
-      for (
-        let id = 1;
-        id <= totalNumber;
-        id++
-      ) {
+      for (let id = 1; id <= totalNumber; id++) {
 
-        try {
+        const automation =
+          await contract.getAutomation(id);
 
-          const automation =
-            await contract.getAutomation(id);
+        const owner =
+          automation[2];
 
+        if (
+          owner &&
+          owner.toLowerCase() ===
+          address.toLowerCase()
+        ) {
 
-          const owner =
-            automation[2];
-
-          if (
-            owner &&
-            owner.toLowerCase() ===
-            address.toLowerCase()
-          ) {
-
-            userAutomations.push({
-              id: Number(automation[0]),
-              name: automation[1],
-              owner: automation[2],
-              recipient: automation[3],
-              amount: automation[4],
-              frequency: Number(automation[5]),
-              executionTime: Number(automation[6]),
-              note: automation[7],
-              active: automation[8]
-            });
-
-          }
-
-        } catch (error) {
-
-          console.error(
-            `Unable to load automation ${id}:`,
-            error
-          );
-
+          userAutomations.push({
+            id: Number(automation[0]),
+            name: automation[1],
+            recipient: automation[3],
+            amount: automation[4],
+            frequency: Number(automation[5]),
+            executionTime: Number(automation[6]),
+            note: automation[7],
+            active: automation[8]
+          });
         }
+      }
 
+
+      if (automationCountElement) {
+        automationCountElement.textContent =
+          userAutomations.length;
       }
 
 
@@ -334,97 +255,80 @@ document.addEventListener("DOMContentLoaded", async () => {
 
 
       automationList.innerHTML =
-        userAutomations.map(
-          (automation) => {
+        userAutomations.map(item => {
 
-            const amount =
-              ethers.formatUnits(
-                automation.amount,
-                6
-              );
+          const amount =
+            ethers.formatUnits(item.amount, 6);
 
-            const executionDate =
-              new Date(
-                automation.executionTime * 1000
-              ).toLocaleString();
+          let frequency = "Once";
 
+          if (item.frequency === 86400)
+            frequency = "Daily";
 
-            let frequencyText =
-              "Once";
+          if (item.frequency === 604800)
+            frequency = "Weekly";
 
-            if (
-              automation.frequency === 86400
-            ) {
-              frequencyText = "Daily";
-            }
+          if (item.frequency === 2592000)
+            frequency = "Monthly";
 
-            if (
-              automation.frequency === 604800
-            ) {
-              frequencyText = "Weekly";
-            }
+          const execution =
+            new Date(
+              item.executionTime * 1000
+            ).toLocaleString();
 
-            if (
-              automation.frequency === 2592000
-            ) {
-              frequencyText = "Monthly";
-            }
+          return `
+            <div class="payment-item">
 
+              <div>
 
-            return `
-              <div class="payment-item">
+                <span class="label">
+                  AUTOMATION #${item.id}
+                </span>
 
-                <div>
+                <strong>
+                  ${escapeHtml(item.name)}
+                </strong>
 
-                  <span class="label">
-                    AUTOMATION #${automation.id}
-                  </span>
+                <p>
+                  ${amount} USDC
+                </p>
 
-                  <strong>
-                    ${escapeHtml(automation.name)}
-                  </strong>
+                <p>
+                  Recipient: ${item.recipient}
+                </p>
 
-                  <p>
-                    ${amount} USDC → ${automation.recipient}
-                  </p>
+                <p>
+                  Frequency: ${frequency}
+                </p>
 
-                  <p>
-                    Frequency: ${frequencyText}
-                  </p>
+                <p>
+                  First execution: ${execution}
+                </p>
 
-                  <p>
-                    First execution: ${executionDate}
-                  </p>
-
-                  ${
-                    automation.note
-                      ? `<p>${escapeHtml(automation.note)}</p>`
-                      : ""
-                  }
-
-                </div>
-
-                <div>
-
-                  <span class="label">
-                    STATUS
-                  </span>
-
-                  <strong>
-                    ${
-                      automation.active
-                        ? "Active"
-                        : "Paused"
-                    }
-                  </strong>
-
-                </div>
+                ${
+                  item.note
+                    ? `<p>${escapeHtml(item.note)}</p>`
+                    : ""
+                }
 
               </div>
-            `;
 
-          }
-        ).join("");
+              <div>
+
+                <span class="label">
+                  STATUS
+                </span>
+
+                <strong>
+                  ${item.active ? "Active" : "Paused"}
+                </strong>
+
+              </div>
+
+            </div>
+          `;
+
+        }).join("");
 
 
     } catch (error) {
@@ -438,14 +342,12 @@ document.addEventListener("DOMContentLoaded", async () => {
         automationStatus.textContent =
           "Unable to load automations.";
       }
-
     }
-
   }
 
 
   /* =====================================================
-     ESCAPE HTML
+     HTML SAFETY
   ====================================================== */
 
   function escapeHtml(value) {
@@ -460,79 +362,66 @@ document.addEventListener("DOMContentLoaded", async () => {
 
 
   /* =====================================================
-     WALLET STATE
+     CHECK WALLET DIRECTLY
   ====================================================== */
 
-  async function handleWalletState(state) {
+  async function checkWallet() {
 
-    console.log("AppKit wallet state:", state);
+    try {
 
-    if (
-      state &&
-      state.isConnected &&
-      state.address
-    ) {
+      const connected =
+        modal.getIsConnected();
 
-      const address = state.address;
+      const address =
+        modal.getAddress();
 
-      updateWalletButton(address);
+      console.log(
+        "Wallet connected:",
+        connected
+      );
 
-      await loadAutomations(address);
+      console.log(
+        "Wallet address:",
+        address
+      );
 
-    } else {
 
-      updateWalletButton(null);
+      if (connected && address) {
 
-      await loadAutomations(null);
+        updateWalletButton(address);
 
+        await loadAutomations(address);
+
+      } else {
+
+        updateWalletButton(null);
+
+        await loadAutomations(null);
+      }
+
+    } catch (error) {
+
+      console.error(
+        "Wallet state error:",
+        error
+      );
     }
-
   }
 
 
   /* =====================================================
-     SUBSCRIBE TO WALLET CHANGES
+     WATCH WALLET CHANGES
   ====================================================== */
 
   modal.subscribeState(
-    async (state) => {
-
-      await handleWalletState(state);
-
+    async () => {
+      await checkWallet();
     }
   );
 
 
   /* =====================================================
-     CHECK EXISTING CONNECTION
-  ====================================================== */
-
-  try {
-
-    const currentState =
-      modal.getState();
-
-    console.log(
-      "Existing AppKit state:",
-      currentState
-    );
-
-    await handleWalletState(
-      currentState
-    );
-
-  } catch (error) {
-
-    console.error(
-      "Unable to restore wallet state:",
-      error
-    );
-
-  }
-
-
-  /* =====================================================
-     CONNECT WALLET BUTTON
+     CONNECT BUTTON
   ====================================================== */
 
   if (connectButton) {
@@ -544,9 +433,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         try {
 
           connectButton.disabled = true;
-
-          connectButton.textContent =
-            "Connecting...";
+          connectButton.textContent = "Connecting...";
 
           await modal.open({
             view: "Connect"
@@ -563,235 +450,22 @@ document.addEventListener("DOMContentLoaded", async () => {
             "Connect Wallet";
 
           connectButton.disabled = false;
-
         }
-
       }
     );
-
   }
+
+
+  /* =====================================================
+     INITIAL WALLET CHECK
+  ====================================================== */
+
+  await checkWallet();
 
 
   /* =====================================================
      CREATE AUTOMATION
   ====================================================== */
-
-  async function handleCreateAutomation() {
-
-    try {
-
-      const state =
-        modal.getState();
-
-      if (
-        !state ||
-        !state.isConnected ||
-        !state.address
-      ) {
-
-        alert(
-          "Please connect your Arc wallet first."
-        );
-
-        await modal.open({
-          view: "Connect"
-        });
-
-        return;
-      }
-
-
-      const name =
-        document
-          .getElementById("automation-name")
-          .value
-          .trim();
-
-      const recipient =
-        document
-          .getElementById("automation-recipient")
-          .value
-          .trim();
-
-      const amount =
-        document
-          .getElementById("automation-amount")
-          .value
-          .trim();
-
-      const frequency =
-        document
-          .getElementById("automation-frequency")
-          .value;
-
-      const date =
-        document
-          .getElementById("automation-date")
-          .value;
-
-      const note =
-        document
-          .getElementById("automation-note")
-          .value
-          .trim();
-
-
-      if (!name) {
-        alert("Enter an automation name.");
-        return;
-      }
-
-      if (!ethers.isAddress(recipient)) {
-        alert("Enter a valid recipient wallet address.");
-        return;
-      }
-
-      if (!amount || Number(amount) <= 0) {
-        alert("Enter a valid USDC amount.");
-        return;
-      }
-
-      if (!date) {
-        alert("Select an execution date.");
-        return;
-      }
-
-
-      const executionTime =
-        Math.floor(
-          new Date(date).getTime() / 1000
-        );
-
-
-      if (
-        executionTime <=
-        Math.floor(Date.now() / 1000)
-      ) {
-
-        alert(
-          "Execution time must be in the future."
-        );
-
-        return;
-      }
-
-
-      let frequencySeconds = 0;
-
-      if (frequency === "Daily") {
-        frequencySeconds = 86400;
-      }
-
-      if (frequency === "Weekly") {
-        frequencySeconds = 604800;
-      }
-
-      if (frequency === "Monthly") {
-        frequencySeconds = 2592000;
-      }
-
-
-      const provider =
-        await modal.getWalletProvider();
-
-      const browserProvider =
-        new ethers.BrowserProvider(
-          provider
-        );
-
-      const network =
-        await browserProvider.getNetwork();
-
-
-      if (
-        Number(network.chainId) !==
-        ARC_CHAIN_ID
-      ) {
-
-        alert(
-          "Please switch your wallet to Arc Mainnet."
-        );
-
-        return;
-      }
-
-
-      const signer =
-        await browserProvider.getSigner();
-
-
-      const contract =
-        new ethers.Contract(
-          CONTRACT_ADDRESS,
-          CONTRACT_ABI,
-          signer
-        );
-
-
-      const parsedAmount =
-        ethers.parseUnits(
-          amount,
-          6
-        );
-
-
-      alert(
-        "Confirm the automation transaction in your wallet."
-      );
-
-
-      const transaction =
-        await contract.createAutomation(
-          name,
-          recipient,
-          parsedAmount,
-          frequencySeconds,
-          executionTime,
-          note
-        );
-
-
-      console.log(
-        "Automation transaction:",
-        transaction.hash
-      );
-
-
-      await transaction.wait();
-
-
-      alert(
-        "Automation created successfully on Arc."
-      );
-
-
-      document
-        .getElementById("automationForm")
-        ?.reset();
-
-
-      await loadAutomations(
-        state.address
-      );
-
-
-    } catch (error) {
-
-      console.error(
-        "Create automation error:",
-        error
-      );
-
-      alert(
-        error?.shortMessage ||
-        error?.reason ||
-        "Unable to create automation."
-      );
-
-    }
-
-  }
-
 
   if (createButton) {
 
@@ -801,11 +475,195 @@ document.addEventListener("DOMContentLoaded", async () => {
 
         event.preventDefault();
 
-        await handleCreateAutomation();
+        try {
 
+          const connected =
+            modal.getIsConnected();
+
+          const address =
+            modal.getAddress();
+
+          if (!connected || !address) {
+
+            alert(
+              "Please connect your Arc wallet first."
+            );
+
+            await modal.open({
+              view: "Connect"
+            });
+
+            return;
+          }
+
+
+          const name =
+            document
+              .getElementById("automation-name")
+              .value.trim();
+
+          const recipient =
+            document
+              .getElementById("automation-recipient")
+              .value.trim();
+
+          const amount =
+            document
+              .getElementById("automation-amount")
+              .value.trim();
+
+          const frequency =
+            document
+              .getElementById("automation-frequency")
+              .value;
+
+          const date =
+            document
+              .getElementById("automation-date")
+              .value;
+
+          const note =
+            document
+              .getElementById("automation-note")
+              .value.trim();
+
+
+          if (!name) {
+            alert("Enter an automation name.");
+            return;
+          }
+
+          if (!ethers.isAddress(recipient)) {
+            alert("Enter a valid recipient wallet address.");
+            return;
+          }
+
+          if (!amount || Number(amount) <= 0) {
+            alert("Enter a valid USDC amount.");
+            return;
+          }
+
+          if (!date) {
+            alert("Select an execution date.");
+            return;
+          }
+
+
+          const executionTime =
+            Math.floor(
+              new Date(date).getTime() / 1000
+            );
+
+
+          if (
+            executionTime <=
+            Math.floor(Date.now() / 1000)
+          ) {
+
+            alert(
+              "Execution time must be in the future."
+            );
+
+            return;
+          }
+
+
+          let frequencySeconds = 0;
+
+          if (frequency === "Daily")
+            frequencySeconds = 86400;
+
+          if (frequency === "Weekly")
+            frequencySeconds = 604800;
+
+          if (frequency === "Monthly")
+            frequencySeconds = 2592000;
+
+
+          const walletProvider =
+            await modal.getWalletProvider();
+
+          const browserProvider =
+            new ethers.BrowserProvider(
+              walletProvider
+            );
+
+          const network =
+            await browserProvider.getNetwork();
+
+
+          if (
+            Number(network.chainId) !==
+            ARC_CHAIN_ID
+          ) {
+
+            alert(
+              "Please switch your wallet to Arc Mainnet."
+            );
+
+            return;
+          }
+
+
+          const signer =
+            await browserProvider.getSigner();
+
+          const contract =
+            new ethers.Contract(
+              CONTRACT_ADDRESS,
+              CONTRACT_ABI,
+              signer
+            );
+
+
+          const parsedAmount =
+            ethers.parseUnits(
+              amount,
+              6
+            );
+
+
+          const transaction =
+            await contract.createAutomation(
+              name,
+              recipient,
+              parsedAmount,
+              frequencySeconds,
+              executionTime,
+              note
+            );
+
+
+          await transaction.wait();
+
+
+          alert(
+            "Automation created successfully on Arc."
+          );
+
+
+          document
+            .getElementById("automationForm")
+            ?.reset();
+
+
+          await loadAutomations(address);
+
+        } catch (error) {
+
+          console.error(
+            "Create automation error:",
+            error
+          );
+
+          alert(
+            error?.shortMessage ||
+            error?.reason ||
+            "Unable to create automation."
+          );
+        }
       }
     );
-
   }
 
 });
