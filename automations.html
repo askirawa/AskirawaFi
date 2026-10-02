@@ -20,7 +20,11 @@
 
     <div class="nav-links">
       <a href="index.html">Dashboard</a>
-      <a href="activity.html">Activity</a>
+
+      <a href="activity.html">
+        Activity
+      </a>
+
       <a href="automations.html" class="active">
         Automations
       </a>
@@ -36,26 +40,106 @@
 
 <main>
 
+  <!-- =====================================================
+       PAGE HEADER
+  ====================================================== -->
+
   <section class="page-header">
 
     <div>
 
       <div class="label">
-        ARC TESTNET
+        ARC MAINNET
       </div>
 
       <h1>
-        USDC Payments
+        Automations
       </h1>
 
       <p>
-        Create and execute a USDC treasury payment on Arc Testnet.
+        Create programmable USDC treasury rules that are recorded on-chain.
       </p>
 
     </div>
 
   </section>
 
+
+  <!-- =====================================================
+       AUTOMATION STATS
+  ====================================================== -->
+
+  <section class="automation">
+
+    <div class="section-header">
+
+      <div>
+
+        <div class="label">
+          TREASURY RULES
+        </div>
+
+        <h2>
+          Automation Registry
+        </h2>
+
+        <p>
+          Automations created through AskirawaFi are recorded on Arc.
+        </p>
+
+      </div>
+
+    </div>
+
+
+    <div class="automation-preview">
+
+      <div>
+
+        <span class="label">
+          NETWORK
+        </span>
+
+        <strong>
+          Arc Mainnet
+        </strong>
+
+      </div>
+
+
+      <div>
+
+        <span class="label">
+          ASSET
+        </span>
+
+        <strong>
+          USDC
+        </strong>
+
+      </div>
+
+
+      <div>
+
+        <span class="label">
+          AUTOMATIONS
+        </span>
+
+        <strong id="automation-count">
+          0
+        </strong>
+
+      </div>
+
+    </div>
+
+  </section>
+
+
+  <!-- =====================================================
+       CREATE AUTOMATION
+  ====================================================== -->
 
   <section class="automation-form">
 
@@ -64,15 +148,15 @@
       <div>
 
         <div class="label">
-          PAYMENT
+          NEW AUTOMATION
         </div>
 
         <h2>
-          Send USDC
+          Create Automation
         </h2>
 
         <p>
-          Review the payment before approving it in your wallet.
+          Define when and where your treasury should make a payment.
         </p>
 
       </div>
@@ -80,46 +164,134 @@
     </div>
 
 
-    <form id="paymentForm">
-
-      <div class="form-grid">
-
-        <div>
-
-          <label for="recipient">
-            Recipient wallet
-          </label>
-
-          <input
-            id="recipient"
-            type="text"
-            placeholder="0x..."
-            autocomplete="off"
-            required
-          >
-
-        </div>
+    <form id="automationForm">
 
 
-        <div>
+      <!-- AUTOMATION NAME -->
 
-          <label for="amount">
-            Amount (USDC)
-          </label>
+      <div>
 
-          <input
-            id="amount"
-            type="number"
-            min="0.01"
-            step="0.01"
-            placeholder="1.00"
-            required
-          >
+        <label for="automation-name">
+          Automation name
+        </label>
 
-        </div>
+        <input
+          id="automation-name"
+          type="text"
+          placeholder="Monthly Treasury Payment"
+          autocomplete="off"
+          required
+        >
 
       </div>
 
+
+      <!-- RECIPIENT -->
+
+      <div>
+
+        <label for="automation-recipient">
+          Recipient wallet
+        </label>
+
+        <input
+          id="automation-recipient"
+          type="text"
+          placeholder="0x..."
+          autocomplete="off"
+          required
+        >
+
+      </div>
+
+
+      <!-- AMOUNT -->
+
+      <div>
+
+        <label for="automation-amount">
+          Amount (USDC)
+        </label>
+
+        <input
+          id="automation-amount"
+          type="number"
+          min="0.01"
+          step="0.01"
+          placeholder="10.00"
+          required
+        >
+
+      </div>
+
+
+      <!-- FREQUENCY -->
+
+      <div>
+
+        <label for="automation-frequency">
+          Frequency
+        </label>
+
+        <select id="automation-frequency">
+
+          <option value="Once">
+            Once
+          </option>
+
+          <option value="Daily">
+            Daily
+          </option>
+
+          <option value="Weekly">
+            Weekly
+          </option>
+
+          <option value="Monthly">
+            Monthly
+          </option>
+
+        </select>
+
+      </div>
+
+
+      <!-- EXECUTION DATE -->
+
+      <div>
+
+        <label for="automation-date">
+          First execution
+        </label>
+
+        <input
+          id="automation-date"
+          type="datetime-local"
+          required
+        >
+
+      </div>
+
+
+      <!-- NOTE -->
+
+      <div>
+
+        <label for="automation-note">
+          Note
+        </label>
+
+        <input
+          id="automation-note"
+          type="text"
+          placeholder="Treasury operating expense"
+          autocomplete="off"
+        >
+
+      </div>
+
+
+      <!-- NETWORK PREVIEW -->
 
       <div class="automation-preview">
 
@@ -130,7 +302,7 @@
           </span>
 
           <strong>
-            Arc Testnet
+            Arc Mainnet
           </strong>
 
         </div>
@@ -152,11 +324,11 @@
         <div>
 
           <span class="label">
-            AMOUNT
+            STATUS
           </span>
 
-          <strong id="previewAmount">
-            0 USDC
+          <strong>
+            On-chain
           </strong>
 
         </div>
@@ -164,14 +336,16 @@
       </div>
 
 
+      <!-- CREATE BUTTON -->
+
       <div class="form-actions">
 
         <button
           type="submit"
           class="primary"
-          id="sendButton"
+          id="createAutomationButton"
         >
-          Review payment
+          Create Automation
         </button>
 
       </div>
@@ -181,26 +355,26 @@
   </section>
 
 
-  <section
-    class="automation"
-    id="reviewSection"
-    hidden
-  >
+  <!-- =====================================================
+       ON-CHAIN AUTOMATIONS
+  ====================================================== -->
+
+  <section class="automation">
 
     <div class="section-header">
 
       <div>
 
         <div class="label">
-          REVIEW
+          ON-CHAIN
         </div>
 
         <h2>
-          Confirm payment
+          Your Automations
         </h2>
 
         <p>
-          Check the details before approving the transaction.
+          Automation rules registered on Arc Mainnet.
         </p>
 
       </div>
@@ -208,137 +382,57 @@
     </div>
 
 
-    <div class="payment-item">
+    <div id="automation-list">
 
-      <div>
+      <div class="payment-item">
 
-        <span class="label">
-          RECIPIENT
-        </span>
+        <div>
 
-        <strong id="reviewRecipient">
-          —
-        </strong>
+          <span class="label">
+            AUTOMATION
+          </span>
 
-      </div>
+          <strong>
+            No automations loaded yet
+          </strong>
 
-    </div>
+          <p>
+            Create your first automation above.
+          </p>
 
-
-    <div class="payment-item">
-
-      <div>
-
-        <span class="label">
-          AMOUNT
-        </span>
-
-        <strong id="reviewAmount">
-          —
-        </strong>
+        </div>
 
       </div>
-
-    </div>
-
-
-    <div class="payment-item">
-
-      <div>
-
-        <span class="label">
-          NETWORK
-        </span>
-
-        <strong>
-          Arc Testnet
-        </strong>
-
-      </div>
-
-    </div>
-
-
-    <div class="form-actions">
-
-      <button
-        type="button"
-        id="cancelReview"
-      >
-        Cancel
-      </button>
-
-      <button
-        type="button"
-        class="primary"
-        id="confirmPayment"
-      >
-        Approve in wallet
-      </button>
 
     </div>
 
   </section>
 
 
-  <section
-    class="automation"
-    id="resultSection"
-    hidden
-  >
+  <!-- =====================================================
+       INFORMATION
+  ====================================================== -->
+
+  <section class="automation">
 
     <div class="section-header">
 
       <div>
 
         <div class="label">
-          TRANSACTION
+          ASKIRAWAFI
         </div>
 
-        <h2 id="resultTitle">
-          Payment submitted
+        <h2>
+          Programmable USDC Treasury
         </h2>
 
-        <p id="resultMessage">
-          Your transaction has been submitted to Arc Testnet.
+        <p>
+          Automation rules are registered on-chain through the
+          AskirawaFi Automation Registry deployed on Arc Mainnet.
         </p>
 
       </div>
-
-    </div>
-
-
-    <div class="payment-item">
-
-      <div>
-
-        <span class="label">
-          TRANSACTION HASH
-        </span>
-
-        <strong
-          id="transactionHash"
-          style="word-break: break-all;"
-        >
-          —
-        </strong>
-
-      </div>
-
-    </div>
-
-
-    <div class="form-actions">
-
-      <a
-        id="explorerLink"
-        class="btn primary"
-        href="#"
-        target="_blank"
-        rel="noopener"
-      >
-        View on Explorer
-      </a>
 
     </div>
 
@@ -347,390 +441,11 @@
 </main>
 
 
+<!-- =======================================================
+     WALLET + AUTOMATION LOGIC
+======================================================== -->
+
 <script src="script.js"></script>
-
-
-<script>
-
-const USDC_ADDRESS =
-  "0x3600000000000000000000000000000000000000";
-
-
-const ARC_CHAIN_ID =
-  5042002;
-
-
-const ARC_EXPLORER =
-  "https://testnet.arcscan.app";
-
-
-const paymentForm =
-  document.getElementById("paymentForm");
-
-
-const amountInput =
-  document.getElementById("amount");
-
-
-const recipientInput =
-  document.getElementById("recipient");
-
-
-const previewAmount =
-  document.getElementById("previewAmount");
-
-
-const reviewSection =
-  document.getElementById("reviewSection");
-
-
-const resultSection =
-  document.getElementById("resultSection");
-
-
-const reviewRecipient =
-  document.getElementById("reviewRecipient");
-
-
-const reviewAmount =
-  document.getElementById("reviewAmount");
-
-
-const confirmPayment =
-  document.getElementById("confirmPayment");
-
-
-const cancelReview =
-  document.getElementById("cancelReview");
-
-
-const transactionHash =
-  document.getElementById("transactionHash");
-
-
-const explorerLink =
-  document.getElementById("explorerLink");
-
-
-let paymentDetails = null;
-
-
-amountInput.addEventListener(
-  "input",
-  () => {
-
-    const amount =
-      amountInput.value || "0";
-
-    previewAmount.textContent =
-      `${amount} USDC`;
-
-  }
-);
-
-
-paymentForm.addEventListener(
-  "submit",
-  (event) => {
-
-    event.preventDefault();
-
-
-    const recipient =
-      recipientInput.value.trim();
-
-
-    const amount =
-      amountInput.value;
-
-
-    if (!/^0x[a-fA-F0-9]{40}$/.test(recipient)) {
-
-      alert(
-        "Enter a valid EVM wallet address."
-      );
-
-      return;
-
-    }
-
-
-    if (
-      !amount ||
-      Number(amount) <= 0
-    ) {
-
-      alert(
-        "Enter a valid USDC amount."
-      );
-
-      return;
-
-    }
-
-
-    paymentDetails = {
-      recipient,
-      amount
-    };
-
-
-    reviewRecipient.textContent =
-      `${recipient.slice(0, 8)}...${recipient.slice(-6)}`;
-
-
-    reviewAmount.textContent =
-      `${amount} USDC`;
-
-
-    reviewSection.hidden = false;
-
-
-    reviewSection.scrollIntoView({
-      behavior: "smooth",
-      block: "start"
-    });
-
-  }
-);
-
-
-cancelReview.addEventListener(
-  "click",
-  () => {
-
-    reviewSection.hidden = true;
-
-  }
-);
-
-
-confirmPayment.addEventListener(
-  "click",
-  async () => {
-
-    if (!paymentDetails) {
-      return;
-    }
-
-
-    if (!window.ethereum) {
-
-      alert(
-        "Open AskirawaFi inside a compatible EVM wallet browser."
-      );
-
-      return;
-
-    }
-
-
-    try {
-
-      confirmPayment.disabled = true;
-
-      confirmPayment.textContent =
-        "Connecting...";
-
-
-      const accounts =
-        await window.ethereum.request({
-          method: "eth_requestAccounts"
-        });
-
-
-      if (
-        !accounts ||
-        accounts.length === 0
-      ) {
-
-        throw new Error(
-          "No wallet account connected."
-        );
-
-      }
-
-
-      const chainId =
-        await window.ethereum.request({
-          method: "eth_chainId"
-        });
-
-
-      if (
-        parseInt(chainId, 16) !== ARC_CHAIN_ID
-      ) {
-
-        try {
-
-          await window.ethereum.request({
-            method: "wallet_switchEthereumChain",
-            params: [
-              {
-                chainId:
-                  "0x4cf7f2"
-              }
-            ]
-          });
-
-        } catch (switchError) {
-
-          if (
-            switchError.code === 4902
-          ) {
-
-            await window.ethereum.request({
-              method:
-                "wallet_addEthereumChain",
-
-              params: [
-                {
-                  chainId:
-                    "0x4cf7f2",
-
-                  chainName:
-                    "Arc Testnet",
-
-                  nativeCurrency: {
-                    name: "USDC",
-                    symbol: "USDC",
-                    decimals: 6
-                  },
-
-                  rpcUrls: [
-                    "https://rpc.testnet.arc.network"
-                  ],
-
-                  blockExplorerUrls: [
-                    ARC_EXPLORER
-                  ]
-                }
-              ]
-            });
-
-          } else {
-
-            throw switchError;
-
-          }
-
-        }
-
-      }
-
-
-      confirmPayment.textContent =
-        "Waiting for approval...";
-
-
-      const amountInUnits =
-        BigInt(
-          Math.round(
-            Number(paymentDetails.amount) *
-            1_000_000
-          )
-        );
-
-
-      const hexAmount =
-        "0x" +
-        amountInUnits.toString(16);
-
-
-      /*
-       * ERC-20 transfer(address,uint256)
-       *
-       * Function selector:
-       * a9059cbb
-       */
-
-      const recipient =
-        paymentDetails.recipient
-          .slice(2)
-          .padStart(64, "0");
-
-
-      const value =
-        hexAmount
-          .slice(2)
-          .padStart(64, "0");
-
-
-      const data =
-        "0xa9059cbb" +
-        recipient +
-        value;
-
-
-      const hash =
-        await window.ethereum.request({
-
-          method: "eth_sendTransaction",
-
-          params: [
-            {
-              from: accounts[0],
-
-              to: USDC_ADDRESS,
-
-              data
-
-            }
-          ]
-
-        });
-
-
-      transactionHash.textContent =
-        hash;
-
-
-      explorerLink.href =
-        `${ARC_EXPLORER}/tx/${hash}`;
-
-
-      resultSection.hidden = false;
-
-
-      resultSection.scrollIntoView({
-        behavior: "smooth",
-        block: "start"
-      });
-
-
-      confirmPayment.textContent =
-        "Transaction submitted";
-
-
-    } catch (error) {
-
-      console.error(
-        "Payment failed:",
-        error
-      );
-
-
-      alert(
-        error?.message ||
-        "The payment could not be completed."
-      );
-
-
-      confirmPayment.textContent =
-        "Approve in wallet";
-
-
-    } finally {
-
-      confirmPayment.disabled =
-        false;
-
-    }
-
-  }
-);
-
-</script>
 
 </body>
 </html>
