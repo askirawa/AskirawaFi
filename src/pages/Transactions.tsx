@@ -17,31 +17,30 @@ export default function Transactions() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
       <PageHeader
-        eyebrow="Treasury Ledger"
+        eyebrow="Treasury"
         title="Transactions"
-        subtitle="Review payments, deposits, and settlements made through AskirawaFi."
+        subtitle="Review payments, deposits and settlements made through Askirawa Finance."
       />
 
       {/* Demo notice */}
       <div
         style={{
           display: 'flex', alignItems: 'flex-start', gap: 10,
-          borderRadius: 10, padding: '10px 14px', fontSize: 12,
+          padding: '10px 14px', fontSize: 12,
           background: 'var(--warning-dim)', border: '1px solid var(--warning-border)', color: 'var(--warning)',
         }}
       >
         <Info size={13} style={{ marginTop: 1, flexShrink: 0 }} />
-        <span>
-          Transaction history shown is demo data. Live on-chain transaction data requires an event indexer
-          (subgraph or custom RPC log scanner) to be built and connected.
+        <span style={{ minWidth: 0 }}>
+          The transactions below are sample data, not your real payments. Live transaction history from Arc is not connected yet.
         </span>
       </div>
 
       <SectionCard
-        title="Transaction History"
+        title="Transaction history"
         actions={
-          <span style={{ fontSize: 11, padding: '3px 9px', borderRadius: 6, background: 'var(--warning-dim)', color: 'var(--warning)', border: '1px solid var(--warning-border)', fontWeight: 600 }}>
-            Demo data
+          <span style={{ fontSize: 11, padding: '3px 9px', background: 'var(--warning-dim)', color: 'var(--warning)', border: '1px solid var(--warning-border)', fontWeight: 600 }}>
+            Sample data
           </span>
         }
       >
@@ -49,7 +48,7 @@ export default function Transactions() {
           <EmptyState
             icon={Receipt}
             title="No transactions yet"
-            description="Transactions will appear here once the event indexer is connected."
+            description="Transactions will appear here once live history is connected."
           />
         ) : (
           <div style={{ overflowX: 'auto' }}>
@@ -84,18 +83,18 @@ export default function Transactions() {
       </SectionCard>
 
       {/* Roadmap */}
-      <div style={{ background: 'rgba(53,217,139,0.04)', border: '1px solid var(--accent-border)', borderRadius: 'var(--radius)', padding: '18px 22px' }}>
+      <div style={{ background: 'var(--accent-dim)', border: '1px solid var(--accent-border)', padding: '18px 22px' }}>
         <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.07em', textTransform: 'uppercase', color: 'var(--accent)', marginBottom: 8 }}>
-          Coming in Phase 2
+          Not available yet
         </div>
-        <div className="display" style={{ fontSize: 15, fontWeight: 600, color: 'var(--ink)', marginBottom: 14 }}>Live Transaction Feed</div>
-        <div style={{ display: 'grid', gap: 12, gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))' }}>
+        <div className="display" style={{ fontSize: 15, fontWeight: 600, color: 'var(--ink)', marginBottom: 14 }}>Planned: live transaction feed</div>
+        <div style={{ display: 'grid', gap: 12, gridTemplateColumns: 'repeat(auto-fit, minmax(min(180px, 100%), 1fr))' }}>
           {[
-            { title: 'On-chain indexer', desc: 'Index Automation contract events to build full history.' },
-            { title: 'USDC transfer tracking', desc: 'Track USDC transfers with Arc Explorer links.' },
-            { title: 'Cross-chain settlement', desc: 'Circle CCTP multi-chain transaction records.' },
+            { title: 'Full history from Arc', desc: 'Show every automation and payment recorded on Arc.' },
+            { title: 'USDC transfer tracking', desc: 'Follow each USDC transfer with a link to Arc Explorer.' },
+            { title: 'Cross-chain settlement', desc: 'Records of USDC moved between blockchains.' },
           ].map(({ title, desc }) => (
-            <div key={title} style={{ background: 'var(--surface-muted)', border: '1px solid var(--border)', borderRadius: 10, padding: '14px 16px' }}>
+            <div key={title} style={{ background: 'var(--surface-muted)', border: '1px solid var(--border)', padding: '14px 16px' }}>
               <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--ink-2)', marginBottom: 4 }}>{title}</div>
               <div style={{ fontSize: 12, color: 'var(--muted)', lineHeight: 1.6 }}>{desc}</div>
             </div>

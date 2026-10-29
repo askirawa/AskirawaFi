@@ -1,5 +1,5 @@
 /**
- * AskirawaFi Automation Registry
+ * Askirawa Finance Automation Registry
  * Deployed on Arc Mainnet (chain ID 5042)
  * Address: 0x5E13b82A35Ac827b368215141F4a4F8ADfb1F434
  */
@@ -136,7 +136,7 @@ export function formatAddress(addr: string): string {
  * Address of the deployed PayrollBatch contract on Arc Mainnet.
  * null = contract not yet deployed; the UI falls back to individual transfers.
  */
-const _rawPayrollBatchAddress = import.meta.env.VITE_PAYROLL_BATCH_ADDRESS as string | undefined
+const _rawPayrollBatchAddress = import.meta.env.VITE_PAYROLL_BATCH_ADDRESS
 export const PAYROLL_BATCH_ADDRESS: `0x${string}` | null =
   (_rawPayrollBatchAddress?.startsWith('0x') && _rawPayrollBatchAddress.length === 42)
     ? (_rawPayrollBatchAddress as `0x${string}`)
@@ -247,7 +247,7 @@ export const PAYROLL_BATCH_ABI = [
 // Validate format: must start with "0x" and be exactly 42 characters (0x + 40 hex digits).
 // A malformed value is treated as unset — produces isTreasuryDeployed=false rather than
 // silently firing contract reads against a non-contract address.
-const _rawTreasuryAddress = import.meta.env.VITE_TREASURY_ADDRESS as string | undefined
+const _rawTreasuryAddress = import.meta.env.VITE_TREASURY_ADDRESS
 export const TREASURY_ADDRESS: `0x${string}` | null =
   (_rawTreasuryAddress?.startsWith('0x') && _rawTreasuryAddress.length === 42)
     ? (_rawTreasuryAddress as `0x${string}`)

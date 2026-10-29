@@ -59,7 +59,7 @@ export default function App() {
           )}
 
           {/* Main column */}
-          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, overflow: 'hidden' }}>
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, overflowX: 'clip' }}>
 
             {/* Topbar */}
             <Topbar
@@ -70,8 +70,8 @@ export default function App() {
             />
 
             {/* Page content */}
-            <main style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden' }}>
-              <div style={{ maxWidth: 1200, margin: '0 auto', padding: '40px 32px 96px' }}>
+            <main style={{ flex: 1, minWidth: 0 }}>
+              <div className="app-content">
                 {activePage === 'dashboard'     && <Dashboard onNavigate={navigate} />}
                 {activePage === 'activity'      && <Activity />}
                 {activePage === 'automations'   && <Automations />}
@@ -86,26 +86,14 @@ export default function App() {
               </div>
 
               {/* Footer */}
-              <div
-                style={{
-                  maxWidth: 1200,
-                  margin: '0 auto',
-                  padding: '16px 32px 28px',
-                  borderTop: '1px solid var(--border)',
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  gap: 12,
-                  flexWrap: 'wrap',
-                }}
-              >
+              <div className="app-footer">
                 <span style={{
                   fontFamily: "'JetBrains Mono', monospace",
                   fontSize: 10,
                   letterSpacing: '0.10em',
                   textTransform: 'uppercase',
                   color: 'var(--subtle)',
-                }}>AskirawaFi &copy; 2026</span>
+                }}>Askirawa Finance &copy; 2026</span>
                 <span style={{
                   fontFamily: "'JetBrains Mono', monospace",
                   fontSize: 10,

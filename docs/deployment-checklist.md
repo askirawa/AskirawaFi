@@ -1,6 +1,6 @@
-# AskirawaFi Deployment Checklist
+# Askirawa Finance Deployment Checklist
 
-Ordered steps to make all five AskirawaFi features operational.
+Ordered steps to make all five Askirawa Finance features operational.
 Complete steps 1–3 before any treasury funding.
 
 ---

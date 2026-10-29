@@ -19,7 +19,7 @@ import { WagmiProvider } from 'wagmi'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { ConnectKitProvider } from 'connectkit'
 import { Toaster } from 'sonner'
-import { config } from './config'
+import { config, ARC_MAINNET_CHAIN_ID } from './config'
 import App from './App'
 import './index.css'
 
@@ -70,7 +70,29 @@ createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <WagmiProvider config={config}>
       <QueryClientProvider client={queryClient}>
-        <ConnectKitProvider>
+        <ConnectKitProvider
+          mode="dark"
+          customTheme={{
+            '--ck-font-family': "'DM Sans', sans-serif",
+            '--ck-border-radius': '0px',
+            '--ck-body-background': '#141414',
+            '--ck-body-color': '#FFFFFF',
+            '--ck-body-color-muted': '#9A9A9A',
+            '--ck-primary-button-background': '#FFFFFF',
+            '--ck-primary-button-color': '#0A0A0A',
+            '--ck-overlay-background': 'rgba(0,0,0,0.75)',
+          }}
+          options={{
+            initialChainId: ARC_MAINNET_CHAIN_ID,
+            enforceSupportedChains: false,
+            walletConnectName: 'WalletConnect',
+            walletConnectCTA: 'both',
+            embedGoogleFonts: false,
+            hideQuestionMarkCTA: false,
+            hideNoWalletCTA: false,
+            overlayBlur: 4,
+          }}
+        >
           <App />
           <StudioWatermark />
           <Toaster position="top-center" />

@@ -2,13 +2,13 @@
  * AuditLog — Treasury activity audit trail.
  *
  * DISCLOSURE:
- * This is a browser-local audit log stored in localStorage.
+ * This is a browser-local audit log stored in this browser's storage.
  * It is NOT tamper-proof, cryptographically signed, or independently verified.
  * On-chain confirmed events are identified by a recorded txHash from the
  * actual transaction receipt. All other events are local application records.
  */
 
-import { useState, useMemo, useCallback } from 'react'
+import { Fragment, useState, useMemo, useCallback } from 'react'
 import { Shield, Download, Filter, Search, ChevronDown, ChevronUp } from 'lucide-react'
 import {
   loadAuditLog,
@@ -25,6 +25,7 @@ import {
   type AuditOutcome,
 } from '../lib/audit'
 import Card, { CardHeader, CardBody } from '../components/ui/Card'
+import PageHeader from '../components/ui/PageHeader'
 import Badge from '../components/ui/Badge'
 import EmptyState from '../components/ui/EmptyState'
 
@@ -92,12 +93,12 @@ export default function AuditLog() {
   }
 
   const handleExport = useCallback(() => {
-    downloadAuditCsv(filtered, `askirawafi-audit-${new Date().toISOString().slice(0, 10)}.csv`)
+    downloadAuditCsv(filtered, `askirawa-finance-audit-${new Date().toISOString().slice(0, 10)}.csv`)
     logAuditEvent({
       category: 'analytics',
       action: 'audit_log_exported',
       actorAddress: null,
-      description: `Audit log exported: ${filtered.length} entries (filtered).`,
+      description: `Audit log exported: ${filtered.length} entr${filtered.length !== 1 ? 'ies' : 'y'} (current filters).`,
       outcome: 'success',
     })
   }, [filtered])
@@ -105,10 +106,11 @@ export default function AuditLog() {
   const inputStyle: React.CSSProperties = {
     background: 'var(--surface-muted)',
     border: '1px solid var(--border)',
-    borderRadius: 8,
     color: 'var(--ink-2)',
     fontSize: 12,
     padding: '6px 10px',
+    minHeight: 44,
+    maxWidth: '100%',
     cursor: 'pointer',
     outline: 'none',
   }
@@ -122,54 +124,51 @@ export default function AuditLog() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-      {/* Page header */}
-      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
-        <div>
-          <h1 style={{ fontSize: 24, fontWeight: 700, color: 'var(--ink)', margin: 0 }}>Audit Log</h1>
-          <p style={{ fontSize: 14, color: 'var(--muted)', margin: '4px 0 0' }}>
-            Application-level activity record — {entries.length} total entries.
-          </p>
-        </div>
-        <button
-          onClick={handleExport}
-          disabled={filtered.length === 0}
-          style={{
-            display: 'flex', alignItems: 'center', gap: 6,
-            background: 'var(--accent)', border: 'none',
-            borderRadius: 8, color: '#021a0e', fontSize: 13,
-            fontWeight: 700, cursor: filtered.length === 0 ? 'not-allowed' : 'pointer',
-            padding: '8px 16px', opacity: filtered.length === 0 ? 0.4 : 1,
-          }}
-        >
-          <Download size={14} />
-          Export CSV ({filtered.length})
-        </button>
-      </div>
+      <PageHeader
+        eyebrow="Records"
+        title="Audit Log"
+        subtitle={`A record of actions taken in this app. ${entries.length} entr${entries.length !== 1 ? 'ies' : 'y'} saved in this browser.`}
+        action={
+          <button
+            onClick={handleExport}
+            disabled={filtered.length === 0}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 6,
+              background: 'var(--accent)', border: 'none',
+              color: 'var(--bg)', fontSize: 13, minHeight: 44,
+              fontWeight: 700, cursor: filtered.length === 0 ? 'not-allowed' : 'pointer',
+              padding: '8px 16px', opacity: filtered.length === 0 ? 0.4 : 1,
+            }}
+          >
+            <Download size={14} />
+            Export CSV ({filtered.length})
+          </button>
+        }
+      />
 
       {/* Disclosure */}
       <div
         style={{
           padding: '10px 14px',
-          borderRadius: 10,
-          background: 'rgba(232,184,76,0.07)',
-          border: '1px solid rgba(232,184,76,0.18)',
+          background: 'var(--warning-dim)',
+          border: '1px solid var(--warning-border)',
           fontSize: 12,
+          lineHeight: 1.6,
           color: 'var(--warning)',
         }}
       >
-        This audit log is stored in browser localStorage and is not tamper-proof or independently verified.
-        On-chain confirmed events are identified by a transaction hash recorded when a receipt was confirmed.
-        All other entries are local application records only.
+        This log is saved in this browser only. Anyone who uses this browser can change or delete it, and it is not independently verified.
+        Entries with a transaction hash were recorded after the network confirmed the transaction. All other entries are notes made by this app.
       </div>
 
       {/* Stats */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: 12 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(130px, 100%), 1fr))', gap: 12 }}>
         {[
-          { label: 'Total Entries', value: entries.length },
+          { label: 'Total entries', value: entries.length },
           { label: 'Successful', value: entries.filter(e => e.outcome === 'success').length },
           { label: 'Failed', value: entries.filter(e => e.outcome === 'failure').length },
           { label: 'Pending', value: entries.filter(e => e.outcome === 'pending').length },
-          { label: 'On-Chain', value: entries.filter(e => !!e.txHash).length },
+          { label: 'With transaction hash', value: entries.filter(e => !!e.txHash).length },
         ].map(s => (
           <Card key={s.label}>
             <div style={{ padding: '14px 16px' }}>
@@ -186,14 +185,14 @@ export default function AuditLog() {
           <Filter size={14} style={{ color: 'var(--subtle)', flexShrink: 0 }} />
 
           {/* Search */}
-          <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+          <div style={{ position: 'relative', display: 'flex', alignItems: 'center', flex: '1 1 160px', minWidth: 0, maxWidth: 260 }}>
             <Search size={13} style={{ position: 'absolute', left: 8, color: 'var(--subtle)', pointerEvents: 'none' }} />
             <input
               type="text"
-              placeholder="Search…"
+              placeholder="Search entries"
               value={search}
               onChange={e => { setSearch(e.target.value); resetPage() }}
-              style={{ ...inputStyle, paddingLeft: 28, width: 180 }}
+              style={{ ...inputStyle, paddingLeft: 28, width: '100%', cursor: 'text' }}
             />
           </div>
 
@@ -232,7 +231,7 @@ export default function AuditLog() {
       {/* Table */}
       <Card>
         <CardHeader>
-          <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--ink-2)' }}>Audit Entries</span>
+          <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--ink-2)' }}>Audit entries</span>
         </CardHeader>
         <CardBody style={{ padding: 0, overflowX: 'auto' }}>
           {paginated.length === 0 ? (
@@ -240,8 +239,8 @@ export default function AuditLog() {
               icon={Shield}
               title="No audit entries"
               description={entries.length === 0
-                ? 'Audit entries will appear here as you use AskirawaFi.'
-                : 'No entries match the current filters.'}
+                ? 'Entries will appear here as you use Askirawa Finance.'
+                : 'Nothing matches these filters. Change a filter to see more.'}
             />
           ) : (
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
@@ -254,7 +253,7 @@ export default function AuditLog() {
                     { label: 'Description', field: null },
                     { label: 'Actor', field: null },
                     { label: 'Outcome', field: 'outcome' as SortField },
-                    { label: 'Ref', field: null },
+                    { label: 'Reference', field: null },
                   ].map(col => (
                     <th
                       key={col.label}
@@ -282,14 +281,13 @@ export default function AuditLog() {
                 {paginated.map((e, idx) => {
                   const isExpanded = expandedId === e.id
                   return (
-                    <>
+                    <Fragment key={e.id}>
                       <tr
-                        key={e.id}
                         onClick={() => setExpandedId(isExpanded ? null : e.id)}
                         style={{
                           borderBottom: '1px solid var(--border)',
                           cursor: 'pointer',
-                          background: idx % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.01)',
+                          background: idx % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.02)',
                           transition: 'background 0.1s',
                         }}
                       >
@@ -326,19 +324,19 @@ export default function AuditLog() {
                       {isExpanded && (
                         <tr key={`${e.id}-expand`} style={{ background: 'var(--surface-muted)' }}>
                           <td colSpan={7} style={{ padding: '12px 16px 14px' }}>
-                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 12 }}>
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(200px, 100%), 1fr))', gap: 12 }}>
                               <Detail label="Entry ID" value={e.id} mono />
                               <Detail label="Timestamp" value={formatAuditTs(e.timestamp)} />
                               <Detail label="Category" value={CATEGORY_LABELS[e.category]} />
                               <Detail label="Action" value={ACTION_LABELS[e.action]} />
                               <Detail label="Outcome" value={OUTCOME_LABELS[e.outcome]} />
                               <Detail label="Actor" value={e.actorAddress ?? 'Unknown'} mono />
-                              {e.entityId && <Detail label="Entity ID" value={e.entityId} mono />}
-                              {e.entityLabel && <Detail label="Entity" value={e.entityLabel} />}
+                              {e.entityId && <Detail label="Related item ID" value={e.entityId} mono />}
+                              {e.entityLabel && <Detail label="Related item" value={e.entityLabel} />}
                               {e.txHash && (
                                 <div>
                                   <div style={{ fontSize: 11, color: 'var(--subtle)', marginBottom: 2, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                                    Transaction Hash
+                                    Transaction hash
                                   </div>
                                   <a
                                     href={`https://explorer.arc.io/tx/${e.txHash}`}
@@ -351,7 +349,7 @@ export default function AuditLog() {
                                   </a>
                                 </div>
                               )}
-                              {e.orgId && <Detail label="Org ID" value={e.orgId} mono />}
+                              {e.orgId && <Detail label="Organization ID" value={e.orgId} mono />}
                               <div style={{ gridColumn: '1 / -1' }}>
                                 <div style={{ fontSize: 11, color: 'var(--subtle)', marginBottom: 2, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Description</div>
                                 <div style={{ fontSize: 13, color: 'var(--muted)' }}>{e.description}</div>
@@ -360,7 +358,7 @@ export default function AuditLog() {
                           </td>
                         </tr>
                       )}
-                    </>
+                    </Fragment>
                   )
                 })}
               </tbody>
@@ -371,7 +369,7 @@ export default function AuditLog() {
 
       {/* Pagination */}
       {totalPages > 1 && (
-        <div style={{ display: 'flex', justifyContent: 'center', gap: 8, alignItems: 'center' }}>
+        <div style={{ display: 'flex', justifyContent: 'center', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
           <button
             onClick={() => setPage(p => Math.max(0, p - 1))}
             disabled={page === 0}

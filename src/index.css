@@ -46,6 +46,13 @@
   --info-dim:       rgba(90,143,168,0.10);
   --info-border:    rgba(90,143,168,0.22);
 
+  /* ── Accent (monochrome identity: white on dark) ─ */
+  --accent:         #FFFFFF;
+  --accent-dim:     rgba(255,255,255,0.08);
+  --accent-border:  rgba(255,255,255,0.28);
+  --surface-strong: #262626;
+  --surface-elevated: #1A1A1A;
+
   /* ── Active nav accent ───────────────────────── */
   --nav-active-bg:  #1F1F1F;
   --nav-active-bar: #FFFFFF;
@@ -64,7 +71,9 @@
 
 /* ── Reset ───────────────────────────────────────── */
 * { box-sizing: border-box; }
-html { scroll-behavior: smooth; }
+html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+img, svg { max-width: 100%; }
+button { font-family: inherit; }
 
 /* ── Dot-grid background texture ─────────────────── */
 body {
@@ -157,6 +166,9 @@ input:focus, select:focus, textarea:focus {
   outline: none;
   border-color: var(--border-focus);
 }
+input[type="checkbox"], input[type="radio"], input[type="range"] {
+  width: auto; min-height: 0; padding: 0; background: transparent;
+}
 input::placeholder, textarea::placeholder { color: var(--subtle); }
 label {
   display: block;
@@ -183,3 +195,38 @@ label {
 /* ── Circular progress ring ───────────────────────── */
 .progress-ring-track { stroke: var(--border-strong); }
 .progress-ring-fill  { stroke: var(--ink); }
+
+
+/* ── Layout shell ─────────────────────────────────── */
+.app-content { max-width: 1200px; margin: 0 auto; padding: 40px 32px 96px; }
+.app-footer {
+  max-width: 1200px; margin: 0 auto; padding: 16px 32px 28px;
+  border-top: 1px solid var(--border);
+  display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap;
+}
+
+/* Wide tables scroll sideways inside their card instead of stretching the page */
+.table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; max-width: 100%; }
+
+/* ── Mobile ───────────────────────────────────────── */
+@media (max-width: 1023px) {
+  .app-content { padding: 24px 16px 96px; }
+  .app-footer { padding: 16px 16px 28px; }
+}
+
+@media (max-width: 640px) {
+  body { overflow-x: hidden; }
+  /* 16px inputs stop iOS Safari zooming the page on focus */
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]), select, textarea { font-size: 16px; }
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]), select { min-height: 44px; }
+  /* Tables become horizontally scrollable blocks */
+  table { display: block; overflow-x: auto; -webkit-overflow-scrolling: touch; max-width: 100%; }
+  th, td { padding-left: 12px; padding-right: 12px; }
+  /* Page headers: stack title and action */
+  h1 { overflow-wrap: anywhere; }
+}
+
+/* Keep the Arc Studio watermark clear of content on small screens */
+@media (max-width: 640px) {
+  a[href="https://studio.arc.io/"] { bottom: 8px !important; right: 8px !important; padding: 6px 10px !important; }
+}

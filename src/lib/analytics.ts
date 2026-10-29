@@ -1,5 +1,5 @@
 /**
- * AskirawaFi — Treasury Analytics & Reports
+ * Askirawa Finance — Treasury Analytics & Reports
  *
  * DATA SOURCE NOTES:
  * ─────────────────────────────────────────────────────────────────────────────
@@ -159,14 +159,14 @@ export function payrollToTxRecords(batches: PayrollBatch[]): AnalyticsTx[] {
       const isProcessing = p.status === 'processing'
 
       let verification: TxVerification = 'local_only'
-      let onChainStatus = 'Local record'
+      let onChainStatus = 'Saved in this browser only'
 
       if (p.txHash && isConfirmed) {
         verification = 'on_chain_confirmed'
         onChainStatus = 'Confirmed on Arc Mainnet'
       } else if (p.txHash && (isProcessing || isFailed)) {
         verification = 'submitted_unconfirmed'
-        onChainStatus = isFailed ? 'Failed on-chain' : 'Submitted — awaiting confirmation'
+        onChainStatus = isFailed ? 'Failed on Arc' : 'Submitted, waiting for confirmation'
       }
 
       const ts = p.confirmedAt ?? batch.submittedAt ?? batch.createdAt
@@ -204,16 +204,16 @@ export function recurringToTxRecords(schedules: RecurringSchedule[]): AnalyticsT
       if (e.status === 'pending') continue  // not yet attempted
 
       let verification: TxVerification = 'local_only'
-      let onChainStatus = 'Local record'
+      let onChainStatus = 'Saved in this browser only'
 
       if (e.txHash && e.status === 'confirmed') {
         verification = 'on_chain_confirmed'
         onChainStatus = 'Confirmed on Arc Mainnet'
       } else if (e.txHash && e.status === 'processing') {
         verification = 'submitted_unconfirmed'
-        onChainStatus = 'Submitted — awaiting confirmation'
+        onChainStatus = 'Submitted, waiting for confirmation'
       } else if (e.status === 'failed') {
-        onChainStatus = e.txHash ? 'Failed on-chain' : 'Execution failed'
+        onChainStatus = e.txHash ? 'Failed on Arc' : 'Payment failed'
         if (e.txHash) verification = 'submitted_unconfirmed'
       }
 
@@ -254,14 +254,14 @@ export function approvalsToTxRecords(requests: ApprovalRequest[]): AnalyticsTx[]
     const isFailed = req.status === 'failed'
 
     let verification: TxVerification = 'local_only'
-    let onChainStatus = 'Local record'
+    let onChainStatus = 'Saved in this browser only'
 
     if (isConfirmed) {
       verification = 'on_chain_confirmed'
       onChainStatus = 'Confirmed on Arc Mainnet'
     } else if (req.txHash) {
       verification = 'submitted_unconfirmed'
-      onChainStatus = isFailed ? 'Failed on-chain' : 'Submitted — awaiting confirmation'
+      onChainStatus = isFailed ? 'Failed on Arc' : 'Submitted, waiting for confirmation'
     }
 
     const ts = req.confirmedAt ?? req.updatedAt ?? req.createdAt
@@ -486,10 +486,10 @@ export function buildCategoryBreakdown(records: AnalyticsTx[]): CategorySlice[] 
 
   const colors: Record<string, string> = {
     payroll: 'var(--accent)',
-    recurring: '#6366f1',
-    approval_transfer: '#f59e0b',
-    automation: '#8b5cf6',
-    incoming: '#22c55e',
+    recurring: 'var(--ink-2)',
+    approval_transfer: 'var(--warning)',
+    automation: 'var(--muted)',
+    incoming: 'var(--success)',
   }
 
   const labels: Record<string, string> = {
@@ -497,7 +497,7 @@ export function buildCategoryBreakdown(records: AnalyticsTx[]): CategorySlice[] 
     recurring: 'Recurring',
     approval_transfer: 'Treasury Transfer',
     automation: 'Automation',
-    incoming: 'Incoming',
+    incoming: 'Received',
   }
 
   for (const r of records) {
@@ -555,22 +555,22 @@ export function generateTransactionCsv(opts: CsvExportOptions): string {
   const lines: string[] = []
 
   // Summary header block
-  lines.push(`# AskirawaFi Treasury Analytics Report`)
+  lines.push(`# Askirawa Finance Treasury Analytics Report`)
   lines.push(`# Period: ${rangeLabel} (${fromLabel} to ${toLabel})`)
   lines.push(`# Generated: ${new Date().toISOString()}`)
-  lines.push(`# Note: "On-chain confirmed" records have a txHash verified on Arc Mainnet.`)
-  lines.push(`#       "Local record" records exist only in browser localStorage.`)
+  lines.push(`# Note: "Confirmed on Arc" records have a transaction hash confirmed by the network.`)
+  lines.push(`#       "Saved in this browser only" records have no transaction hash and exist only in this browser.`)
   lines.push('')
   lines.push('## Summary')
-  lines.push(`Total Outgoing USDC,${formatUsdcBigint(summary.totalOutgoingRaw)}`)
-  lines.push(`Total Incoming USDC,${formatUsdcBigint(summary.totalIncomingRaw)}`)
+  lines.push(`Total Sent USDC,${formatUsdcBigint(summary.totalOutgoingRaw)}`)
+  lines.push(`Total Received USDC,${formatUsdcBigint(summary.totalIncomingRaw)}`)
   lines.push(`Net Cash Flow,${formatUsdcBigint(summary.netFlowRaw)}`)
   lines.push(`Payroll Expenditure,${formatUsdcBigint(summary.payrollOutgoingRaw)}`)
   lines.push(`Recurring Payments,${formatUsdcBigint(summary.recurringOutgoingRaw)}`)
   lines.push(`Treasury Transfers,${formatUsdcBigint(summary.approvalOutgoingRaw)}`)
   lines.push(`Confirmed Transactions,${summary.confirmedCount}`)
   lines.push(`Pending Transactions,${summary.pendingCount}`)
-  lines.push(`Local Records Only,${summary.totalCount - summary.confirmedCount - summary.pendingCount}`)
+  lines.push(`Saved In This Browser Only,${summary.totalCount - summary.confirmedCount - summary.pendingCount}`)
   lines.push('')
 
   // Transaction detail
@@ -604,9 +604,9 @@ export function generateTransactionCsv(opts: CsvExportOptions): string {
     }
 
     const verificationLabel: Record<TxVerification, string> = {
-      on_chain_confirmed: 'On-chain confirmed',
+      on_chain_confirmed: 'Confirmed on Arc',
       submitted_unconfirmed: 'Submitted (unconfirmed)',
-      local_only: 'Local record only',
+      local_only: 'Saved in this browser only',
     }
 
     const ref = r.batchId

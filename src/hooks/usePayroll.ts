@@ -101,7 +101,7 @@ export function usePayrollBatches(opts?: { onNotify?: NotifyFn; onAudit?: AuditF
         category: 'payroll',
         action: 'payroll_batch_created',
         actorAddress: params.createdBy ?? null,
-        description: `Payroll batch "${batch.name}" created with ${batch.payments.length} employees.`,
+        description: `Payroll batch "${batch.name}" created with ${batch.payments.length} ${batch.payments.length === 1 ? 'employee' : 'employees'}.`,
         outcome: 'success',
         entityId: batch.id,
         entityLabel: batch.name,
@@ -197,6 +197,24 @@ export function usePayrollStats(batches: PayrollBatch[]) {
 
 export type ExecutionMode = 'atomic' | 'sequential'
 
+/** Turns a raw wallet/network error into a short plain-English message. */
+function describeTxError(raw: string): string {
+  const m = raw.toLowerCase()
+  if (m.includes('insufficient funds') || m.includes('exceeds balance') || m.includes('transfer amount exceeds')) {
+    return 'Your wallet does not have enough USDC to cover this payment. Add USDC and try again.'
+  }
+  if (m.includes('reverted') || m.includes('revert')) {
+    return 'The network rejected the transaction. Check your balance and the recipient details, then try again.'
+  }
+  if (m.includes('chain') && (m.includes('mismatch') || m.includes('switch'))) {
+    return 'Your wallet is on the wrong network. Switch to Arc Mainnet and try again.'
+  }
+  if (raw.length > 140 || raw.includes('\n')) {
+    return 'The payment could not be completed. Check your wallet and try again.'
+  }
+  return raw
+}
+
 export function getExecutionMode(): ExecutionMode {
   return PAYROLL_BATCH_ADDRESS ? 'atomic' : 'sequential'
 }
@@ -247,13 +265,13 @@ export function useBatchRunner(
     : true // sequential doesn't need pre-approval
 
   function canExecute(): { ok: boolean; reason?: string } {
-    if (!address) return { ok: false, reason: 'Connect your wallet first.' }
-    if (isWrongChain) return { ok: false, reason: 'Switch to Arc Mainnet.' }
-    if (!batch || pendingPayments.length === 0) return { ok: false, reason: 'No pending payments.' }
+    if (!address) return { ok: false, reason: 'Your wallet is not connected. Connect it and try again.' }
+    if (isWrongChain) return { ok: false, reason: 'Your wallet is on the wrong network. Switch to Arc Mainnet and try again.' }
+    if (!batch || pendingPayments.length === 0) return { ok: false, reason: 'There are no unpaid payments left in this batch.' }
     if (rawBalance < batchTotal) {
       return {
         ok: false,
-        reason: `Insufficient USDC. Need ${(Number(batchTotal) / 10 ** USDC_DECIMALS).toFixed(2)} USDC.`,
+        reason: `Your wallet does not have enough USDC. You need ${(Number(batchTotal) / 10 ** USDC_DECIMALS).toFixed(2)} USDC. Add USDC and try again.`,
       }
     }
     return { ok: true }
@@ -264,7 +282,7 @@ export function useBatchRunner(
   async function runAtomic() {
     if (!batch || !address || !usdcFact || !publicClient || !PAYROLL_BATCH_ADDRESS) return
     const { ok, reason } = canExecute()
-    if (!ok) { setRunError(reason ?? 'Cannot execute.'); return }
+    if (!ok) { setRunError(reason ?? 'The payments cannot be sent right now. Try again.'); return }
 
     setIsRunning(true)
     setRunError(null)
@@ -282,9 +300,9 @@ export function useBatchRunner(
 
     logAuditEvent({
       category: 'payroll',
-      action: 'payroll_batch_executed',
+      action: 'payroll_batch_started',
       actorAddress: opts?.actorAddress ?? address ?? null,
-      description: `Atomic payroll batch "${batch.name}" execution started (${pendingPayments.length} payments, batchId=${batchIdBytes32.slice(0, 10)}…).`,
+      description: `Payroll batch "${batch.name}" started: ${pendingPayments.length} payments sent together (batch ID ${batchIdBytes32.slice(0, 10)}…).`,
       outcome: 'pending',
       entityId: batch.id,
       entityLabel: batch.name,
@@ -306,7 +324,7 @@ export function useBatchRunner(
         setStep('confirming')
         const approveReceipt = await publicClient.waitForTransactionReceipt({ hash: approveHash })
         if (approveReceipt.status !== 'success') {
-          throw new Error('USDC approval transaction reverted.')
+          throw new Error('The USDC approval was rejected by the network. Try again.')
         }
 
         await refetchAllowance()
@@ -330,7 +348,7 @@ export function useBatchRunner(
       const execReceipt = await publicClient.waitForTransactionReceipt({ hash: execHash })
 
       if (execReceipt.status !== 'success') {
-        throw new Error('executeBatch reverted on-chain.')
+        throw new Error('The batch was rejected by the network, so no payments were sent. Try again.')
       }
 
       // ── All payments confirmed atomically ────────────────────────────────
@@ -357,7 +375,7 @@ export function useBatchRunner(
         category: 'payroll',
         action: 'payroll_batch_executed',
         actorAddress: opts?.actorAddress ?? address ?? null,
-        description: `Atomic payroll batch "${batch.name}" completed: ${pendingPayments.length} payments confirmed in a single transaction.`,
+        description: `Payroll batch "${batch.name}" completed: ${pendingPayments.length} payments confirmed in a single transaction.`,
         outcome: 'success',
         entityId: batch.id,
         entityLabel: batch.name,
@@ -365,8 +383,9 @@ export function useBatchRunner(
       })
     } catch (err) {
       const e = err as { shortMessage?: string; message?: string }
-      const msg = e?.shortMessage || e?.message || 'Execution failed.'
-      const isRejection = msg.toLowerCase().includes('user rejected') || msg.toLowerCase().includes('user denied')
+      const rawMsg = e?.shortMessage || e?.message || ''
+      const isRejection = rawMsg.toLowerCase().includes('user rejected') || rawMsg.toLowerCase().includes('user denied')
+      const msg = describeTxError(rawMsg || 'The payments could not be sent. Try again.')
 
       workingBatch = {
         ...workingBatch,
@@ -378,7 +397,7 @@ export function useBatchRunner(
         ),
       }
       onBatchUpdate(workingBatch)
-      setRunError(isRejection ? 'Execution cancelled by user.' : msg)
+      setRunError(isRejection ? 'Transaction cancelled. Nothing was sent.' : msg)
     } finally {
       setIsRunning(false)
       setStep('idle')
@@ -391,7 +410,7 @@ export function useBatchRunner(
   async function runSequential() {
     if (!batch || !address || !usdcFact || !publicClient) return
     const { ok, reason } = canExecute()
-    if (!ok) { setRunError(reason ?? 'Cannot execute.'); return }
+    if (!ok) { setRunError(reason ?? 'The payments cannot be sent right now. Try again.'); return }
 
     setIsRunning(true)
     setRunError(null)
@@ -407,9 +426,9 @@ export function useBatchRunner(
 
     logAuditEvent({
       category: 'payroll',
-      action: 'payroll_batch_executed',
+      action: 'payroll_batch_started',
       actorAddress: opts?.actorAddress ?? address ?? null,
-      description: `Sequential payroll batch "${batch.name}" execution started (${pendingPayments.length} payments).`,
+      description: `Payroll batch "${batch.name}" started: ${pendingPayments.length} payments sent one by one.`,
       outcome: 'pending',
       entityId: batch.id,
       entityLabel: batch.name,
@@ -452,7 +471,7 @@ export function useBatchRunner(
                   status: succeeded ? 'confirmed' : 'failed',
                   txHash: hash,
                   confirmedAt: succeeded ? Date.now() : undefined,
-                  errorMessage: succeeded ? undefined : 'Transaction reverted on-chain.',
+                  errorMessage: succeeded ? undefined : 'The network rejected this payment. Try again.',
                 }
               : pay
           ),
@@ -466,7 +485,7 @@ export function useBatchRunner(
             category: 'payroll',
             action: 'payroll_payment_confirmed',
             actorAddress: opts?.actorAddress ?? address ?? null,
-            description: `Payment to ${p.name} confirmed. Amount: ${p.amountUsdc} USDC.`,
+            description: `Payment to ${p.name} confirmed: ${p.amountUsdc} USDC.`,
             outcome: 'success',
             entityId: batch.id,
             entityLabel: batch.name,
@@ -474,13 +493,13 @@ export function useBatchRunner(
             meta: { recipient: p.walletAddress, amount: p.amountUsdc },
           })
         } else {
-          const n = Notify.payrollPaymentFailed(batch.id, batch.name, p.name, 'Transaction reverted on-chain.')
+          const n = Notify.payrollPaymentFailed(batch.id, batch.name, p.name, 'The network rejected this payment. Try again.')
           opts?.onNotify?.(n)
           logAuditEvent({
             category: 'payroll',
             action: 'payroll_payment_failed',
             actorAddress: opts?.actorAddress ?? address ?? null,
-            description: `Payment to ${p.name} reverted on-chain. Amount: ${p.amountUsdc} USDC.`,
+            description: `Payment to ${p.name} was rejected by the network: ${p.amountUsdc} USDC.`,
             outcome: 'failure',
             entityId: batch.id,
             entityLabel: batch.name,
@@ -489,8 +508,9 @@ export function useBatchRunner(
         }
       } catch (err) {
         const e = err as { shortMessage?: string; message?: string }
-        const msg = e?.shortMessage || e?.message || 'Transfer failed.'
-        const isRejection = msg.toLowerCase().includes('user rejected') || msg.toLowerCase().includes('user denied')
+        const rawMsg = e?.shortMessage || e?.message || ''
+        const isRejection = rawMsg.toLowerCase().includes('user rejected') || rawMsg.toLowerCase().includes('user denied')
+        const msg = describeTxError(rawMsg || 'The payment could not be sent. Try again.')
 
         workingBatch = {
           ...workingBatch,
@@ -517,7 +537,7 @@ export function useBatchRunner(
         }
 
         if (isRejection) {
-          setRunError('Execution cancelled by user.')
+          setRunError('Transaction cancelled. No further payments were sent.')
           const finalStatus: BatchStatus = deriveBatchStatus(workingBatch.payments)
           workingBatch = { ...workingBatch, status: finalStatus }
           onBatchUpdate(workingBatch)
@@ -541,7 +561,7 @@ export function useBatchRunner(
       category: 'payroll',
       action: 'payroll_batch_executed',
       actorAddress: opts?.actorAddress ?? address ?? null,
-      description: `Sequential payroll batch "${batch.name}" completed: ${confirmedCount} confirmed, ${failedCount} failed.`,
+      description: `Payroll batch "${batch.name}" finished: ${confirmedCount} confirmed, ${failedCount} failed.`,
       outcome: failedCount === 0 ? 'success' : confirmedCount > 0 ? 'success' : 'failure',
       entityId: batch.id,
       entityLabel: batch.name,

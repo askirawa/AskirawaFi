@@ -1,5 +1,5 @@
 /**
- * SQLite database layer for AskirawaFi org management.
+ * SQLite database layer for Askirawa Finance org management.
  * Uses bun:sqlite — available in all Bun runtimes without extra packages.
  */
 import { Database } from 'bun:sqlite'

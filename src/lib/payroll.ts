@@ -1,8 +1,8 @@
 /**
- * AskirawaFi — Payroll Management
+ * Askirawa Finance — Payroll Management
  *
  * ARCHITECTURE NOTE:
- * The existing AskirawaFi Automation Registry contract (0x5E13b82A35Ac827b368215141F4a4F8ADfb1F434)
+ * The existing Askirawa Finance Automation Registry contract (0x5E13b82A35Ac827b368215141F4a4F8ADfb1F434)
  * supports single-recipient automations only (createAutomation takes one recipient + amount).
  * It does NOT support batch multi-recipient payroll.
  *
@@ -110,7 +110,7 @@ export const USDC_DECIMALS = 6
 export function parseUsdcString(value: string): bigint {
   const trimmed = value.trim()
   if (!trimmed || !/^\d+(\.\d+)?$/.test(trimmed)) {
-    throw new Error(`Invalid USDC amount: "${value}"`)
+    throw new Error(`"${value}" is not a valid USDC amount. Use a number such as 500.00.`)
   }
   const [whole, frac = ''] = trimmed.split('.')
   const fracPadded = frac.slice(0, USDC_DECIMALS).padEnd(USDC_DECIMALS, '0')
@@ -171,33 +171,33 @@ export function validateBatchEntries(entries: EmployeeEntry[]): ValidationResult
     const errors: EntryError[] = []
 
     if (!entry.name.trim()) {
-      errors.push({ field: 'name', message: 'Name is required.' })
+      errors.push({ field: 'name', message: 'Enter a name.' })
     }
 
     if (!entry.walletAddress.trim()) {
-      errors.push({ field: 'walletAddress', message: 'Wallet address is required.' })
+      errors.push({ field: 'walletAddress', message: 'Enter a wallet address.' })
     } else if (!/^0x[0-9a-fA-F]{40}$/.test(entry.walletAddress.trim())) {
-      errors.push({ field: 'walletAddress', message: 'Invalid Ethereum address.' })
+      errors.push({ field: 'walletAddress', message: 'This is not a valid wallet address. It should start with 0x and be 42 characters long.' })
     } else {
       const lower = entry.walletAddress.toLowerCase()
       if (seenAddresses.has(lower)) {
         errors.push({
           field: 'walletAddress',
-          message: `Duplicate address (same as ${seenAddresses.get(lower)}).`,
+          message: `This wallet address is already used for ${seenAddresses.get(lower)}.`,
         })
       } else {
-        seenAddresses.set(lower, entry.name.trim() || 'unnamed entry')
+        seenAddresses.set(lower, entry.name.trim() || 'an unnamed employee')
       }
     }
 
     if (!entry.amountUsdc.trim()) {
-      errors.push({ field: 'amountUsdc', message: 'Amount is required.' })
+      errors.push({ field: 'amountUsdc', message: 'Enter an amount.' })
     } else {
       try {
         const raw = parseUsdcString(entry.amountUsdc)
-        if (raw <= 0n) errors.push({ field: 'amountUsdc', message: 'Amount must be greater than 0.' })
+        if (raw <= 0n) errors.push({ field: 'amountUsdc', message: 'Enter an amount greater than 0.' })
       } catch {
-        errors.push({ field: 'amountUsdc', message: 'Invalid amount. Use decimal format (e.g. 500.00).' })
+        errors.push({ field: 'amountUsdc', message: 'Enter the amount as a number, for example 500.00.' })
       }
     }
 
@@ -255,10 +255,10 @@ export function deriveBatchStatus(payments: EmployeePayment[]): BatchStatus {
 
 export const BATCH_STATUS_LABELS: Record<BatchStatus, string> = {
   draft: 'Draft',
-  ready: 'Ready',
-  processing: 'Processing',
+  ready: 'Ready to send',
+  processing: 'In progress',
   completed: 'Completed',
-  partial: 'Partial',
+  partial: 'Partly paid',
   failed: 'Failed',
 }
 

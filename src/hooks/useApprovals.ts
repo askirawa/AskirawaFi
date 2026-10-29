@@ -1,7 +1,7 @@
 /**
  * useApprovals — approval request state, policy management, and execution.
  *
- * All requests are stored in localStorage (browser-local).
+ * All requests are saved in this browser only.
  * Execution sends a real USDC ERC-20 transfer() on Arc Mainnet.
  * Approval decisions are locally recorded — NOT cryptographically enforced on-chain.
  *
@@ -26,6 +26,8 @@ import {
   deriveRequestStatus,
   getRequestStats,
   isAuthorizedApprover,
+  friendlyTxError,
+  isUserRejection,
 } from '../lib/approvals'
 import { Notify, type AppNotification } from '../lib/notifications'
 import { logAuditEvent, type AuditEntry } from '../lib/audit'
@@ -195,9 +197,9 @@ export function useApprovalRequests(opts?: { onNotify?: NotifyFn }) {
         opts?.onNotify?.(tn)
         logAuditEvent({
           category: 'approval',
-          action: 'approval_request_executed',
+          action: 'approval_threshold_reached',
           actorAddress: approverAddress,
-          description: `"${req.title}" reached required approval threshold (${req.requiredApprovals}/${req.requiredApprovals}).`,
+          description: `"${req.title}" reached the required number of approvals (${req.requiredApprovals}/${req.requiredApprovals}).`,
           outcome: 'info',
           entityId: req.id,
           entityLabel: req.title,
@@ -289,33 +291,33 @@ export function useRequestExecutor(
   const isWrongChain = chainId !== CHAIN_ID
 
   function canExecute(): { ok: boolean; reason?: string } {
-    if (!address) return { ok: false, reason: 'Connect your wallet first.' }
-    if (isWrongChain) return { ok: false, reason: 'Switch to Arc Mainnet.' }
-    if (!req) return { ok: false, reason: 'No request selected.' }
+    if (!address) return { ok: false, reason: 'Connect your wallet to continue.' }
+    if (isWrongChain) return { ok: false, reason: 'Your wallet is on the wrong network. Switch to Arc Mainnet to continue.' }
+    if (!req) return { ok: false, reason: 'Select a request first.' }
     if (req.status !== 'approved') {
       const stats = getRequestStats(req)
       return {
         ok: false,
-        reason: `${stats.remainingApprovals} more approval${stats.remainingApprovals !== 1 ? 's' : ''} required before execution.`,
+        reason: `${stats.remainingApprovals} more approval${stats.remainingApprovals !== 1 ? 's' : ''} needed before this can be sent.`,
       }
     }
-    if (!usdcFact) return { ok: false, reason: 'USDC not configured for this chain.' }
+    if (!usdcFact) return { ok: false, reason: 'USDC is not available on this network. Switch to Arc Mainnet and try again.' }
     try {
       const rawAmount = parseUsdcString(req.amountUsdc)
       if (rawBalance < rawAmount) {
-        return { ok: false, reason: `Insufficient USDC balance.` }
+        return { ok: false, reason: `Your wallet does not have enough USDC for this payment. Add funds and try again.` }
       }
     } catch {
-      return { ok: false, reason: 'Invalid request amount.' }
+      return { ok: false, reason: 'The amount on this request is not valid. Create a new request with the correct amount.' }
     }
-    if (!publicClient) return { ok: false, reason: 'Public client unavailable.' }
+    if (!publicClient) return { ok: false, reason: 'Could not connect to the network. Refresh the page and try again.' }
     return { ok: true }
   }
 
   async function executeRequest() {
     if (!req || !address || !usdcFact || !publicClient) return
     const { ok, reason } = canExecute()
-    if (!ok) { setExecError(reason ?? 'Cannot execute.'); return }
+    if (!ok) { setExecError(reason ?? 'This payment cannot be sent right now.'); return }
 
     setIsExecuting(true)
     setExecError(null)
@@ -325,9 +327,9 @@ export function useRequestExecutor(
 
     logAuditEvent({
       category: 'approval',
-      action: 'approval_request_executed',
+      action: 'approval_request_sending',
       actorAddress: address ?? null,
-      description: `Executing approval request "${req.title}". Amount: ${req.amountUsdc} USDC.`,
+      description: `Sending approval request "${req.title}". Amount: ${req.amountUsdc} USDC.`,
       outcome: 'pending',
       entityId: req.id,
       entityLabel: req.title,
@@ -352,7 +354,7 @@ export function useRequestExecutor(
         status: succeeded ? 'executed' : 'failed',
         txHash: hash,
         confirmedAt: succeeded ? finishedAt : undefined,
-        errorMessage: succeeded ? undefined : 'Transaction reverted on-chain.',
+        errorMessage: succeeded ? undefined : 'The network rejected the payment. Nothing was sent. Check the details and try again.',
         updatedAt: finishedAt,
       })
 
@@ -363,7 +365,7 @@ export function useRequestExecutor(
           category: 'approval',
           action: 'approval_request_executed',
           actorAddress: address ?? null,
-          description: `Approval request "${req.title}" executed and confirmed on Arc Mainnet.`,
+          description: `Approval request "${req.title}" sent and confirmed on Arc Mainnet.`,
           outcome: 'success',
           entityId: req.id,
           entityLabel: req.title,
@@ -371,13 +373,13 @@ export function useRequestExecutor(
           meta: { amount: req.amountUsdc, recipient: req.recipientAddress },
         })
       } else {
-        const n = Notify.approvalFailed(req.id, req.title, 'Transaction reverted on-chain.')
+        const n = Notify.approvalFailed(req.id, req.title, 'The network rejected the payment. Nothing was sent. Check the details and try again.')
         opts?.onNotify?.(n)
         logAuditEvent({
           category: 'approval',
           action: 'approval_request_failed',
           actorAddress: address ?? null,
-          description: `Approval request "${req.title}" reverted on-chain.`,
+          description: `Approval request "${req.title}" was rejected by the network.`,
           outcome: 'failure',
           entityId: req.id,
           entityLabel: req.title,
@@ -385,9 +387,26 @@ export function useRequestExecutor(
         })
       }
     } catch (err) {
-      const msg = (err as { shortMessage?: string; message?: string })?.shortMessage
-        || (err as { message?: string })?.message
-        || 'Transaction failed.'
+      // Declining the wallet prompt is not a failure: nothing was sent, so the request
+      // goes back to "approved" and can be sent again.
+      if (isUserRejection(err)) {
+        const cancelMsg = 'Transaction cancelled. Nothing was sent.'
+        onUpdate({ ...req, status: 'approved', errorMessage: undefined, updatedAt: Date.now() })
+        opts?.onNotify?.(Notify.approvalSendCancelled(req.id, req.title))
+        logAuditEvent({
+          category: 'approval',
+          action: 'approval_send_cancelled',
+          actorAddress: address ?? null,
+          description: `Wallet prompt cancelled for "${req.title}". No transaction was sent.`,
+          outcome: 'info',
+          entityId: req.id,
+          entityLabel: req.title,
+        })
+        setExecError(cancelMsg)
+        return
+      }
+
+      const msg = friendlyTxError(err, 'The payment was not sent. Check your wallet and try again.')
       onUpdate({ ...req, status: 'failed', errorMessage: msg, updatedAt: Date.now() })
 
       const n = Notify.approvalFailed(req.id, req.title, msg)

@@ -1,4 +1,4 @@
-# AskirawaFi — Final Security and Verification Review
+# Askirawa Finance — Final Security and Verification Review
 
 **Date:** October 19, 2026  
 **Build result:** ✅ Zero errors, zero warnings (`bun run check` — oxlint + tsc --noEmit)  

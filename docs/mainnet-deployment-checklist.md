@@ -1,4 +1,4 @@
-# AskirawaFi — Mainnet Deployment Readiness Checklist
+# Askirawa Finance — Mainnet Deployment Readiness Checklist
 
 **Status as of October 22, 2026: AWAITING AUTHORIZATION — do not deploy until explicitly instructed.**
 

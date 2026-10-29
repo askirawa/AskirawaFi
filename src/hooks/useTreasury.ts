@@ -28,7 +28,7 @@
  * On-chain state is authoritative for execution.
  */
 
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import {
   useAccount,
   useReadContract,
@@ -38,6 +38,7 @@ import {
 import { keccak256, encodePacked } from 'viem'
 import { TREASURY_ADDRESS, TREASURY_ABI } from '../lib/contract'
 import { ARC_MAINNET_CHAIN_ID } from '../config'
+import { friendlyTxError } from '../lib/approvals'
 
 const CHAIN_ID = ARC_MAINNET_CHAIN_ID
 
@@ -49,8 +50,7 @@ export const isTreasuryDeployed = !!TREASURY_ADDRESS
 function assertDeployed(): `0x${string}` {
   if (!TREASURY_ADDRESS) {
     throw new Error(
-      'AskirawaFiTreasury not deployed. ' +
-      'Set VITE_TREASURY_ADDRESS in .env after deploying the contract.'
+      'The treasury contract has not been set up yet, so this action is not available.'
     )
   }
   return TREASURY_ADDRESS
@@ -198,6 +198,61 @@ export function useTreasuryProposal(proposalId: `0x${string}` | null) {
   return { proposal, isLoading, refetch, isDeployed: isTreasuryDeployed }
 }
 
+// ─── useVoteEligibility ───────────────────────────────────────────────────────
+
+export interface VoteEligibility {
+  /** True only when the connected wallet may approve this request right now. */
+  canVote: boolean
+  /** Plain-English reason when canVote is false and the user should know why. */
+  reason: string | null
+  /** True while the wallet's approval status is still being loaded. */
+  isLoading: boolean
+}
+
+/**
+ * Mirrors the contract's vote() rules so the Approve button is only shown to a
+ * wallet that is an approver, did not create the request, has not already approved
+ * it, and only while the request is still open. The contract remains the final check.
+ */
+export function useVoteEligibility(proposalId: `0x${string}` | null): VoteEligibility {
+  const { address } = useAccount()
+  const { isApprover } = useIsApprover()
+  const { proposal, isLoading: proposalLoading } = useTreasuryProposal(proposalId)
+  const [nowSec, setNowSec] = useState(() => Math.floor(Date.now() / 1000))
+  useEffect(() => {
+    const t = setInterval(() => setNowSec(Math.floor(Date.now() / 1000)), 30_000)
+    return () => clearInterval(t)
+  }, [])
+
+  const { data: votedData, isLoading: votedLoading } = useReadContract({
+    address: TREASURY_ADDRESS ?? '0x0000000000000000000000000000000000000000',
+    abi: TREASURY_ABI,
+    functionName: 'voted',
+    args: [proposalId ?? `0x${'0'.repeat(64)}`, address ?? '0x0000000000000000000000000000000000000000'],
+    chainId: CHAIN_ID,
+    // Re-read when the approval count changes so the button hides right after you approve
+    scopeKey: `approvals-${proposal?.approvalCount ?? 0}`,
+    query: { enabled: isTreasuryDeployed && !!proposalId && !!address },
+  })
+
+  const isLoading = proposalLoading || votedLoading
+  const no = (reason: string | null): VoteEligibility => ({ canVote: false, reason, isLoading })
+
+  if (!address) return no('Connect your wallet to approve.')
+  if (isLoading || !proposal) return no(null)
+  if (proposal.executed) return no(null)
+  if (proposal.cancelled) return no(null)
+  if (proposal.expiresAt !== 0 && nowSec >= proposal.expiresAt) {
+    return no('This approval request has expired.')
+  }
+  if (!isApprover) return no('Only approvers can approve this request.')
+  if (proposal.proposer.toLowerCase() === address.toLowerCase()) {
+    return no('You created this request, so another approver must approve it.')
+  }
+  if (votedData === true) return no('You have already approved this request.')
+  return { canVote: true, reason: null, isLoading }
+}
+
 // ─── useTreasuryVote ──────────────────────────────────────────────────────────
 
 export function useTreasuryVote() {
@@ -208,9 +263,9 @@ export function useTreasuryVote() {
   const [error, setError] = useState<string | null>(null)
 
   const vote = useCallback(async (proposalId: `0x${string}`): Promise<string | null> => {
-    if (!isTreasuryDeployed) { setError('Contract not deployed.'); return null }
-    if (chainId !== CHAIN_ID) { setError('Switch to Arc Mainnet.'); return null }
-    if (!publicClient) { setError('Public client unavailable.'); return null }
+    if (!isTreasuryDeployed) { setError('The treasury contract has not been set up yet, so this action is not available.'); return null }
+    if (chainId !== CHAIN_ID) { setError('Your wallet is on the wrong network. Switch to Arc Mainnet and try again.'); return null }
+    if (!publicClient) { setError('Could not connect to the network. Refresh the page and try again.'); return null }
 
     setIsPending(true)
     setError(null)
@@ -224,11 +279,10 @@ export function useTreasuryVote() {
         chainId: CHAIN_ID,
       })
       const receipt = await publicClient.waitForTransactionReceipt({ hash })
-      if (receipt.status !== 'success') { setError('Vote transaction reverted.'); return null }
+      if (receipt.status !== 'success') { setError('The network rejected your approval. Refresh the page and try again.'); return null }
       return hash
     } catch (err) {
-      const msg = (err as { shortMessage?: string; message?: string })?.shortMessage
-        || (err as { message?: string })?.message || 'Vote failed.'
+      const msg = friendlyTxError(err, 'Your approval was not recorded. Check your wallet and try again.')
       setError(msg)
       return null
     } finally {
@@ -249,9 +303,9 @@ export function useTreasuryCancel() {
   const [error, setError] = useState<string | null>(null)
 
   const cancel = useCallback(async (proposalId: `0x${string}`): Promise<string | null> => {
-    if (!isTreasuryDeployed) { setError('Contract not deployed.'); return null }
-    if (chainId !== CHAIN_ID) { setError('Switch to Arc Mainnet.'); return null }
-    if (!publicClient) { setError('Public client unavailable.'); return null }
+    if (!isTreasuryDeployed) { setError('The treasury contract has not been set up yet, so this action is not available.'); return null }
+    if (chainId !== CHAIN_ID) { setError('Your wallet is on the wrong network. Switch to Arc Mainnet and try again.'); return null }
+    if (!publicClient) { setError('Could not connect to the network. Refresh the page and try again.'); return null }
 
     setIsPending(true)
     setError(null)
@@ -265,11 +319,10 @@ export function useTreasuryCancel() {
         chainId: CHAIN_ID,
       })
       const receipt = await publicClient.waitForTransactionReceipt({ hash })
-      if (receipt.status !== 'success') { setError('Cancel transaction reverted.'); return null }
+      if (receipt.status !== 'success') { setError('The network rejected the cancellation. Refresh the page and try again.'); return null }
       return hash
     } catch (err) {
-      const msg = (err as { shortMessage?: string; message?: string })?.shortMessage
-        || (err as { message?: string })?.message || 'Cancel failed.'
+      const msg = friendlyTxError(err, 'The request was not cancelled. Check your wallet and try again.')
       setError(msg)
       return null
     } finally {
@@ -306,9 +359,9 @@ export function useTreasuryPropose() {
   const proposeTransfer = useCallback(async (
     params: ProposeTransferParams
   ): Promise<{ hash: string; proposalId: `0x${string}` } | null> => {
-    if (!isTreasuryDeployed) { setError('Contract not deployed.'); return null }
-    if (chainId !== CHAIN_ID) { setError('Switch to Arc Mainnet.'); return null }
-    if (!publicClient) { setError('Public client unavailable.'); return null }
+    if (!isTreasuryDeployed) { setError('The treasury contract has not been set up yet, so this action is not available.'); return null }
+    if (chainId !== CHAIN_ID) { setError('Your wallet is on the wrong network. Switch to Arc Mainnet and try again.'); return null }
+    if (!publicClient) { setError('Could not connect to the network. Refresh the page and try again.'); return null }
 
     setIsPending(true)
     setError(null)
@@ -323,11 +376,10 @@ export function useTreasuryPropose() {
         chainId: CHAIN_ID,
       })
       const receipt = await publicClient.waitForTransactionReceipt({ hash })
-      if (receipt.status !== 'success') { setError('Proposal transaction reverted.'); return null }
+      if (receipt.status !== 'success') { setError('The network rejected the request. Check that your wallet is allowed to submit requests, then try again.'); return null }
       return { hash, proposalId }
     } catch (err) {
-      const msg = (err as { shortMessage?: string; message?: string })?.shortMessage
-        || (err as { message?: string })?.message || 'Proposal failed.'
+      const msg = friendlyTxError(err, 'The request was not submitted. Check your wallet and try again.')
       setError(msg)
       return null
     } finally {
@@ -338,9 +390,9 @@ export function useTreasuryPropose() {
   const proposePayroll = useCallback(async (
     params: ProposePayrollParams
   ): Promise<{ hash: string; proposalId: `0x${string}` } | null> => {
-    if (!isTreasuryDeployed) { setError('Contract not deployed.'); return null }
-    if (chainId !== CHAIN_ID) { setError('Switch to Arc Mainnet.'); return null }
-    if (!publicClient) { setError('Public client unavailable.'); return null }
+    if (!isTreasuryDeployed) { setError('The treasury contract has not been set up yet, so this action is not available.'); return null }
+    if (chainId !== CHAIN_ID) { setError('Your wallet is on the wrong network. Switch to Arc Mainnet and try again.'); return null }
+    if (!publicClient) { setError('Could not connect to the network. Refresh the page and try again.'); return null }
 
     setIsPending(true)
     setError(null)
@@ -355,11 +407,10 @@ export function useTreasuryPropose() {
         chainId: CHAIN_ID,
       })
       const receipt = await publicClient.waitForTransactionReceipt({ hash })
-      if (receipt.status !== 'success') { setError('Payroll proposal transaction reverted.'); return null }
+      if (receipt.status !== 'success') { setError('The network rejected the payroll request. Check that your wallet is allowed to submit requests, then try again.'); return null }
       return { hash, proposalId }
     } catch (err) {
-      const msg = (err as { shortMessage?: string; message?: string })?.shortMessage
-        || (err as { message?: string })?.message || 'Payroll proposal failed.'
+      const msg = friendlyTxError(err, 'The payroll request was not submitted. Check your wallet and try again.')
       setError(msg)
       return null
     } finally {
@@ -388,9 +439,9 @@ export function useTreasuryExecute() {
   const execute = useCallback(async (
     params: ExecuteTransferParams
   ): Promise<string | null> => {
-    if (!isTreasuryDeployed) { setError('Contract not deployed.'); return null }
-    if (chainId !== CHAIN_ID) { setError('Switch to Arc Mainnet.'); return null }
-    if (!publicClient) { setError('Public client unavailable.'); return null }
+    if (!isTreasuryDeployed) { setError('The treasury contract has not been set up yet, so this action is not available.'); return null }
+    if (chainId !== CHAIN_ID) { setError('Your wallet is on the wrong network. Switch to Arc Mainnet and try again.'); return null }
+    if (!publicClient) { setError('Could not connect to the network. Refresh the page and try again.'); return null }
 
     setIsPending(true)
     setError(null)
@@ -405,13 +456,12 @@ export function useTreasuryExecute() {
       })
       const receipt = await publicClient.waitForTransactionReceipt({ hash })
       if (receipt.status !== 'success') {
-        setError('Execute transaction reverted. Verify quorum, expiry, and payload.')
+        setError('The network rejected the payment. Check that it has all its approvals and has not expired, then try again.')
         return null
       }
       return hash
     } catch (err) {
-      const msg = (err as { shortMessage?: string; message?: string })?.shortMessage
-        || (err as { message?: string })?.message || 'Execution failed.'
+      const msg = friendlyTxError(err, 'The payment was not sent. Check your wallet and try again.')
       setError(msg)
       return null
     } finally {
@@ -460,12 +510,12 @@ export function useTreasuryPayroll() {
   const propose = useCallback(async (
     params: PayrollProposeParams
   ): Promise<PayrollProposeResult | null> => {
-    if (!isTreasuryDeployed) { setError('Treasury contract not deployed.'); return null }
-    if (chainId !== CHAIN_ID) { setError('Switch to Arc Mainnet.'); return null }
-    if (!publicClient) { setError('Public client unavailable.'); return null }
-    if (params.recipients.length === 0) { setError('Batch is empty.'); return null }
+    if (!isTreasuryDeployed) { setError('The treasury contract has not been set up yet, so this action is not available.'); return null }
+    if (chainId !== CHAIN_ID) { setError('Your wallet is on the wrong network. Switch to Arc Mainnet and try again.'); return null }
+    if (!publicClient) { setError('Could not connect to the network. Refresh the page and try again.'); return null }
+    if (params.recipients.length === 0) { setError('Add at least one recipient before submitting.'); return null }
     if (params.recipients.length !== params.amounts.length) {
-      setError('Recipients and amounts arrays must be the same length.')
+      setError('Each recipient needs an amount. Check the list and try again.')
       return null
     }
 
@@ -489,14 +539,13 @@ export function useTreasuryPayroll() {
 
       const receipt = await publicClient.waitForTransactionReceipt({ hash })
       if (receipt.status !== 'success') {
-        setError('proposePayroll transaction reverted. Check gas, expiry, and approver status.')
+        setError('The network rejected the payroll request. Check that your wallet is allowed to submit requests and that the expiry date is valid, then try again.')
         return null
       }
 
       return { hash, proposalId, frozenRecipients, frozenAmounts }
     } catch (err) {
-      const msg = (err as { shortMessage?: string; message?: string })?.shortMessage
-        || (err as { message?: string })?.message || 'Proposal failed.'
+      const msg = friendlyTxError(err, 'The request was not submitted. Check your wallet and try again.')
       setError(msg)
       return null
     } finally {
@@ -514,9 +563,9 @@ export function useTreasuryPayroll() {
     frozenRecipients: `0x${string}`[]
     frozenAmounts: bigint[]
   }): Promise<string | null> => {
-    if (!isTreasuryDeployed) { setError('Treasury contract not deployed.'); return null }
-    if (chainId !== CHAIN_ID) { setError('Switch to Arc Mainnet.'); return null }
-    if (!publicClient) { setError('Public client unavailable.'); return null }
+    if (!isTreasuryDeployed) { setError('The treasury contract has not been set up yet, so this action is not available.'); return null }
+    if (chainId !== CHAIN_ID) { setError('Your wallet is on the wrong network. Switch to Arc Mainnet and try again.'); return null }
+    if (!publicClient) { setError('Could not connect to the network. Refresh the page and try again.'); return null }
 
     setIsPending(true)
     setError(null)
@@ -531,13 +580,12 @@ export function useTreasuryPayroll() {
       })
       const receipt = await publicClient.waitForTransactionReceipt({ hash })
       if (receipt.status !== 'success') {
-        setError('Execute transaction reverted. Verify quorum, expiry, and that payload is unchanged.')
+        setError('The network rejected the payment. Check that it has all its approvals, has not expired and has not been changed, then try again.')
         return null
       }
       return hash
     } catch (err) {
-      const msg = (err as { shortMessage?: string; message?: string })?.shortMessage
-        || (err as { message?: string })?.message || 'Execution failed.'
+      const msg = friendlyTxError(err, 'The payment was not sent. Check your wallet and try again.')
       setError(msg)
       return null
     } finally {
@@ -583,9 +631,9 @@ export function useTreasuryRecurringPropose() {
   const proposeExecution = useCallback(async (
     params: RecurringProposeParams
   ): Promise<RecurringProposeResult | null> => {
-    if (!isTreasuryDeployed) { setError('Treasury contract not deployed.'); return null }
-    if (chainId !== CHAIN_ID) { setError('Switch to Arc Mainnet.'); return null }
-    if (!publicClient) { setError('Public client unavailable.'); return null }
+    if (!isTreasuryDeployed) { setError('The treasury contract has not been set up yet, so this action is not available.'); return null }
+    if (chainId !== CHAIN_ID) { setError('Your wallet is on the wrong network. Switch to Arc Mainnet and try again.'); return null }
+    if (!publicClient) { setError('Could not connect to the network. Refresh the page and try again.'); return null }
 
     setIsPending(true)
     setError(null)
@@ -606,14 +654,13 @@ export function useTreasuryRecurringPropose() {
 
       const receipt = await publicClient.waitForTransactionReceipt({ hash })
       if (receipt.status !== 'success') {
-        setError('proposeTransfer transaction reverted. Check approver status and expiry window.')
+        setError('The network rejected the request. Check that your wallet is allowed to submit requests and that the expiry date is valid, then try again.')
         return null
       }
 
       return { hash, proposalId, frozenRecipient, frozenAmount }
     } catch (err) {
-      const msg = (err as { shortMessage?: string; message?: string })?.shortMessage
-        || (err as { message?: string })?.message || 'Recurring proposal failed.'
+      const msg = friendlyTxError(err, 'The recurring payment request was not submitted. Check your wallet and try again.')
       setError(msg)
       return null
     } finally {
@@ -630,9 +677,9 @@ export function useTreasuryRecurringPropose() {
     frozenRecipient: `0x${string}`
     frozenAmount: bigint
   }): Promise<string | null> => {
-    if (!isTreasuryDeployed) { setError('Treasury contract not deployed.'); return null }
-    if (chainId !== CHAIN_ID) { setError('Switch to Arc Mainnet.'); return null }
-    if (!publicClient) { setError('Public client unavailable.'); return null }
+    if (!isTreasuryDeployed) { setError('The treasury contract has not been set up yet, so this action is not available.'); return null }
+    if (chainId !== CHAIN_ID) { setError('Your wallet is on the wrong network. Switch to Arc Mainnet and try again.'); return null }
+    if (!publicClient) { setError('Could not connect to the network. Refresh the page and try again.'); return null }
 
     setIsPending(true)
     setError(null)
@@ -647,13 +694,12 @@ export function useTreasuryRecurringPropose() {
       })
       const receipt = await publicClient.waitForTransactionReceipt({ hash })
       if (receipt.status !== 'success') {
-        setError('Execute transaction reverted. Check quorum, expiry, and payload integrity.')
+        setError('The network rejected the payment. Check that it has all its approvals, has not expired and has not been changed, then try again.')
         return null
       }
       return hash
     } catch (err) {
-      const msg = (err as { shortMessage?: string; message?: string })?.shortMessage
-        || (err as { message?: string })?.message || 'Execution failed.'
+      const msg = friendlyTxError(err, 'The payment was not sent. Check your wallet and try again.')
       setError(msg)
       return null
     } finally {

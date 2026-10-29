@@ -1,8 +1,8 @@
 /**
- * AskirawaFi — Treasury Approval Workflows
+ * Askirawa Finance — Treasury Approval Workflows
  *
  * AUTHORIZATION ARCHITECTURE NOTE:
- * The existing AskirawaFi contract (0x5E13b82A35Ac827b368215141F4a4F8ADfb1F434)
+ * The existing Askirawa Finance contract (0x5E13b82A35Ac827b368215141F4a4F8ADfb1F434)
  * is an Automation Registry that stores single-recipient automation rules.
  * It does NOT implement multi-party approval logic, transfer thresholds,
  * or keeper-enforced execution guards.
@@ -140,7 +140,7 @@ export const USDC_DECIMALS = 6
 export function parseUsdcString(value: string): bigint {
   const trimmed = value.trim()
   if (!trimmed || !/^\d+(\.\d+)?$/.test(trimmed)) {
-    throw new Error(`Invalid USDC amount: "${value}"`)
+    throw new Error(`"${value}" is not a valid USDC amount. Enter a number such as 5000.00.`)
   }
   const [whole, frac = ''] = trimmed.split('.')
   const fracPadded = frac.slice(0, USDC_DECIMALS).padEnd(USDC_DECIMALS, '0')
@@ -203,7 +203,7 @@ export function getRequestStats(req: ApprovalRequest): RequestStats {
 
   const progressLabel =
     req.requiredApprovals === 1
-      ? isFullyApproved ? 'Approved' : 'Awaiting approval'
+      ? isFullyApproved ? 'Approved' : 'Waiting for approval'
       : `${approvedCount} of ${req.requiredApprovals} approvals`
 
   return {
@@ -246,22 +246,22 @@ export function validateApprovalRequest(fields: {
 }): RequestValidationResult {
   const errors: RequestValidationResult['errors'] = {}
 
-  if (!fields.title.trim()) errors.title = 'Request title is required.'
+  if (!fields.title.trim()) errors.title = 'Enter a title for this request.'
 
   if (!fields.recipientAddress.trim()) {
-    errors.recipientAddress = 'Recipient address is required.'
+    errors.recipientAddress = 'Enter the recipient wallet address.'
   } else if (!/^0x[0-9a-fA-F]{40}$/.test(fields.recipientAddress.trim())) {
-    errors.recipientAddress = 'Invalid Ethereum address.'
+    errors.recipientAddress = 'This is not a valid wallet address. It should start with 0x and be 42 characters long.'
   }
 
   if (!fields.amountUsdc.trim()) {
-    errors.amountUsdc = 'Amount is required.'
+    errors.amountUsdc = 'Enter an amount in USDC.'
   } else {
     try {
       const raw = parseUsdcString(fields.amountUsdc)
-      if (raw <= 0n) errors.amountUsdc = 'Amount must be greater than zero.'
+      if (raw <= 0n) errors.amountUsdc = 'The amount must be more than zero.'
     } catch {
-      errors.amountUsdc = 'Invalid amount. Use decimal format (e.g. 5000.00).'
+      errors.amountUsdc = 'This is not a valid amount. Use numbers only, for example 5000.00.'
     }
   }
 
@@ -274,21 +274,21 @@ export type BadgeVariant = 'success' | 'warning' | 'danger' | 'neutral' | 'activ
 
 export const REQUEST_STATUS_LABELS: Record<ApprovalRequestStatus, string> = {
   draft: 'Draft',
-  pending: 'Pending',
-  partial: 'Partial',
+  pending: 'Waiting for approval',
+  partial: 'Partly approved',
   approved: 'Approved',
   rejected: 'Rejected',
-  executing: 'Executing',
-  executed: 'Executed',
+  executing: 'Sending',
+  executed: 'Sent',
   failed: 'Failed',
   cancelled: 'Cancelled',
   expired: 'Expired',
 }
 
 export const REQUEST_TYPE_LABELS: Record<RequestType, string> = {
-  transfer: 'Treasury Transfer',
-  payroll_batch: 'Payroll Batch',
-  recurring_schedule: 'Recurring Schedule',
+  transfer: 'Treasury transfer',
+  payroll_batch: 'Payroll batch',
+  recurring_schedule: 'Recurring payment',
   other: 'Other',
 }
 
@@ -360,4 +360,40 @@ export function loadPolicy(): ApprovalPolicy {
 
 export function savePolicy(policy: ApprovalPolicy): void {
   localStorage.setItem(POLICY_KEY, JSON.stringify(policy))
+}
+
+// ─── Plain-English transaction errors ─────────────────────────────────────────
+
+/**
+ * Turns a wallet / network error into a short message that says what happened
+ * and what to do next. Never returns raw error text or stack traces.
+ */
+export function isUserRejection(err: unknown): boolean {
+  const e = err as { code?: number; cause?: { code?: number }; shortMessage?: string; message?: string } | null
+  const text = `${e?.shortMessage ?? ''} ${e?.message ?? ''}`.toLowerCase()
+  return (
+    e?.code === 4001 ||
+    e?.cause?.code === 4001 ||
+    text.includes('user rejected') ||
+    text.includes('user denied') ||
+    text.includes('rejected the request')
+  )
+}
+
+export function friendlyTxError(err: unknown, fallback: string): string {
+  const e = err as { shortMessage?: string; message?: string } | null
+  const text = `${e?.shortMessage ?? ''} ${e?.message ?? ''}`.toLowerCase()
+  if (isUserRejection(err)) {
+    return 'Transaction cancelled. Nothing was sent.'
+  }
+  if (text.includes('insufficient funds') || text.includes('exceeds balance')) {
+    return 'Your wallet does not have enough USDC to cover this, including the network fee. Add funds and try again.'
+  }
+  if (text.includes('chain mismatch') || text.includes('does not match the target chain')) {
+    return 'Your wallet is on the wrong network. Switch to Arc Mainnet and try again.'
+  }
+  if (text.includes('timeout') || text.includes('failed to fetch') || text.includes('network error')) {
+    return 'Could not reach the network. Check your connection and try again.'
+  }
+  return fallback
 }

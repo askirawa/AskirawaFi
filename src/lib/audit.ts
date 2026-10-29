@@ -1,5 +1,5 @@
 /**
- * AskirawaFi — Audit Log
+ * Askirawa Finance — Audit Log
  *
  * DISCLOSURE:
  * Audit entries are stored in browser localStorage. They are NOT tamper-proof,
@@ -28,6 +28,9 @@ export type AuditCategory =
 export type AuditAction =
   // Payroll
   | 'payroll_batch_created'
+  | 'payroll_batch_submitted'
+  | 'payroll_batch_approved'
+  | 'payroll_batch_started'
   | 'payroll_batch_executed'
   | 'payroll_payment_confirmed'
   | 'payroll_payment_failed'
@@ -36,12 +39,16 @@ export type AuditAction =
   | 'recurring_schedule_paused'
   | 'recurring_schedule_resumed'
   | 'recurring_schedule_cancelled'
+  | 'recurring_execution_submitted'
   | 'recurring_execution_confirmed'
   | 'recurring_execution_failed'
   // Approvals
   | 'approval_request_created'
   | 'approval_decision_approved'
   | 'approval_decision_rejected'
+  | 'approval_threshold_reached'
+  | 'approval_request_sending'
+  | 'approval_send_cancelled'
   | 'approval_request_executed'
   | 'approval_request_cancelled'
   | 'approval_request_failed'
@@ -166,36 +173,43 @@ export const CATEGORY_LABELS: Record<AuditCategory, string> = {
 }
 
 export const ACTION_LABELS: Record<AuditAction, string> = {
-  payroll_batch_created: 'Batch Created',
-  payroll_batch_executed: 'Batch Executed',
-  payroll_payment_confirmed: 'Payment Confirmed',
-  payroll_payment_failed: 'Payment Failed',
-  recurring_schedule_created: 'Schedule Created',
-  recurring_schedule_paused: 'Schedule Paused',
-  recurring_schedule_resumed: 'Schedule Resumed',
-  recurring_schedule_cancelled: 'Schedule Cancelled',
-  recurring_execution_confirmed: 'Execution Confirmed',
-  recurring_execution_failed: 'Execution Failed',
-  approval_request_created: 'Request Created',
+  payroll_batch_created: 'Batch created',
+  payroll_batch_submitted: 'Sent for approval',
+  payroll_batch_approved: 'Approval recorded',
+  payroll_batch_started: 'Batch started',
+  payroll_batch_executed: 'Batch sent',
+  payroll_payment_confirmed: 'Payment confirmed',
+  payroll_payment_failed: 'Payment failed',
+  recurring_schedule_created: 'Schedule created',
+  recurring_schedule_paused: 'Schedule paused',
+  recurring_schedule_resumed: 'Schedule resumed',
+  recurring_schedule_cancelled: 'Schedule cancelled',
+  recurring_execution_submitted: 'Sent for approval',
+  recurring_execution_confirmed: 'Payment confirmed',
+  recurring_execution_failed: 'Payment failed',
+  approval_request_created: 'Request created',
   approval_decision_approved: 'Approved',
   approval_decision_rejected: 'Rejected',
-  approval_request_executed: 'Request Executed',
-  approval_request_cancelled: 'Request Cancelled',
-  approval_request_failed: 'Execution Failed',
-  org_created: 'Org Created',
-  org_updated: 'Org Updated',
-  org_deleted: 'Org Deleted',
-  member_invited: 'Member Invited',
-  member_accepted: 'Invitation Accepted',
-  member_declined: 'Invitation Declined',
-  member_role_changed: 'Role Changed',
-  member_removed: 'Member Removed',
-  tx_submitted: 'TX Submitted',
-  tx_confirmed: 'TX Confirmed',
-  tx_failed: 'TX Failed',
-  csv_exported: 'CSV Exported',
-  audit_log_exported: 'Audit Log Exported',
-  app_initialized: 'App Initialized',
+  approval_threshold_reached: 'Fully approved',
+  approval_request_sending: 'Sending payment',
+  approval_send_cancelled: 'Send cancelled',
+  approval_request_executed: 'Request sent',
+  approval_request_cancelled: 'Request cancelled',
+  approval_request_failed: 'Transfer failed',
+  org_created: 'Organization created',
+  org_updated: 'Organization updated',
+  org_deleted: 'Organization deleted',
+  member_invited: 'Member invited',
+  member_accepted: 'Invitation accepted',
+  member_declined: 'Invitation declined',
+  member_role_changed: 'Role changed',
+  member_removed: 'Member removed',
+  tx_submitted: 'Transaction submitted',
+  tx_confirmed: 'Transaction confirmed',
+  tx_failed: 'Transaction failed',
+  csv_exported: 'CSV exported',
+  audit_log_exported: 'Audit log exported',
+  app_initialized: 'App started',
 }
 
 export const OUTCOME_LABELS: Record<AuditOutcome, string> = {
@@ -269,7 +283,7 @@ export function downloadAuditCsv(entries: AuditEntry[], filename?: string): void
   const url = URL.createObjectURL(blob)
   const a = document.createElement('a')
   a.href = url
-  a.download = filename ?? `askirawafi-audit-${new Date().toISOString().slice(0, 10)}.csv`
+  a.download = filename ?? `askirawa-finance-audit-${new Date().toISOString().slice(0, 10)}.csv`
   document.body.appendChild(a)
   a.click()
   document.body.removeChild(a)

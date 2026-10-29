@@ -7,11 +7,9 @@ interface StatCardProps {
   accent?: boolean
   icon?: React.ReactNode
   trend?: { direction: 'up' | 'down' | 'neutral'; label: string }
-  /** Mono section counter shown top-right, e.g. "01" */
-  counter?: string
 }
 
-export default function StatCard({ label, value, note, accent: _accent, icon, trend, counter }: StatCardProps) {
+export default function StatCard({ label, value, note, accent: _accent, icon, trend }: StatCardProps) {
   return (
     <div
       style={{
@@ -37,14 +35,7 @@ export default function StatCard({ label, value, note, accent: _accent, icon, tr
         }}>
           {label}
         </span>
-        {counter ? (
-          <span style={{
-            fontFamily: "'JetBrains Mono', monospace",
-            fontSize: 10,
-            color: 'var(--subtle)',
-            letterSpacing: '0.06em',
-          }}>{counter}</span>
-        ) : icon ? (
+        {icon ? (
           <span style={{ color: 'var(--subtle)', opacity: 0.7 }}>{icon}</span>
         ) : null}
       </div>

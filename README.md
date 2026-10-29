@@ -1,6 +1,6 @@
-# AskirawaFi
+# Askirawa Finance
 
-Programmable USDC treasury on Arc Mainnet. Supports atomic on-chain payroll batches, multi-approver proposal workflows, recurring automated payment schedules, automation registry integration, and persistent organization management.
+Askirawa Finance — Programmable USDC Treasury built on Arc. Run payroll batches, approvals, recurring payments and team roles for your organization in USDC on Arc Mainnet.
 
 Built with [Arc Studio](https://studio.arc.io)
 
@@ -8,7 +8,7 @@ Built with [Arc Studio](https://studio.arc.io)
 
 - Frontend: React 18, Vite, TypeScript, Tailwind CSS
 - Web3: wagmi v2, viem v2, ConnectKit
-- Contracts: Solidity 0.8.28 + Foundry (94 tests)
+- Contracts: Solidity 0.8.28 + Foundry
 - Backend: Bun server, SQLite (`bun:sqlite`), SIWE authentication
 - Chain: Arc Mainnet (chain ID 5042), USDC at `0x3600000000000000000000000000000000000000`
 
@@ -37,6 +37,7 @@ bun install
 
 | Variable | Required | Description |
 |---|---|---|
+| `VITE_WC_PROJECT_ID` | For mobile wallets | WalletConnect project ID from [cloud.reown.com](https://cloud.reown.com). Public identifier, read at build time |
 | `VITE_TREASURY_ADDRESS` | After deploy | Deployed AskirawaFiTreasury contract address |
 | `SESSION_SECRET` | Server | Random 32-byte hex string for session cookies |
 | `DATABASE_URL` | No | SQLite file path (default: `./askira.db`) |
@@ -77,6 +78,17 @@ bun run contracts:test
 bun run check
 ```
 
+## Wallet connection
+
+Desktop browser wallets work without any setup. Phone wallet apps (MetaMask Mobile, Trust, Rainbow and others) connect through WalletConnect, which needs `VITE_WC_PROJECT_ID`.
+
+1. Create a free project at [cloud.reown.com](https://cloud.reown.com) and copy its Project ID.
+2. In Vercel open your project, go to **Settings > Environment Variables**, and add `VITE_WC_PROJECT_ID` for Production (and Preview).
+3. **Redeploy.** Vite reads `VITE_` variables when the app is built, so changing the value has no effect until a new build runs.
+4. In the Reown dashboard, add your site domain (for example `askirawa-finance.vercel.app`) to the project's allowed domains.
+
+To test on a phone: open the live site in your phone browser, tap **Connect wallet**, choose your wallet app, approve the connection, then switch to Arc Mainnet (chain ID 5042) when asked. Also try opening the site from inside your wallet app's built-in browser.
+
 ## Contract Deployment
 
 The `AskirawaFiTreasury` contract is not yet deployed. See `docs/deployment-checklist.md` for the full ordered process. Quick reference:
@@ -89,6 +101,11 @@ bun run contracts:build
 export DEPLOYER_PRIVATE_KEY=0x<your-private-key>   # set in shell — never commit
 export DEPLOYER_ADDRESS=$(cast wallet address --private-key $DEPLOYER_PRIVATE_KEY)
 
+# Approvers: at least 2 addresses (a proposer cannot approve their own request).
+# Keep QUORUM below the approver count so a proposer can never lock the treasury.
+export APPROVERS=0xApprover1,0xApprover2,0xApprover3
+export QUORUM=2
+
 DEPLOYER_ADDRESS=$DEPLOYER_ADDRESS \
 forge script contracts/script/DeployTreasury.s.sol \
   --rpc-url https://rpc.mainnet.arc.io \
@@ -100,21 +117,15 @@ forge script contracts/script/DeployTreasury.s.sol \
 #    VITE_TREASURY_ADDRESS=0x<deployed-address>
 ```
 
-The script deploys to Arc Mainnet (chain ID 5042), enforces this with a `require(block.chainid == 5042)` guard, and prints next steps. Constructor arguments are hardcoded in the script: USDC at `0x3600000000000000000000000000000000000000`, keeper disabled (`address(0)`), quorum = 1.
+The script deploys to Arc Mainnet (chain ID 5042), enforces this with a `require(block.chainid == 5042)` guard, and prints next steps. USDC is fixed in the script at `0x3600000000000000000000000000000000000000`; the owner, approvers and quorum come from the environment variables above.
 
-## Keeper Setup
+## Recurring payments service (not current)
 
-1. Create a funded EOA wallet for the keeper
-2. Set it as the treasury's keeper address: call `setKeeper(keeperEOA)` on the deployed treasury
-3. Set `KEEPER_PRIVATE_KEY` in the keeper's environment
-4. Run `bun run keeper:start` on a persistent host
-
-See `AGENTS.md` for the full deployment checklist and remaining external setup steps.
+`server/keeper.ts` and `src/contracts.ts` were written for an earlier treasury design that had on-chain schedules and a keeper. The current `AskirawaFiTreasury` contract has no schedules and no keeper, so that service cannot work against it and recurring payments are run by hand in the app. Treat those two files as outdated until they are rewritten.
 
 ## Security Notes
 
-- Treasury contract has been reviewed with 94 Foundry tests. It has NOT been independently audited
+- The treasury contract has NOT been independently audited. Foundry tests live under `contracts/test` (`bun run contracts:test`)
 - On-chain proposal payloads are immutable once created
-- Keeper can only call `executeSchedule` — it cannot create or modify proposals
 - SIWE nonces are single-use and expire after 5 minutes
 - All backend role checks are server-side; frontend role values are never trusted

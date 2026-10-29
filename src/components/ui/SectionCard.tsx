@@ -9,7 +9,7 @@ interface SectionCardProps {
   children: React.ReactNode
   noPad?: boolean
   style?: React.CSSProperties
-  /** Mono label for the header strip, e.g. "01 / RECENT ACTIVITY" */
+  /** Mono label for the header strip, e.g. "Recent activity" */
   label?: string
   /** Apply chamfered top-right corner */
   chamfer?: boolean
@@ -36,7 +36,7 @@ export default function SectionCard({ title, subtitle, actions, children, noPad:
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          padding: '12px 24px',
+          padding: '12px 16px',
           borderBottom: '1px solid var(--border)',
           gap: 12,
           flexWrap: 'wrap',
@@ -76,7 +76,7 @@ export default function SectionCard({ title, subtitle, actions, children, noPad:
           {actions && <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>{actions}</div>}
         </div>
       )}
-      <div>{children}</div>
+      <div className="table-scroll">{children}</div>
     </div>
   )
 }

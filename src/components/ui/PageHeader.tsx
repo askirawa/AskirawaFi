@@ -3,11 +3,9 @@ interface PageHeaderProps {
   title: string
   subtitle?: string
   action?: React.ReactNode
-  /** Optional mono counter shown next to eyebrow, e.g. "01" */
-  counter?: string
 }
 
-export default function PageHeader({ eyebrow, title, subtitle, action, counter }: PageHeaderProps) {
+export default function PageHeader({ eyebrow, title, subtitle, action }: PageHeaderProps) {
   return (
     <div
       style={{
@@ -15,13 +13,13 @@ export default function PageHeader({ eyebrow, title, subtitle, action, counter }
         alignItems: 'flex-start',
         justifyContent: 'space-between',
         gap: 16,
-        marginBottom: 36,
-        paddingBottom: 24,
+        marginBottom: 28,
+        paddingBottom: 20,
         borderBottom: '1px solid var(--border)',
         flexWrap: 'wrap',
       }}
     >
-      <div>
+      <div style={{ minWidth: 0, flex: '1 1 260px' }}>
         {eyebrow && (
           <div style={{
             display: 'flex',
@@ -29,14 +27,6 @@ export default function PageHeader({ eyebrow, title, subtitle, action, counter }
             gap: 10,
             marginBottom: 10,
           }}>
-            {counter && (
-              <span style={{
-                fontFamily: "'JetBrains Mono', monospace",
-                fontSize: 10,
-                color: 'var(--subtle)',
-                letterSpacing: '0.10em',
-              }}>{counter}</span>
-            )}
             <span style={{
               fontFamily: "'JetBrains Mono', monospace",
               fontSize: 10,
@@ -53,11 +43,11 @@ export default function PageHeader({ eyebrow, title, subtitle, action, counter }
           style={{
             margin: 0,
             fontFamily: "'Space Grotesk', sans-serif",
-            fontSize: 'clamp(32px, 6vw, 44px)',
+            fontSize: 'clamp(28px, 6vw, 44px)',
             fontWeight: 700,
             color: 'var(--ink)',
             letterSpacing: '-0.03em',
-            lineHeight: 1.0,
+            lineHeight: 1.1,
           }}
         >
           {title}
@@ -74,7 +64,7 @@ export default function PageHeader({ eyebrow, title, subtitle, action, counter }
           </p>
         )}
       </div>
-      {action && <div style={{ flexShrink: 0 }}>{action}</div>}
+      {action && <div style={{ flexShrink: 0, maxWidth: '100%' }}>{action}</div>}
     </div>
   )
 }

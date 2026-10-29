@@ -97,7 +97,7 @@ export function useOrganization(opts?: { onNotify?: NotifyFn }) {
   // ─── Update org settings ─────────────────────────────────────────────────────
 
   function updateOrgSettings(updates: Partial<Pick<Organization, 'name' | 'description' | 'treasuryWallet'>>) {
-    if (!org) throw new Error('No organization found.')
+    if (!org) throw new Error('No organization was found. Create one first and try again.')
     const updated = { ...org, ...updates, updatedAt: Date.now() }
     persist(updated)
 
@@ -117,11 +117,11 @@ export function useOrganization(opts?: { onNotify?: NotifyFn }) {
   // ─── Invite member ───────────────────────────────────────────────────────────
 
   function inviteMember(walletAddress: string, role: OrgRole, displayName?: string, note?: string): string {
-    if (!org) throw new Error('No organization found.')
-    if (!myAddress) throw new Error('Connect your wallet first.')
+    if (!org) throw new Error('No organization was found. Create one first and try again.')
+    if (!myAddress) throw new Error('Connect your wallet to continue.')
     const lower = normalizeAddress(walletAddress)
     const existing = org.members.find(m => m.walletAddress === lower && m.status !== 'removed')
-    if (existing) throw new Error('This address is already a member or has a pending invitation.')
+    if (existing) throw new Error('This wallet address is already on your team or has a pending invitation.')
 
     const now = Date.now()
     const newMember: OrgMember = {
@@ -146,7 +146,7 @@ export function useOrganization(opts?: { onNotify?: NotifyFn }) {
       category: 'organization',
       action: 'member_invited',
       actorAddress: myAddress,
-      description: `${lower.slice(0, 8)}… invited to "${org.name}" as ${role}. (Local invitation record — no email sent.)`,
+      description: `${lower.slice(0, 8)}… invited to "${org.name}" as ${role}. (Saved in this browser only — no email sent.)`,
       outcome: 'info',
       entityId: org.id,
       entityLabel: org.name,
@@ -213,9 +213,9 @@ export function useOrganization(opts?: { onNotify?: NotifyFn }) {
   // ─── Change member role ───────────────────────────────────────────────────────
 
   function changeMemberRole(memberId: string, newRole: OrgRole): void {
-    if (!org) throw new Error('No organization found.')
+    if (!org) throw new Error('No organization was found. Create one first and try again.')
     if (!canChangeRole(org, memberId, newRole)) {
-      throw new Error('Cannot demote: this would remove the last owner.')
+      throw new Error('This would leave the team with no Owner. Make someone else an Owner first.')
     }
     const member = org.members.find(m => m.id === memberId)
     const updated: Organization = {
@@ -245,9 +245,9 @@ export function useOrganization(opts?: { onNotify?: NotifyFn }) {
   // ─── Remove member ────────────────────────────────────────────────────────────
 
   function removeMember(memberId: string): void {
-    if (!org) throw new Error('No organization found.')
+    if (!org) throw new Error('No organization was found. Create one first and try again.')
     if (!canRemoveMember(org, memberId)) {
-      throw new Error('Cannot remove the last owner.')
+      throw new Error('This is the last Owner and cannot be removed. Make someone else an Owner first.')
     }
     const member = org.members.find(m => m.id === memberId)
     const updated: Organization = {

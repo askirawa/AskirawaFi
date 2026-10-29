@@ -1,5 +1,5 @@
 /**
- * CashFlowChart — SVG bar chart showing daily outgoing vs incoming USDC.
+ * CashFlowChart — SVG bar chart showing daily USDC sent vs received.
  * No external charting library — pure SVG + React.
  */
 
@@ -81,10 +81,19 @@ export default function CashFlowChart({ buckets, height = 160 }: CashFlowChartPr
     .filter(({ i }) => i % step === 0 || i === n - 1)
 
   return (
-    <div style={{ width: '100%', overflowX: 'auto' }}>
+    <div style={{ width: '100%', minWidth: 0 }}>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 16, marginBottom: 8, fontSize: 12, color: 'var(--muted)' }}>
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+          <span style={{ width: 10, height: 10, background: 'var(--danger)', opacity: 0.75 }} /> Sent
+        </span>
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+          <span style={{ width: 10, height: 10, background: 'var(--success)', opacity: 0.75 }} /> Received
+        </span>
+      </div>
+      <div style={{ width: '100%', overflowX: 'auto' }}>
       <svg
         viewBox={`0 0 ${W} ${H}`}
-        style={{ width: '100%', minWidth: 280, display: 'block' }}
+        style={{ width: '100%', minWidth: 480, display: 'block' }}
         aria-label="Cash flow bar chart"
       >
         {/* Grid lines */}
@@ -123,9 +132,8 @@ export default function CashFlowChart({ buckets, height = 160 }: CashFlowChartPr
                 height={barH(d.out)}
                 fill="var(--danger)"
                 opacity={0.75}
-                rx={2}
               >
-                <title>{`${d.date} Outgoing: $${d.out.toLocaleString('en-US', { minimumFractionDigits: 2 })} USDC`}</title>
+                <title>{`${d.date} Sent: $${d.out.toLocaleString('en-US', { minimumFractionDigits: 2 })} USDC`}</title>
               </rect>
             )}
             {/* Incoming */}
@@ -135,11 +143,10 @@ export default function CashFlowChart({ buckets, height = 160 }: CashFlowChartPr
                 y={barY(d.inc)}
                 width={barW}
                 height={barH(d.inc)}
-                fill="var(--accent)"
+                fill="var(--success)"
                 opacity={0.75}
-                rx={2}
               >
-                <title>{`${d.date} Incoming: $${d.inc.toLocaleString('en-US', { minimumFractionDigits: 2 })} USDC`}</title>
+                <title>{`${d.date} Received: $${d.inc.toLocaleString('en-US', { minimumFractionDigits: 2 })} USDC`}</title>
               </rect>
             )}
           </g>
@@ -159,12 +166,8 @@ export default function CashFlowChart({ buckets, height = 160 }: CashFlowChartPr
           </text>
         ))}
 
-        {/* Legend */}
-        <rect x={W - 160} y={6} width={10} height={10} fill="var(--danger)" opacity={0.75} rx={2} />
-        <text x={W - 146} y={15} fontSize={10} fill="var(--muted)">Outgoing</text>
-        <rect x={W - 95} y={6} width={10} height={10} fill="var(--accent)" opacity={0.75} rx={2} />
-        <text x={W - 81} y={15} fontSize={10} fill="var(--muted)">Incoming</text>
       </svg>
+      </div>
     </div>
   )
 }

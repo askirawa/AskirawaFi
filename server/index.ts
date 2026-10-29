@@ -1,5 +1,5 @@
 /**
- * AskirawaFi backend server.
+ * Askirawa Finance backend server.
  * Provides SIWE authentication and organization management via a SQLite database.
  *
  * Start: bun run server/index.ts
@@ -247,4 +247,4 @@ const server = Bun.serve({
   },
 })
 
-console.log(`[server] AskirawaFi backend running on http://localhost:${server.port}`)
+console.log(`[server] Askirawa Finance backend running on http://localhost:${server.port}`)

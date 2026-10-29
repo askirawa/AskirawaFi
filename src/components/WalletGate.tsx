@@ -18,7 +18,7 @@ export default function WalletGate({ children }: WalletGateProps) {
 export function WalletRequired({ message }: { message?: string }) {
   return (
     <div
-      className="flex flex-col items-center justify-center py-16 text-center rounded-2xl"
+      className="flex flex-col items-center justify-center py-16 px-4 text-center"
       style={{
         background: 'var(--surface-muted)',
         border: '1px solid var(--border)',
@@ -26,7 +26,7 @@ export function WalletRequired({ message }: { message?: string }) {
       }}
     >
       <div
-        className="mb-4 flex items-center justify-center rounded-2xl"
+        className="mb-4 flex items-center justify-center"
         style={{
           width: 52,
           height: 52,
@@ -38,12 +38,12 @@ export function WalletRequired({ message }: { message?: string }) {
         <Wallet size={22} strokeWidth={1.5} />
       </div>
       <p className="mb-1 text-sm font-semibold" style={{ color: 'var(--ink-2)' }}>
-        Wallet not connected
+        Connect your wallet
       </p>
       <p className="mb-5 text-xs max-w-xs" style={{ color: 'var(--muted)' }}>
-        {message ?? 'Connect your Arc wallet to continue.'}
+        {message ?? 'Connect a wallet to continue. On a phone you can pick your wallet app from the list.'}
       </p>
-      <ConnectKitButton label="Connect Wallet" />
+      <ConnectKitButton label="Connect wallet" />
     </div>
   )
 }
@@ -61,32 +61,32 @@ export function WrongNetworkBanner() {
 
   return (
     <div
-      className="flex items-start gap-3 rounded-xl px-4 py-3 mb-4 text-sm"
+      className="flex flex-wrap items-start gap-3 px-4 py-3 mb-4 text-sm"
       style={{
-        background: 'rgba(234,179,8,0.10)',
-        border: '1px solid rgba(234,179,8,0.35)',
-        color: '#92400e',
+        background: 'var(--warning-dim)',
+        border: '1px solid var(--warning-border)',
+        color: 'var(--warning)',
       }}
     >
-      <AlertTriangle size={16} className="mt-0.5 shrink-0" style={{ color: '#b45309' }} />
-      <div className="flex-1 min-w-0">
-        <span className="font-semibold">Wrong network. </span>
-        Treasury transactions require Arc Mainnet (chain ID {requiredChainId}).
+      <AlertTriangle size={16} className="mt-0.5 shrink-0" style={{ color: 'var(--warning)' }} />
+      <div className="flex-1 min-w-0" style={{ minWidth: 180, overflowWrap: 'anywhere' }}>
+        Wrong network. Switch to Arc Mainnet to continue.
         {connectedChainId !== null && (
           <span> Your wallet is on chain ID {connectedChainId}.</span>
         )}
       </div>
       <button
         onClick={() => switchChain?.({ chainId: requiredChainId })}
-        className="shrink-0 rounded-lg px-3 py-1 text-xs font-semibold"
+        className="shrink-0 px-4 text-xs font-semibold"
         style={{
-          background: 'rgba(234,179,8,0.18)',
-          border: '1px solid rgba(234,179,8,0.40)',
-          color: '#92400e',
+          minHeight: 44,
+          background: 'var(--warning-dim)',
+          border: '1px solid var(--warning-border)',
+          color: 'var(--warning)',
           cursor: 'pointer',
         }}
       >
-        Switch Network
+        Switch to Arc Mainnet
       </button>
     </div>
   )

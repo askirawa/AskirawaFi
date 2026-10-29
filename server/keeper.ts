@@ -1,5 +1,5 @@
 /**
- * AskirawaFi Keeper Worker
+ * Askirawa Finance Keeper Worker
  *
  * Polls AskirawaFiTreasury for due recurring schedules and executes them on-chain.
  * Must be run with a funded EOA whose address is set as the treasury's keeper.
@@ -135,7 +135,7 @@ setInterval(() => {
   }
 }, 3_600_000)
 
-console.log(`[keeper] Starting AskirawaFi Keeper`)
+console.log(`[keeper] Starting Askirawa Finance Keeper`)
 console.log(`[keeper] Treasury: ${TREASURY_ADDRESS}`)
 console.log(`[keeper] Keeper wallet: ${account.address}`)
 console.log(`[keeper] Poll interval: ${POLL_INTERVAL_MS}ms`)

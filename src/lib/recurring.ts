@@ -1,8 +1,8 @@
 /**
- * AskirawaFi — Recurring Payments
+ * Askirawa Finance — Recurring Payments
  *
  * ARCHITECTURE NOTE:
- * The existing AskirawaFi contract (0x5E13b82A35Ac827b368215141F4a4F8ADfb1F434)
+ * The existing Askirawa Finance contract (0x5E13b82A35Ac827b368215141F4a4F8ADfb1F434)
  * can register single-recipient automations. However, it does NOT include an
  * on-chain scheduler or keeper that automatically executes transfers at the
  * configured interval. This means:
@@ -93,7 +93,7 @@ export const USDC_DECIMALS = 6
 export function parseUsdcString(value: string): bigint {
   const trimmed = value.trim()
   if (!trimmed || !/^\d+(\.\d+)?$/.test(trimmed)) {
-    throw new Error(`Invalid USDC amount: "${value}"`)
+    throw new Error(`"${value}" is not a valid USDC amount. Use a number such as 500.00.`)
   }
   const [whole, frac = ''] = trimmed.split('.')
   const fracPadded = frac.slice(0, USDC_DECIMALS).padEnd(USDC_DECIMALS, '0')
@@ -239,59 +239,59 @@ export function validateScheduleForm(fields: {
   const now = new Date()
 
   if (!fields.name.trim()) {
-    errors.name = 'Schedule name is required.'
+    errors.name = 'Enter a schedule name.'
   }
 
   if (!fields.recipientAddress.trim()) {
-    errors.recipientAddress = 'Recipient address is required.'
+    errors.recipientAddress = 'Enter the recipient wallet address.'
   } else if (!/^0x[0-9a-fA-F]{40}$/.test(fields.recipientAddress.trim())) {
-    errors.recipientAddress = 'Invalid Ethereum address.'
+    errors.recipientAddress = 'This is not a valid wallet address. It should start with 0x and be 42 characters long.'
   }
 
   if (!fields.amountUsdc.trim()) {
-    errors.amountUsdc = 'Amount is required.'
+    errors.amountUsdc = 'Enter an amount.'
   } else {
     try {
       const raw = parseUsdcString(fields.amountUsdc)
-      if (raw <= 0n) errors.amountUsdc = 'Amount must be greater than zero.'
+      if (raw <= 0n) errors.amountUsdc = 'Enter an amount greater than 0.'
     } catch {
-      errors.amountUsdc = 'Invalid amount. Use decimal format (e.g. 100.00).'
+      errors.amountUsdc = 'Enter the amount as a number, for example 100.00.'
     }
   }
 
   if (!['daily', 'weekly', 'monthly'].includes(fields.frequency)) {
-    errors.frequency = 'Select a frequency.'
+    errors.frequency = 'Choose how often to pay.'
   }
 
   if (!fields.startDate) {
-    errors.startDate = 'Start date is required.'
+    errors.startDate = 'Choose a start date.'
   } else {
     const startDt = new Date(fields.startDate + 'T' + (fields.startTime || '00:00'))
     if (isNaN(startDt.getTime())) {
-      errors.startDate = 'Invalid start date.'
+      errors.startDate = 'This start date is not valid. Choose another date.'
     } else if (startDt < now) {
       // Allow past start dates — the first future execution will be computed
     }
   }
 
   if (!fields.startTime) {
-    errors.startTime = 'Start time is required.'
+    errors.startTime = 'Choose a start time.'
   }
 
   if (fields.endDate) {
     const endDt = new Date(fields.endDate + 'T23:59:59')
     const startDt = new Date(fields.startDate + 'T' + (fields.startTime || '00:00'))
     if (isNaN(endDt.getTime())) {
-      errors.endDate = 'Invalid end date.'
+      errors.endDate = 'This end date is not valid. Choose another date.'
     } else if (endDt <= startDt) {
-      errors.endDate = 'End date must be after start date.'
+      errors.endDate = 'Choose an end date after the start date.'
     }
   }
 
   if (fields.maxExecutions) {
     const n = parseInt(fields.maxExecutions, 10)
     if (isNaN(n) || n <= 0) {
-      errors.maxExecutions = 'Max executions must be a positive integer.'
+      errors.maxExecutions = 'Enter a whole number greater than 0.'
     }
   }
 
@@ -338,11 +338,11 @@ export function executionStatusVariant(status: ExecutionStatus): BadgeVariant {
 }
 
 export const EXECUTION_STATUS_LABELS: Record<ExecutionStatus, string> = {
-  pending: 'Pending',
+  pending: 'Waiting',
   processing: 'Processing',
   confirmed: 'Confirmed',
   failed: 'Failed',
-  skipped: 'Skipped',
+  skipped: 'Cancelled',
 }
 
 // ─── localStorage persistence ─────────────────────────────────────────────────

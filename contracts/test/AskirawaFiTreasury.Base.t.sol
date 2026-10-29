@@ -3,10 +3,10 @@ pragma solidity 0.8.28;
 
 import {Test} from "forge-std/Test.sol";
 import {AskirawaFiTreasury} from "../AskirawaFiTreasury.sol";
-import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Minimal ERC-20 mock with configurable revert-on-transfer
+// Minimal ERC-20 mock (6 decimals). Can be told to revert transfers to chosen
+// recipients so payroll atomicity can be exercised.
 // ─────────────────────────────────────────────────────────────────────────────
 contract MockERC20 {
     string  public name;
@@ -17,7 +17,7 @@ contract MockERC20 {
     mapping(address => mapping(address => uint256)) public allowance;
     uint256 public totalSupply;
 
-    bool public revertNextTransfer;
+    mapping(address => bool) public blockedRecipient;
 
     constructor(string memory _name, string memory _symbol, uint8 _decimals) {
         name     = _name;
@@ -27,18 +27,15 @@ contract MockERC20 {
 
     function mint(address to, uint256 amount) external {
         balanceOf[to] += amount;
-        totalSupply    += amount;
+        totalSupply   += amount;
     }
 
-    function setRevertNextTransfer(bool value) external {
-        revertNextTransfer = value;
+    function setBlockedRecipient(address who, bool blocked) external {
+        blockedRecipient[who] = blocked;
     }
 
     function transfer(address to, uint256 amount) external returns (bool) {
-        if (revertNextTransfer) {
-            revertNextTransfer = false;
-            revert("MockERC20: transfer reverted");
-        }
+        require(!blockedRecipient[to], "MockERC20: blocked recipient");
         require(balanceOf[msg.sender] >= amount, "MockERC20: insufficient");
         balanceOf[msg.sender] -= amount;
         balanceOf[to]         += amount;
@@ -61,123 +58,158 @@ contract MockERC20 {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Shared base – no test/fuzz/invariant functions here
+// Shared base – no test/fuzz/invariant functions here.
+//
+// Default fixture: approvers = {owner, alice, bob}, quorum = 2, treasury funded
+// with TREASURY_SEED. NOTE: the proposer can never vote on their own proposal,
+// so with 3 approvers a proposal is approved by the two OTHER approvers.
 // ─────────────────────────────────────────────────────────────────────────────
 abstract contract AskirawaFiTreasuryTestBase is Test {
     AskirawaFiTreasury internal treasury;
     MockERC20          internal usdc;
 
-    address internal owner   = makeAddr("owner");
-    address internal alice   = makeAddr("alice");
-    address internal bob     = makeAddr("bob");
-    address internal carol   = makeAddr("carol");
-    address internal keeper  = makeAddr("keeper");
-    address internal stranger = makeAddr("stranger");
+    address internal owner     = makeAddr("owner");
+    address internal alice     = makeAddr("alice");
+    address internal bob       = makeAddr("bob");
+    address internal carol     = makeAddr("carol");
+    address internal dave      = makeAddr("dave");
+    address internal stranger  = makeAddr("stranger");
+    address internal recipient = makeAddr("recipient");
 
     uint256 internal constant TREASURY_SEED = 100_000e6; // 100k USDC
 
+    struct PView {
+        uint8   txType;
+        bool    executed;
+        bool    cancelled;
+        uint64  expiresAt;
+        bytes32 contentHash;
+        address proposer;
+        uint16  approvalCount;
+    }
+
     function setUp() public virtual {
         usdc     = new MockERC20("Mock USDC", "mUSDC", 6);
-        treasury = new AskirawaFiTreasury(owner, address(usdc), keeper, 1);
-
-        // Fund the treasury
+        treasury = new AskirawaFiTreasury(address(usdc), owner, _addrs3(owner, alice, bob), 2);
         usdc.mint(address(treasury), TREASURY_SEED);
     }
 
-    // ── helpers ──────────────────────────────────────────────────────────────
+    // ── array helpers ────────────────────────────────────────────────────────
 
-    /// Create a transfer proposal as `owner`, return proposalId.
-    function _createTransferProposal(address recipient, uint256 amount)
-        internal returns (uint256 pid)
+    function _one(address a) internal pure returns (address[] memory r) {
+        r = new address[](1);
+        r[0] = a;
+    }
+
+    function _oneU(uint256 v) internal pure returns (uint256[] memory r) {
+        r = new uint256[](1);
+        r[0] = v;
+    }
+
+    function _addrs2(address a, address b) internal pure returns (address[] memory r) {
+        r = new address[](2);
+        r[0] = a;
+        r[1] = b;
+    }
+
+    function _addrs3(address a, address b, address c) internal pure returns (address[] memory r) {
+        r = new address[](3);
+        r[0] = a;
+        r[1] = b;
+        r[2] = c;
+    }
+
+    function _addrs4(address a, address b, address c, address d) internal pure returns (address[] memory r) {
+        r = new address[](4);
+        r[0] = a;
+        r[1] = b;
+        r[2] = c;
+        r[3] = d;
+    }
+
+    function _uints2(uint256 a, uint256 b) internal pure returns (uint256[] memory r) {
+        r = new uint256[](2);
+        r[0] = a;
+        r[1] = b;
+    }
+
+    /// Amount array as encoded by proposeConfigChange: [quorum, 0, 0, ...] of length n.
+    function _cfgAmounts(uint256 n, uint8 q) internal pure returns (uint256[] memory r) {
+        r = new uint256[](n);
+        r[0] = q;
+    }
+
+    // ── id / time helpers ────────────────────────────────────────────────────
+
+    function _pid(string memory label) internal pure returns (bytes32) {
+        return keccak256(bytes(label));
+    }
+
+    /// A valid expiry: now + 1 day.
+    function _exp() internal view returns (uint64) {
+        return uint64(block.timestamp + 1 days);
+    }
+
+    // ── content hash replica (spec in the contract's NatSpec) ────────────────
+
+    function _hash(
+        bytes32 id,
+        uint8 txType,
+        address[] memory r,
+        uint256[] memory a,
+        uint64 expiresAt
+    ) internal view returns (bytes32) {
+        return keccak256(abi.encode(block.chainid, address(treasury), id, txType, r, a, expiresAt));
+    }
+
+    // ── proposal helpers ─────────────────────────────────────────────────────
+
+    /// proposeTransfer as `by` with a 1-day expiry; returns the expiry used.
+    function _proposeTransfer(address by, bytes32 id, address to, uint256 amount)
+        internal returns (uint64 exp)
     {
-        vm.prank(owner);
-        pid = treasury.createTransferProposal(recipient, amount, "memo");
+        exp = _exp();
+        vm.prank(by);
+        treasury.proposeTransfer(id, to, amount, exp);
     }
 
-    /// Approve + execute a proposal as `owner` (quorum=1 scenario).
-    function _approveAndExecute(uint256 pid) internal {
-        vm.prank(owner);
-        treasury.approve(pid);
-        vm.prank(owner);
-        treasury.execute(pid);
-    }
-
-    // ── getSchedule field accessors ───────────────────────────────────────────
-    // Each function scopes its own return to avoid stack-too-deep on the 12-tuple.
-
-    function _schedActive(uint256 id) internal view returns (bool v) {
-        bool[2] memory flags = _schedFlags(id);
-        v = flags[0];
-    }
-    function _schedCancelled(uint256 id) internal view returns (bool v) {
-        bool[2] memory flags = _schedFlags(id);
-        v = flags[1];
-    }
-    /// Returns [active, cancelled]
-    function _schedFlags(uint256 id) internal view returns (bool[2] memory flags) {
-        ScheduleView memory s = _getScheduleView(id);
-        flags[0] = s.active;
-        flags[1] = s.cancelled;
-    }
-    function _schedExecCount(uint256 id) internal view returns (uint256 v) {
-        v = _getScheduleView(id).execCount;
-    }
-    function _schedFailCount(uint256 id) internal view returns (uint256 v) {
-        v = _getScheduleView(id).failCount;
-    }
-    function _schedNextExec(uint256 id) internal view returns (uint64 v) {
-        v = _getScheduleView(id).nextExecTime;
-    }
-    function _schedRecipient(uint256 id) internal view returns (address v) {
-        v = _getScheduleView(id).recipient;
-    }
-    function _schedAmount(uint256 id) internal view returns (uint256 v) {
-        v = _getScheduleView(id).amount;
-    }
-    function _schedFrequency(uint256 id) internal view returns (uint8 v) {
-        v = _getScheduleView(id).frequency;
-    }
-    function _schedCreatedBy(uint256 id) internal view returns (address v) {
-        v = _getScheduleView(id).createdBy;
-    }
-    function _schedId(uint256 id) internal view returns (uint256 v) {
-        v = _getScheduleView(id).scheduleId;
-    }
-
-    struct ScheduleView {
-        uint256 scheduleId;
-        address recipient;
-        uint256 amount;
-        uint8   frequency;
-        uint64  nextExecTime;
-        bool    active;
-        bool    cancelled;
-        uint256 execCount;
-        uint256 failCount;
-        address createdBy;
-    }
-
-    function _getScheduleView(uint256 id) internal view returns (ScheduleView memory sv) {
-        (
-            sv.scheduleId,
-            sv.recipient,
-            sv.amount,
-            sv.frequency,
-            sv.nextExecTime,
-            sv.active,
-            sv.cancelled,
-            sv.execCount,
-            sv.failCount,
-            ,   // memo — skip
-            sv.createdBy,
-            // linkedProposalId — skip
-        ) = treasury.getSchedule(id);
-    }
-
-    // ── getProposal status helper ─────────────────────────────────────────────
-    function _proposalStatus(uint256 pid)
-        internal view returns (AskirawaFiTreasury.ProposalStatus s)
+    function _proposePayroll(address by, bytes32 id, address[] memory r, uint256[] memory a)
+        internal returns (uint64 exp)
     {
-        (,,,, s,,,,) = treasury.getProposal(pid);
+        exp = _exp();
+        vm.prank(by);
+        treasury.proposePayroll(id, r, a, exp);
+    }
+
+    function _proposeConfig(address by, bytes32 id, address[] memory newApprovers, uint8 newQuorum)
+        internal returns (uint64 exp)
+    {
+        exp = _exp();
+        vm.prank(by);
+        treasury.proposeConfigChange(id, newApprovers, newQuorum, exp);
+    }
+
+    function _vote(address who, bytes32 id) internal {
+        vm.prank(who);
+        treasury.vote(id);
+    }
+
+    /// Execute as an arbitrary caller (execute() is permissionless).
+    function _execute(bytes32 id, address[] memory r, uint256[] memory a) internal {
+        vm.prank(stranger);
+        treasury.execute(id, r, a);
+    }
+
+    /// Full happy path for a single transfer in the default fixture:
+    /// owner proposes, alice + bob vote.
+    function _proposeApprove(bytes32 id, address to, uint256 amount) internal returns (uint64 exp) {
+        exp = _proposeTransfer(owner, id, to, amount);
+        _vote(alice, id);
+        _vote(bob, id);
+    }
+
+    function _prop(bytes32 id) internal view returns (PView memory v) {
+        (v.txType, v.executed, v.cancelled, v.expiresAt, v.contentHash, v.proposer, v.approvalCount) =
+            treasury.proposals(id);
     }
 }

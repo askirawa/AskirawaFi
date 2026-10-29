@@ -1,300 +1,291 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.28;
 
-import {AskirawaFiTreasuryTestBase} from "./AskirawaFiTreasury.Base.t.sol";
+// NOTE ON THIS FILE'S NAME
+// ------------------------
+// AskirawaFiTreasury has NO scheduling feature: there are no schedules, no keeper
+// and no automation hooks. Recurring payments are done by creating a NEW proposal
+// (proposeTransfer / proposePayroll) for each payment cycle, each needing its own
+// quorum. The file path is kept for continuity; this suite instead covers
+// GOVERNANCE: approver-set / quorum changes through proposeConfigChange ->
+// vote -> execute, and ownership transfer.
+
 import {AskirawaFiTreasury} from "../AskirawaFiTreasury.sol";
+import {AskirawaFiTreasuryTestBase} from "./AskirawaFiTreasury.Base.t.sol";
 
-/// @dev createSchedule, executeSchedule, pauseSchedule, resumeSchedule,
-///      cancelSchedule, getDueSchedules, checkExpiry
-contract AskirawaFiTreasurySchedulesTest is AskirawaFiTreasuryTestBase {
+contract AskirawaFiTreasuryGovernanceTest is AskirawaFiTreasuryTestBase {
+    bytes32 internal constant CFG = keccak256("config-1");
+    bytes32 internal constant PAY = keccak256("payment-1");
 
-    uint256 internal sid; // reusable schedule id
-
-    function setUp() public override {
-        super.setUp();
-        // Create a daily schedule (frequency=0 → interval=1 day)
-        vm.prank(owner);
-        sid = treasury.createSchedule(alice, 50e6, 0, "daily pay");
+    /// owner proposes a config change; alice + bob approve; anyone executes.
+    function _applyConfig(address[] memory na, uint8 q) internal {
+        _proposeConfig(owner, CFG, na, q);
+        _vote(alice, CFG);
+        _vote(bob, CFG);
+        _execute(CFG, na, _cfgAmounts(na.length, q));
     }
 
-    // ── createSchedule ────────────────────────────────────────────────────────
+    // ── approver set changes ─────────────────────────────────────────────────
 
-    function test_CreateSchedule_HappyPath() public view {
-        assertEq(_schedId(sid), 1);
-        assertEq(_schedRecipient(sid), alice);
-        assertEq(_schedAmount(sid), 50e6);
-        assertEq(_schedFrequency(sid), 0);
-        assertEq(_schedNextExec(sid), uint64(block.timestamp + 1 days));
-        assertTrue(_schedActive(sid));
-        assertFalse(_schedCancelled(sid));
-        assertEq(_schedCreatedBy(sid), owner);
+    function test_ConfigChangeAddsApprover() public {
+        address[] memory na = _addrs4(owner, alice, bob, carol);
+        _applyConfig(na, 2);
+
+        assertEq(treasury.approverCount(), 4);
+        assertTrue(treasury.isApprover(carol));
+        assertEq(treasury.quorum(), 2);
+        assertTrue(_prop(CFG).executed);
+
+        // The new approver can now propose and vote.
+        _proposeTransfer(carol, PAY, recipient, 1e6);
+        _vote(alice, PAY);
+        assertEq(_prop(PAY).approvalCount, 1);
     }
 
-    function test_CreateSchedule_EmitsEvent() public {
+    function test_ConfigChangeRemovesApprover() public {
+        address[] memory na = _addrs3(owner, alice, carol);
+        _applyConfig(na, 2);
+
+        assertFalse(treasury.isApprover(bob));
+        assertEq(treasury.approverCount(), 3);
+
+        uint64 exp = _exp();
+        vm.expectRevert(AskirawaFiTreasury.NotApprover.selector);
+        vm.prank(bob);
+        treasury.proposeTransfer(PAY, recipient, 1e6, exp);
+
+        _proposeTransfer(owner, PAY, recipient, 1e6);
+        vm.expectRevert(AskirawaFiTreasury.NotApprover.selector);
+        vm.prank(bob);
+        treasury.vote(PAY);
+    }
+
+    function test_ConfigChangeReplacesWholeSetAndReordersList() public {
+        address[] memory na = _addrs3(carol, dave, alice);
+        _applyConfig(na, 2);
+
+        address[] memory list = treasury.approvers();
+        assertEq(list.length, 3);
+        assertEq(list[0], carol);
+        assertEq(list[1], dave);
+        assertEq(list[2], alice);
+        assertFalse(treasury.isApprover(owner));
+        assertFalse(treasury.isApprover(bob));
+    }
+
+    function test_ConfigChangeDeduplicatesApprovers() public {
+        // [alice, alice, bob, carol], q=2 -> 3 distinct approvers
+        address[] memory na = new address[](4);
+        na[0] = alice;
+        na[1] = alice;
+        na[2] = bob;
+        na[3] = carol;
+        _applyConfig(na, 2);
+        assertEq(treasury.approverCount(), 3);
+    }
+
+    function test_ConfigChangeEmitsEvents() public {
+        address[] memory na = _addrs4(owner, alice, bob, carol);
+        _proposeConfig(owner, CFG, na, 3);
+        _vote(alice, CFG);
+        _vote(bob, CFG);
+
+        vm.expectEmit(true, false, false, true, address(treasury));
+        emit AskirawaFiTreasury.Executed(CFG, 3, 0);
+        vm.expectEmit(false, false, false, true, address(treasury));
+        emit AskirawaFiTreasury.ApproversUpdated(na, 3);
+        _execute(CFG, na, _cfgAmounts(4, 3));
+    }
+
+    function test_ConfigChangeDoesNotMoveFunds() public {
+        _applyConfig(_addrs3(owner, alice, carol), 2);
+        assertEq(treasury.balance(), TREASURY_SEED);
+    }
+
+    // ── quorum changes ───────────────────────────────────────────────────────
+
+    function test_ConfigChangeRaisesQuorum() public {
+        _applyConfig(_addrs4(owner, alice, bob, carol), 3);
+        assertEq(treasury.quorum(), 3);
+
+        // Two votes are no longer enough.
+        _proposeTransfer(owner, PAY, recipient, 1e6);
+        _vote(alice, PAY);
+        _vote(bob, PAY);
+        vm.expectRevert(abi.encodeWithSelector(AskirawaFiTreasury.QuorumNotReached.selector, PAY, uint16(2), uint8(3)));
+        treasury.execute(PAY, _one(recipient), _oneU(1e6));
+
+        _vote(carol, PAY);
+        treasury.execute(PAY, _one(recipient), _oneU(1e6));
+        assertEq(usdc.balanceOf(recipient), 1e6);
+    }
+
+    function test_ConfigChangeLowersQuorum() public {
+        _applyConfig(_addrs3(owner, alice, bob), 1);
+        assertEq(treasury.quorum(), 1);
+
+        _proposeTransfer(owner, PAY, recipient, 1e6);
+        _vote(alice, PAY);
+        treasury.execute(PAY, _one(recipient), _oneU(1e6));
+        assertEq(usdc.balanceOf(recipient), 1e6);
+    }
+
+    function test_ConfigChangeBelowQuorumDoesNotApply() public {
+        address[] memory na = _addrs3(owner, alice, carol);
+        _proposeConfig(owner, CFG, na, 1);
+        _vote(alice, CFG);
+        vm.expectRevert(abi.encodeWithSelector(AskirawaFiTreasury.QuorumNotReached.selector, CFG, uint16(1), uint8(2)));
+        treasury.execute(CFG, na, _cfgAmounts(3, 1));
+        assertEq(treasury.quorum(), 2);
+        assertTrue(treasury.isApprover(bob));
+    }
+
+    function test_OwnerCanCancelConfigChange() public {
+        address[] memory na = _addrs3(owner, alice, carol);
+        _proposeConfig(alice, CFG, na, 1);
+        _vote(bob, CFG);
+        _vote(owner, CFG);
         vm.prank(owner);
+        treasury.cancel(CFG);
+        vm.expectRevert(abi.encodeWithSelector(AskirawaFiTreasury.ProposalAlreadyCancelled.selector, CFG));
+        treasury.execute(CFG, na, _cfgAmounts(3, 1));
+        assertEq(treasury.quorum(), 2);
+    }
+
+    function test_RevertConfigExecuteWithAlteredQuorum() public {
+        address[] memory na = _addrs3(owner, alice, carol);
+        _proposeConfig(owner, CFG, na, 2);
+        _vote(alice, CFG);
+        _vote(bob, CFG);
+        vm.expectRevert(abi.encodeWithSelector(AskirawaFiTreasury.PayloadHashMismatch.selector, CFG));
+        treasury.execute(CFG, na, _cfgAmounts(3, 1)); // approved with q=2, executor tries q=1
+    }
+
+    function test_RevertConfigExecuteWithAlteredApprovers() public {
+        address[] memory na = _addrs3(owner, alice, carol);
+        _proposeConfig(owner, CFG, na, 2);
+        _vote(alice, CFG);
+        _vote(bob, CFG);
+        vm.expectRevert(abi.encodeWithSelector(AskirawaFiTreasury.PayloadHashMismatch.selector, CFG));
+        treasury.execute(CFG, _addrs3(owner, alice, stranger), _cfgAmounts(3, 2));
+    }
+
+    function test_RevertConfigChangeCannotBeExecutedTwice() public {
+        address[] memory na = _addrs3(owner, alice, carol);
+        _applyConfig(na, 2);
+        vm.expectRevert(abi.encodeWithSelector(AskirawaFiTreasury.ProposalAlreadyExecuted.selector, CFG));
+        treasury.execute(CFG, na, _cfgAmounts(3, 2));
+    }
+
+    // ── execute-time validation (propose-time validation is shallower) ───────
+
+    /// proposeConfigChange validates the RAW list length; _setApprovers validates the
+    /// DEDUPLICATED length at execute. A duplicate-padded list can therefore be
+    /// proposed and approved, yet revert on execute (proposal stays pending).
+    function test_ConfigWithDuplicatesFailsAtExecuteWhenQuorumExceedsDistinctCount() public {
+        address[] memory na = _addrs3(alice, alice, bob); // 2 distinct, quorum 3
+        _proposeConfig(owner, CFG, na, 3); // accepted: raw length 3 >= 3
+        _vote(alice, CFG);
+        _vote(bob, CFG);
+        vm.expectRevert(abi.encodeWithSelector(AskirawaFiTreasury.InvalidQuorum.selector, uint8(3), uint256(2)));
+        treasury.execute(CFG, na, _cfgAmounts(3, 3));
+
+        assertEq(treasury.approverCount(), 3);
+        assertEq(treasury.quorum(), 2);
+        assertFalse(_prop(CFG).executed);
+    }
+
+    /// A zero address in the new set is accepted by proposeConfigChange and only
+    /// rejected at execute time.
+    function test_ConfigWithZeroApproverFailsAtExecute() public {
+        address[] memory na = _addrs3(alice, address(0), bob);
+        _proposeConfig(owner, CFG, na, 2);
+        _vote(alice, CFG);
+        _vote(bob, CFG);
+        vm.expectRevert(bytes("Treasury: zero approver"));
+        treasury.execute(CFG, na, _cfgAmounts(3, 2));
+        assertTrue(treasury.isApprover(owner)); // old set intact
+    }
+
+    // ── votes survive approver-set changes (observed behaviour) ──────────────
+
+    /// OBSERVATION (possible design gap, not asserted as intended behaviour):
+    /// approvalCount is never re-validated against the current approver set, so a
+    /// vote cast by an approver who is later REMOVED still counts at execute().
+    function test_RemovedApproversEarlierVoteStillCounts() public {
+        _proposeTransfer(owner, PAY, recipient, 1e6);
+        _vote(bob, PAY); // bob votes while still an approver
+
+        _applyConfig(_addrs3(owner, alice, carol), 2); // bob removed
+        assertFalse(treasury.isApprover(bob));
+
+        _vote(alice, PAY);
+        assertEq(_prop(PAY).approvalCount, 2);
+        treasury.execute(PAY, _one(recipient), _oneU(1e6));
+        assertEq(usdc.balanceOf(recipient), 1e6);
+    }
+
+    // ── ownership ────────────────────────────────────────────────────────────
+
+    function test_TransferOwnershipUpdatesOwnerAndEmits() public {
         vm.expectEmit(true, true, false, false, address(treasury));
-        emit AskirawaFiTreasury.ScheduleCreated(2, bob, 10e6, 1, 0, owner, 0, "weekly");
-        treasury.createSchedule(bob, 10e6, 1, "weekly");
-    }
-
-    function test_CreateSchedule_RevertNonApprover() public {
-        vm.prank(stranger);
-        vm.expectRevert(AskirawaFiTreasury.Unauthorized.selector);
-        treasury.createSchedule(alice, 10e6, 0, "");
-    }
-
-    function test_CreateSchedule_RevertZeroRecipient() public {
+        emit AskirawaFiTreasury.OwnershipTransferred(owner, carol);
         vm.prank(owner);
-        vm.expectRevert(AskirawaFiTreasury.ZeroAddress.selector);
-        treasury.createSchedule(address(0), 10e6, 0, "");
+        treasury.transferOwnership(carol);
+        assertEq(treasury.owner(), carol);
     }
 
-    function test_CreateSchedule_RevertZeroAmount() public {
+    function test_NewOwnerCanCancelAndOldOwnerCannot() public {
+        _proposeTransfer(alice, PAY, recipient, 1e6);
         vm.prank(owner);
-        vm.expectRevert(AskirawaFiTreasury.InvalidAmount.selector);
-        treasury.createSchedule(alice, 0, 0, "");
-    }
+        treasury.transferOwnership(carol);
 
-    function test_CreateSchedule_RevertInvalidFrequency() public {
+        vm.expectRevert(AskirawaFiTreasury.NotOwner.selector);
         vm.prank(owner);
-        vm.expectRevert(AskirawaFiTreasury.InvalidFrequency.selector);
-        treasury.createSchedule(alice, 10e6, 5, "");
+        treasury.cancel(PAY);
+
+        vm.prank(carol);
+        treasury.cancel(PAY);
+        assertTrue(_prop(PAY).cancelled);
     }
 
-    // ── executeSchedule ───────────────────────────────────────────────────────
-
-    function test_ExecuteSchedule_KeeperCanExecuteDue() public {
-        vm.warp(block.timestamp + 1 days);
-        vm.prank(keeper);
-        treasury.executeSchedule(sid);
-
-        assertEq(usdc.balanceOf(alice), 50e6);
-        assertEq(_schedExecCount(sid), 1);
-        assertGt(_schedNextExec(sid), uint64(block.timestamp));
-    }
-
-    function test_ExecuteSchedule_EmitsScheduleExecuted() public {
-        vm.warp(block.timestamp + 1 days);
-        vm.prank(keeper);
-        vm.expectEmit(true, true, false, false, address(treasury));
-        emit AskirawaFiTreasury.ScheduleExecuted(sid, alice, 50e6, 0, 1);
-        treasury.executeSchedule(sid);
-    }
-
-    function test_ExecuteSchedule_RevertNonKeeper() public {
-        vm.warp(block.timestamp + 1 days);
-        vm.prank(stranger);
-        vm.expectRevert(AskirawaFiTreasury.Unauthorized.selector);
-        treasury.executeSchedule(sid);
-    }
-
-    function test_ExecuteSchedule_RevertNotDue() public {
-        vm.prank(keeper);
-        vm.expectRevert(AskirawaFiTreasury.ScheduleNotDue.selector);
-        treasury.executeSchedule(sid);
-    }
-
-    function test_ExecuteSchedule_NextExecUpdatedBeforeTransfer() public {
-        vm.warp(block.timestamp + 1 days);
-        vm.prank(keeper);
-        treasury.executeSchedule(sid);
-
-        // Immediately trying again should fail because nextExecTime was advanced
-        vm.prank(keeper);
-        vm.expectRevert(AskirawaFiTreasury.ScheduleNotDue.selector);
-        treasury.executeSchedule(sid);
-    }
-
-    function test_ExecuteSchedule_FailCountOnTransferFailure() public {
-        usdc.setRevertNextTransfer(true);
-
-        vm.warp(block.timestamp + 1 days);
-        vm.prank(keeper);
-        treasury.executeSchedule(sid); // caught internally via try/catch
-
-        assertEq(_schedFailCount(sid), 1);
-        assertEq(usdc.balanceOf(alice), 0);
-    }
-
-    function test_ExecuteSchedule_RevertIfCancelled() public {
+    function test_OwnershipTransferDoesNotChangeApprovers() public {
         vm.prank(owner);
-        treasury.cancelSchedule(sid);
-        vm.warp(block.timestamp + 1 days);
-
-        vm.prank(keeper);
-        vm.expectRevert(AskirawaFiTreasury.ScheduleInactive.selector);
-        treasury.executeSchedule(sid);
+        treasury.transferOwnership(carol);
+        assertFalse(treasury.isApprover(carol));
+        assertTrue(treasury.isApprover(owner));
+        assertEq(treasury.quorum(), 2);
     }
 
-    function test_ExecuteSchedule_RevertIfPaused() public {
-        vm.prank(owner);
-        treasury.pauseSchedule(sid);
-        vm.warp(block.timestamp + 1 days);
-
-        vm.prank(keeper);
-        vm.expectRevert(AskirawaFiTreasury.ScheduleInactive.selector);
-        treasury.executeSchedule(sid);
+    function test_RevertTransferOwnershipByNonOwner() public {
+        vm.expectRevert(AskirawaFiTreasury.NotOwner.selector);
+        vm.prank(alice); // approver but not owner
+        treasury.transferOwnership(alice);
+        assertEq(treasury.owner(), owner);
     }
 
-    // ── pauseSchedule ─────────────────────────────────────────────────────────
-
-    function test_PauseSchedule_HappyPath() public {
+    function test_RevertTransferOwnershipToZero() public {
+        vm.expectRevert(AskirawaFiTreasury.ZeroOwner.selector);
         vm.prank(owner);
-        treasury.pauseSchedule(sid);
-        assertFalse(_schedActive(sid));
-        assertFalse(_schedCancelled(sid));
+        treasury.transferOwnership(address(0));
+        assertEq(treasury.owner(), owner);
     }
 
-    function test_PauseSchedule_EmitsEvent() public {
+    function test_OldOwnerCannotTransferOwnershipAgain() public {
         vm.prank(owner);
-        vm.expectEmit(true, true, false, false, address(treasury));
-        emit AskirawaFiTreasury.SchedulePaused(sid, owner);
-        treasury.pauseSchedule(sid);
+        treasury.transferOwnership(carol);
+        vm.expectRevert(AskirawaFiTreasury.NotOwner.selector);
+        vm.prank(owner);
+        treasury.transferOwnership(owner);
     }
 
-    function test_PauseSchedule_RevertUnauthorized() public {
-        vm.prank(stranger);
-        vm.expectRevert(AskirawaFiTreasury.Unauthorized.selector);
-        treasury.pauseSchedule(sid);
-    }
-
-    function test_PauseSchedule_RevertAlreadyPaused() public {
+    function test_OwnerHasNoUnilateralWithdrawal() public {
+        // The owner can cancel and deposit but cannot pull funds without quorum.
+        uint256 before = usdc.balanceOf(owner);
+        _proposeTransfer(owner, PAY, owner, 1e6);
+        vm.expectRevert(abi.encodeWithSelector(AskirawaFiTreasury.QuorumNotReached.selector, PAY, uint16(0), uint8(2)));
         vm.prank(owner);
-        treasury.pauseSchedule(sid);
-        vm.prank(owner);
-        vm.expectRevert(AskirawaFiTreasury.ScheduleInactive.selector);
-        treasury.pauseSchedule(sid);
-    }
-
-    // ── resumeSchedule ────────────────────────────────────────────────────────
-
-    function test_ResumeSchedule_HappyPath() public {
-        vm.prank(owner);
-        treasury.pauseSchedule(sid);
-        vm.prank(owner);
-        treasury.resumeSchedule(sid);
-        assertTrue(_schedActive(sid));
-    }
-
-    function test_ResumeSchedule_ResetsNextExecIfStale() public {
-        vm.prank(owner);
-        treasury.pauseSchedule(sid);
-        vm.warp(block.timestamp + 2 days); // past original nextExecTime
-        vm.prank(owner);
-        treasury.resumeSchedule(sid);
-
-        // nextExecTime must be in the future (reset to now + 1 day)
-        assertGt(_schedNextExec(sid), uint64(block.timestamp));
-    }
-
-    function test_ResumeSchedule_EmitsEvent() public {
-        vm.prank(owner);
-        treasury.pauseSchedule(sid);
-        vm.prank(owner);
-        vm.expectEmit(true, true, false, false, address(treasury));
-        emit AskirawaFiTreasury.ScheduleResumed(sid, owner, 0);
-        treasury.resumeSchedule(sid);
-    }
-
-    function test_ResumeSchedule_RevertUnauthorized() public {
-        vm.prank(owner);
-        treasury.pauseSchedule(sid);
-        vm.prank(stranger);
-        vm.expectRevert(AskirawaFiTreasury.Unauthorized.selector);
-        treasury.resumeSchedule(sid);
-    }
-
-    function test_ResumeSchedule_RevertIfNotPaused() public {
-        // schedule is active — resume should revert with InvalidProposalStatus
-        vm.prank(owner);
-        vm.expectRevert(AskirawaFiTreasury.InvalidProposalStatus.selector);
-        treasury.resumeSchedule(sid);
-    }
-
-    // ── cancelSchedule ────────────────────────────────────────────────────────
-
-    function test_CancelSchedule_HappyPath() public {
-        vm.prank(owner);
-        treasury.cancelSchedule(sid);
-        assertFalse(_schedActive(sid));
-        assertTrue(_schedCancelled(sid));
-    }
-
-    function test_CancelSchedule_EmitsEvent() public {
-        vm.prank(owner);
-        vm.expectEmit(true, true, false, false, address(treasury));
-        emit AskirawaFiTreasury.ScheduleCancelled(sid, owner);
-        treasury.cancelSchedule(sid);
-    }
-
-    function test_CancelSchedule_RevertUnauthorized() public {
-        vm.prank(stranger);
-        vm.expectRevert(AskirawaFiTreasury.Unauthorized.selector);
-        treasury.cancelSchedule(sid);
-    }
-
-    function test_CancelSchedule_RevertAlreadyCancelled() public {
-        vm.prank(owner);
-        treasury.cancelSchedule(sid);
-        vm.prank(owner);
-        vm.expectRevert(AskirawaFiTreasury.ErrScheduleCancelled.selector);
-        treasury.cancelSchedule(sid);
-    }
-
-    // ── getDueSchedules ───────────────────────────────────────────────────────
-
-    function test_GetDueSchedules_ReturnsDueIds() public {
-        vm.prank(owner);
-        treasury.createSchedule(bob, 10e6, 1, "weekly");   // sid=2, 7-day interval
-        vm.prank(owner);
-        treasury.createSchedule(carol, 5e6, 2, "monthly"); // sid=3, 30-day interval
-
-        vm.warp(block.timestamp + 8 days); // sid 1 (daily) and 2 (weekly) due; 3 not
-        uint256[] memory due = treasury.getDueSchedules(10);
-        assertEq(due.length, 2);
-        assertEq(due[0], 1);
-        assertEq(due[1], 2);
-    }
-
-    function test_GetDueSchedules_EmptyWhenNothingDue() public view {
-        uint256[] memory due = treasury.getDueSchedules(10);
-        assertEq(due.length, 0);
-    }
-
-    function test_GetDueSchedules_MaxCountRespected() public {
-        vm.prank(owner);
-        treasury.createSchedule(bob, 1e6, 0, "");   // sid=2
-        vm.prank(owner);
-        treasury.createSchedule(carol, 1e6, 0, ""); // sid=3
-
-        vm.warp(block.timestamp + 2 days); // all 3 daily schedules are due
-        uint256[] memory due = treasury.getDueSchedules(2);
-        assertEq(due.length, 2);
-    }
-
-    function test_GetDueSchedules_SkipsPausedAndCancelled() public {
-        vm.prank(owner);
-        treasury.pauseSchedule(sid);
-        vm.warp(block.timestamp + 2 days);
-        uint256[] memory due = treasury.getDueSchedules(10);
-        assertEq(due.length, 0);
-    }
-
-    // ── checkExpiry ───────────────────────────────────────────────────────────
-
-    function test_CheckExpiry_MarksExpired() public {
-        uint256 pid = _createTransferProposal(alice, 100e6);
-        vm.warp(block.timestamp + 8 days);
-        treasury.checkExpiry(pid);
-        assertEq(
-            uint8(_proposalStatus(pid)),
-            uint8(AskirawaFiTreasury.ProposalStatus.Expired)
-        );
-    }
-
-    function test_CheckExpiry_RevertNotExpiredYet() public {
-        uint256 pid = _createTransferProposal(alice, 100e6);
-        vm.expectRevert(AskirawaFiTreasury.NotExpired.selector);
-        treasury.checkExpiry(pid);
+        treasury.execute(PAY, _one(owner), _oneU(1e6));
+        assertEq(usdc.balanceOf(owner), before);
     }
 }

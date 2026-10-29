@@ -5,7 +5,7 @@
  * Step 3: Review & confirm
  */
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { X, Plus, Trash2, AlertCircle, ChevronRight, ChevronLeft, Info } from 'lucide-react'
 import Card, { CardBody } from '../ui/Card'
 import {
@@ -42,9 +42,10 @@ const inputStyle: React.CSSProperties = {
   width: '100%',
   background: 'var(--surface-muted)',
   border: '1px solid var(--border)',
-  borderRadius: 8,
+  borderRadius: 0,
   color: 'var(--ink)',
   fontSize: 14,
+  minHeight: 44,
   padding: '9px 12px',
   outline: 'none',
 }
@@ -81,21 +82,21 @@ function EmployeeRow({ entry, index, onChange, onRemove, errors = [], canRemove 
 
   return (
     <div
-      className="rounded-xl p-4 mb-3"
+      className="p-4 mb-3"
       style={{ background: 'var(--surface-muted)', border: '1px solid var(--border)' }}
     >
       <div className="flex items-center justify-between mb-3">
         <span className="text-xs font-semibold" style={{ color: 'var(--muted)' }}>
-          Employee #{index + 1}
+          Employee {index + 1}
         </span>
         {canRemove && (
           <button
             type="button"
             onClick={() => onRemove(entry.id)}
-            className="flex items-center justify-center rounded-lg transition-colors"
+            className="flex items-center justify-center transition-colors"
             style={{
-              width: 28,
-              height: 28,
+              width: 44,
+              height: 44,
               background: 'rgba(232,109,122,0.08)',
               border: '1px solid rgba(232,109,122,0.18)',
               color: 'var(--danger)',
@@ -108,10 +109,10 @@ function EmployeeRow({ entry, index, onChange, onRemove, errors = [], canRemove 
         )}
       </div>
 
-      <div className="grid gap-3 md:grid-cols-[1fr_1.4fr_0.7fr]">
+      <div className="grid gap-3" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(min(200px, 100%), 1fr))' }}>
         {/* Name */}
         <div>
-          <label style={labelStyle}>Name / ID</label>
+          <label style={labelStyle}>Name</label>
           <input
             type="text"
             value={entry.name}
@@ -124,7 +125,7 @@ function EmployeeRow({ entry, index, onChange, onRemove, errors = [], canRemove 
 
         {/* Address */}
         <div>
-          <label style={labelStyle}>Wallet Address</label>
+          <label style={labelStyle}>Wallet address</label>
           <input
             type="text"
             value={entry.walletAddress}
@@ -142,7 +143,7 @@ function EmployeeRow({ entry, index, onChange, onRemove, errors = [], canRemove 
 
         {/* Amount */}
         <div>
-          <label style={labelStyle}>USDC Amount</label>
+          <label style={labelStyle}>Amount (USDC)</label>
           <div style={{ position: 'relative' }}>
             <input
               type="text"
@@ -214,17 +215,25 @@ export default function CreateBatchModal({ onClose, onSubmit }: CreateBatchModal
   const [validation, setValidation] = useState<ValidationResult | null>(null)
   const [detailsErrors, setDetailsErrors] = useState<Partial<Record<keyof BatchDetailsForm, string>>>({})
 
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (e.key === 'Escape') onClose()
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [onClose])
+
   // ── Step 1 helpers ──
 
   function validateDetails(): boolean {
     const errors: Partial<Record<keyof BatchDetailsForm, string>> = {}
-    if (!details.name.trim()) errors.name = 'Batch name is required.'
+    if (!details.name.trim()) errors.name = 'Enter a batch name.'
     if (details.scheduleType === 'scheduled') {
-      if (!details.scheduledDate) errors.scheduledDate = 'Select a payment date.'
+      if (!details.scheduledDate) errors.scheduledDate = 'Choose a payment date.'
       else {
         const d = new Date(`${details.scheduledDate}T${details.scheduledTime || '09:00'}`)
         if (isNaN(d.getTime()) || d.getTime() <= Date.now()) {
-          errors.scheduledDate = 'Scheduled date must be in the future.'
+          errors.scheduledDate = 'Choose a date and time in the future.'
         }
       }
     }
@@ -280,16 +289,26 @@ export default function CreateBatchModal({ onClose, onSubmit }: CreateBatchModal
 
   // ── Render ──
 
-  const STEP_LABELS = ['Batch Details', 'Employees', 'Review']
+  const STEP_LABELS = ['Details', 'Employees', 'Review']
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto"
-      style={{ background: 'rgba(5,12,18,0.85)', backdropFilter: 'blur(6px)', padding: '32px 16px' }}
+      className="fixed inset-0 z-50 flex items-center justify-center"
+      style={{ background: 'rgba(5,12,18,0.85)', backdropFilter: 'blur(6px)', padding: 12 }}
+      onClick={onClose}
     >
       <div
-        className="w-full max-w-3xl rounded-2xl overflow-hidden"
-        style={{ background: 'var(--bg-2)', border: '1px solid var(--border-strong)' }}
+        style={{
+          width: 'min(768px, 100%)',
+          maxHeight: '90dvh',
+          overflowY: 'auto',
+          background: 'var(--bg-2)',
+          border: '1px solid var(--border-strong)',
+        }}
+        onClick={e => e.stopPropagation()}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Create payroll"
       >
         {/* Header */}
         <div
@@ -298,18 +317,19 @@ export default function CreateBatchModal({ onClose, onSubmit }: CreateBatchModal
         >
           <div>
             <div className="text-xs font-semibold uppercase tracking-widest mb-1" style={{ color: 'var(--accent)' }}>
-              New Payroll Batch
+              New payroll batch
             </div>
             <h2 className="display font-bold text-lg" style={{ color: 'var(--ink)', letterSpacing: '-0.02em' }}>
-              Create Payroll
+              Create payroll
             </h2>
           </div>
           <button
             onClick={onClose}
-            className="flex items-center justify-center rounded-lg transition-colors"
+            className="flex items-center justify-center transition-colors"
             style={{
-              width: 36,
-              height: 36,
+              width: 44,
+              height: 44,
+              flexShrink: 0,
               background: 'var(--surface)',
               border: '1px solid var(--border)',
               color: 'var(--muted)',
@@ -322,7 +342,7 @@ export default function CreateBatchModal({ onClose, onSubmit }: CreateBatchModal
         </div>
 
         {/* Step indicator */}
-        <div className="flex items-center gap-0 px-6 py-3" style={{ borderBottom: '1px solid var(--border)' }}>
+        <div className="flex items-center gap-0 px-6 py-3" style={{ borderBottom: '1px solid var(--border)', overflowX: 'auto' }}>
           {STEP_LABELS.map((label, i) => {
             const stepNum = (i + 1) as 1 | 2 | 3
             const done = step > stepNum
@@ -331,12 +351,12 @@ export default function CreateBatchModal({ onClose, onSubmit }: CreateBatchModal
               <div key={label} className="flex items-center gap-2">
                 <div className="flex items-center gap-2">
                   <div
-                    className="flex items-center justify-center rounded-full text-xs font-bold"
+                    className="flex items-center justify-center text-xs font-bold"
                     style={{
                       width: 24,
                       height: 24,
                       background: done || active ? 'var(--accent)' : 'var(--surface-muted)',
-                      color: done || active ? '#021a0e' : 'var(--subtle)',
+                      color: done || active ? 'var(--bg)' : 'var(--subtle)',
                       border: done || active ? 'none' : '1px solid var(--border)',
                     }}
                   >
@@ -363,7 +383,7 @@ export default function CreateBatchModal({ onClose, onSubmit }: CreateBatchModal
           {step === 1 && (
             <div className="space-y-4">
               <div>
-                <label style={labelStyle}>Batch Name *</label>
+                <label style={labelStyle}>Batch name *</label>
                 <input
                   type="text"
                   value={details.name}
@@ -375,14 +395,14 @@ export default function CreateBatchModal({ onClose, onSubmit }: CreateBatchModal
               </div>
 
               <div>
-                <label style={labelStyle}>Payment Timing</label>
-                <div className="grid grid-cols-2 gap-3">
+                <label style={labelStyle}>When to pay</label>
+                <div className="grid gap-3" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(min(220px, 100%), 1fr))' }}>
                   {(['immediate', 'scheduled'] as ScheduleType[]).map(type => (
                     <button
                       key={type}
                       type="button"
                       onClick={() => setDetails(d => ({ ...d, scheduleType: type }))}
-                      className="rounded-xl p-4 text-left transition-colors"
+                      className="p-4 text-left transition-colors"
                       style={{
                         background: details.scheduleType === type ? 'var(--accent-dim)' : 'var(--surface-muted)',
                         border: `1px solid ${details.scheduleType === type ? 'var(--accent-border)' : 'var(--border)'}`,
@@ -390,12 +410,12 @@ export default function CreateBatchModal({ onClose, onSubmit }: CreateBatchModal
                       }}
                     >
                       <div className="text-sm font-semibold mb-0.5" style={{ color: details.scheduleType === type ? 'var(--accent)' : 'var(--ink-2)' }}>
-                        {type === 'immediate' ? 'Execute Now' : 'Schedule'}
+                        {type === 'immediate' ? 'Pay now' : 'Pay on a date'}
                       </div>
                       <div className="text-xs" style={{ color: 'var(--muted)' }}>
                         {type === 'immediate'
-                          ? 'Send payments immediately when submitted'
-                          : 'Set a future date (awaiting manual execution)'}
+                          ? 'Send payments as soon as you are ready.'
+                          : 'Pick a date. You send the payments yourself.'}
                       </div>
                     </button>
                   ))}
@@ -403,9 +423,9 @@ export default function CreateBatchModal({ onClose, onSubmit }: CreateBatchModal
               </div>
 
               {details.scheduleType === 'scheduled' && (
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid gap-3" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(min(200px, 100%), 1fr))' }}>
                   <div>
-                    <label style={labelStyle}>Payment Date *</label>
+                    <label style={labelStyle}>Payment date *</label>
                     <input
                       type="date"
                       value={details.scheduledDate}
@@ -428,12 +448,12 @@ export default function CreateBatchModal({ onClose, onSubmit }: CreateBatchModal
 
               {details.scheduleType === 'scheduled' && (
                 <div
-                  className="flex items-start gap-2 rounded-xl p-3 text-xs"
+                  className="flex items-start gap-2 p-3 text-xs"
                   style={{ background: 'rgba(232,184,76,0.06)', border: '1px solid rgba(232,184,76,0.15)', color: 'var(--warning)' }}
                 >
                   <Info size={13} className="mt-0.5 shrink-0" />
                   <span>
-                    Scheduled batches are saved locally and labeled <strong>Awaiting Execution</strong>. They do not auto-execute — the treasury owner must manually run the batch at the scheduled time.
+                    Scheduled batches are saved in this browser only and are <strong>not sent automatically</strong>. You need to open the batch and send the payments yourself on the day.
                   </span>
                 </div>
               )}
@@ -443,7 +463,7 @@ export default function CreateBatchModal({ onClose, onSubmit }: CreateBatchModal
                 <textarea
                   value={details.note}
                   onChange={e => setDetails(d => ({ ...d, note: e.target.value }))}
-                  placeholder="October salary cycle, project bonuses…"
+                  placeholder="For example: October salaries"
                   rows={2}
                   style={{ ...inputStyle, resize: 'vertical', paddingTop: 9, paddingBottom: 9 }}
                 />
@@ -456,18 +476,18 @@ export default function CreateBatchModal({ onClose, onSubmit }: CreateBatchModal
             <div>
               {validation && !validation.valid && (
                 <div
-                  className="flex items-start gap-2 rounded-xl p-3 mb-4 text-xs"
+                  className="flex items-start gap-2 p-3 mb-4 text-xs"
                   style={{ background: 'rgba(232,109,122,0.07)', border: '1px solid rgba(232,109,122,0.18)', color: 'var(--danger)' }}
                 >
                   <AlertCircle size={13} className="mt-0.5 shrink-0" />
                   <div>
-                    <div className="font-semibold mb-0.5">Fix the errors below before continuing.</div>
+                    <div className="font-semibold mb-0.5">Fix the errors below to continue.</div>
                     {validation.globalErrors.map(e => <div key={e}>{e}</div>)}
                   </div>
                 </div>
               )}
 
-              <div style={{ maxHeight: '50vh', overflowY: 'auto', paddingRight: 2 }}>
+              <div style={{ maxHeight: '50dvh', overflowY: 'auto', paddingRight: 2 }}>
                 {entries.map((entry, i) => (
                   <EmployeeRow
                     key={entry.id}
@@ -484,22 +504,23 @@ export default function CreateBatchModal({ onClose, onSubmit }: CreateBatchModal
               <button
                 type="button"
                 onClick={addEntry}
-                className="flex items-center gap-2 mt-2 rounded-xl px-4 py-2.5 text-sm font-medium transition-colors"
+                className="flex items-center justify-center gap-2 mt-2 px-4 py-2.5 text-sm font-medium transition-colors"
                 style={{
                   background: 'var(--surface-muted)',
                   border: '1px dashed var(--border-strong)',
                   color: 'var(--ink-2)',
                   cursor: 'pointer',
                   width: '100%',
+                  minHeight: 44,
                 }}
               >
                 <Plus size={15} />
-                Add Employee
+                Add employee
               </button>
 
               {/* Running total */}
               <div
-                className="flex items-center justify-between mt-4 rounded-xl px-5 py-3"
+                className="flex items-center justify-between mt-4 px-5 py-3"
                 style={{ background: 'var(--accent-dim)', border: '1px solid var(--accent-border)' }}
               >
                 <div className="text-sm font-medium" style={{ color: 'var(--ink-2)' }}>
@@ -519,26 +540,26 @@ export default function CreateBatchModal({ onClose, onSubmit }: CreateBatchModal
               <Card>
                 <CardBody>
                   <div className="text-xs font-semibold uppercase tracking-widest mb-3" style={{ color: 'var(--muted)' }}>
-                    Batch Summary
+                    Batch summary
                   </div>
-                  <div className="grid grid-cols-2 gap-4 md:grid-cols-4 mb-4">
+                  <div className="grid gap-4 mb-4" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(min(140px, 100%), 1fr))' }}>
                     {[
-                      { label: 'Batch Name', value: details.name },
+                      { label: 'Batch name', value: details.name },
                       { label: 'Employees', value: String(entries.length) },
                       { label: 'Total', value: `${totalFormatted} USDC` },
-                      { label: 'Timing', value: details.scheduleType === 'immediate' ? 'Immediate' : 'Scheduled' },
+                      { label: 'Timing', value: details.scheduleType === 'immediate' ? 'Pay now' : 'On a date' },
                     ].map(({ label, value }) => (
                       <div key={label}>
                         <div className="text-xs uppercase tracking-wider mb-1" style={{ color: 'var(--subtle)', fontSize: 10 }}>{label}</div>
-                        <div className="text-sm font-semibold mono" style={{ color: 'var(--ink)' }}>{value}</div>
+                        <div className="text-sm font-semibold mono" style={{ color: 'var(--ink)', overflowWrap: 'anywhere' }}>{value}</div>
                       </div>
                     ))}
                   </div>
 
                   {details.scheduleType === 'scheduled' && scheduledIso && (
                     <div className="text-xs" style={{ color: 'var(--muted)' }}>
-                      Scheduled for: <span style={{ color: 'var(--ink-2)' }}>{new Date(scheduledIso).toLocaleString()}</span>
-                      <span className="ml-2 font-semibold" style={{ color: 'var(--warning)' }}>(Awaiting manual execution)</span>
+                      Payment date: <span style={{ color: 'var(--ink-2)' }}>{new Date(scheduledIso).toLocaleString()}</span>
+                      <span className="ml-2 font-semibold" style={{ color: 'var(--warning)' }}>(not sent automatically)</span>
                     </div>
                   )}
                   {details.note && (
@@ -550,10 +571,10 @@ export default function CreateBatchModal({ onClose, onSubmit }: CreateBatchModal
               </Card>
 
               {/* Employee list */}
-              <div className="overflow-x-auto rounded-xl" style={{ border: '1px solid var(--border)' }}>
+              <div className="overflow-x-auto" style={{ border: '1px solid var(--border)' }}>
                 <table className="w-full" style={{ minWidth: 560 }}>
                   <thead>
-                    <tr style={{ background: 'rgba(255,255,255,0.02)' }}>
+                    <tr style={{ background: 'var(--surface-muted)' }}>
                       {['Name', 'Wallet', 'Amount', 'Description'].map(h => (
                         <th key={h} className="text-left text-xs uppercase tracking-wider px-4 py-3" style={{ color: 'var(--subtle)', borderBottom: '1px solid var(--border)', fontSize: 10, letterSpacing: '0.07em' }}>
                           {h}
@@ -565,7 +586,7 @@ export default function CreateBatchModal({ onClose, onSubmit }: CreateBatchModal
                     {entries.map((e, i) => (
                       <tr key={e.id} style={{ borderBottom: i < entries.length - 1 ? '1px solid var(--border)' : 'none' }}>
                         <td className="px-4 py-3 text-sm font-medium" style={{ color: 'var(--ink)' }}>{e.name || '—'}</td>
-                        <td className="px-4 py-3 text-xs mono" style={{ color: 'var(--muted)' }}>
+                        <td className="px-4 py-3 text-xs mono" style={{ color: 'var(--muted)', wordBreak: 'break-all' }}>
                           {e.walletAddress ? `${e.walletAddress.slice(0, 6)}…${e.walletAddress.slice(-4)}` : '—'}
                         </td>
                         <td className="px-4 py-3 text-sm mono font-semibold" style={{ color: 'var(--ink-2)', fontVariantNumeric: 'tabular-nums' }}>
@@ -574,7 +595,7 @@ export default function CreateBatchModal({ onClose, onSubmit }: CreateBatchModal
                         <td className="px-4 py-3 text-xs" style={{ color: 'var(--muted)' }}>{e.description || '—'}</td>
                       </tr>
                     ))}
-                    <tr style={{ background: 'rgba(53,217,139,0.04)' }}>
+                    <tr style={{ background: 'var(--accent-dim)' }}>
                       <td className="px-4 py-3 text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--muted)' }} colSpan={2}>
                         Total
                       </td>
@@ -589,15 +610,15 @@ export default function CreateBatchModal({ onClose, onSubmit }: CreateBatchModal
 
               {/* Real payment notice */}
               <div
-                className="flex items-start gap-2 rounded-xl p-3 text-xs"
+                className="flex items-start gap-2 p-3 text-xs"
                 style={{ background: 'rgba(232,184,76,0.06)', border: '1px solid rgba(232,184,76,0.15)', color: 'var(--warning)' }}
               >
                 <Info size={13} className="mt-0.5 shrink-0" />
                 <div>
-                  <span className="font-semibold">Real USDC transfers. </span>
-                  Executing this batch sends individual ERC-20 <code>transfer()</code> calls on Arc Mainnet.
-                  Each payment requires a separate wallet confirmation. Payments are not atomic —
-                  a partial failure is possible. Ensure your wallet holds sufficient USDC before proceeding.
+                  <span className="font-semibold">These are real USDC payments. </span>
+                  Saving creates the batch only. When you run it, each employee is paid separately on Arc Mainnet
+                  and each payment needs its own wallet confirmation. Some payments may succeed while others fail,
+                  so make sure your wallet holds enough USDC.
                 </div>
               </div>
             </div>
@@ -606,20 +627,20 @@ export default function CreateBatchModal({ onClose, onSubmit }: CreateBatchModal
 
         {/* Footer actions */}
         <div
-          className="flex items-center justify-between px-6 py-4"
+          className="flex items-center justify-between gap-3 px-6 py-4"
           style={{ borderTop: '1px solid var(--border)' }}
         >
           {step > 1 ? (
             <button
               type="button"
               onClick={() => setStep(s => (s - 1) as 1 | 2 | 3)}
-              className="flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-colors"
+              className="flex items-center gap-2 px-4 py-2 text-sm font-medium transition-colors"
               style={{
                 background: 'var(--surface)',
                 border: '1px solid var(--border)',
                 color: 'var(--ink-2)',
                 cursor: 'pointer',
-                minHeight: 38,
+                minHeight: 44,
               }}
             >
               <ChevronLeft size={14} />
@@ -629,13 +650,13 @@ export default function CreateBatchModal({ onClose, onSubmit }: CreateBatchModal
             <button
               type="button"
               onClick={onClose}
-              className="rounded-lg px-4 py-2 text-sm font-medium"
+              className="px-4 py-2 text-sm font-medium"
               style={{
                 background: 'var(--surface)',
                 border: '1px solid var(--border)',
                 color: 'var(--muted)',
                 cursor: 'pointer',
-                minHeight: 38,
+                minHeight: 44,
               }}
             >
               Cancel
@@ -646,13 +667,13 @@ export default function CreateBatchModal({ onClose, onSubmit }: CreateBatchModal
             <button
               type="button"
               onClick={step === 1 ? toStep2 : toStep3}
-              className="flex items-center gap-2 rounded-lg px-5 py-2 text-sm font-semibold transition-colors"
+              className="flex items-center gap-2 px-5 py-2 text-sm font-semibold transition-colors"
               style={{
                 background: 'var(--accent)',
                 border: 'none',
-                color: '#021a0e',
+                color: 'var(--bg)',
                 cursor: 'pointer',
-                minHeight: 38,
+                minHeight: 44,
               }}
             >
               Continue
@@ -662,16 +683,16 @@ export default function CreateBatchModal({ onClose, onSubmit }: CreateBatchModal
             <button
               type="button"
               onClick={handleSubmit}
-              className="flex items-center gap-2 rounded-lg px-5 py-2 text-sm font-semibold"
+              className="flex items-center gap-2 px-5 py-2 text-sm font-semibold"
               style={{
                 background: 'var(--accent)',
                 border: 'none',
-                color: '#021a0e',
+                color: 'var(--bg)',
                 cursor: 'pointer',
-                minHeight: 38,
+                minHeight: 44,
               }}
             >
-              Save Batch
+              Save batch
             </button>
           )}
         </div>

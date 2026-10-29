@@ -6,6 +6,7 @@ import { toast } from 'sonner'
 import Card, { CardHeader, CardBody } from '../components/ui/Card'
 import Badge from '../components/ui/Badge'
 import EmptyState from '../components/ui/EmptyState'
+import PageHeader from '../components/ui/PageHeader'
 import Spinner from '../components/ui/Spinner'
 import { WalletRequired } from '../components/WalletGate'
 import {
@@ -50,30 +51,43 @@ const EMPTY_FORM: FormState = {
 }
 
 function validateForm(f: FormState): string | null {
-  if (!f.name.trim()) return 'Automation name is required.'
-  if (!isAddress(f.recipient)) return 'Recipient must be a valid 0x address.'
+  if (!f.name.trim()) return 'Enter a name for this automation.'
+  if (!isAddress(f.recipient)) return 'Enter a valid recipient wallet address. It starts with 0x.'
   const amt = parseFloat(f.amount)
-  if (!f.amount || isNaN(amt) || amt <= 0) return 'Enter a valid USDC amount greater than zero.'
-  if (!f.executionDate) return 'Select an execution date.'
+  if (!f.amount || isNaN(amt) || amt <= 0) return 'Enter a USDC amount greater than zero.'
+  if (!f.executionDate) return 'Choose the date of the first payment.'
   const ts = Math.floor(new Date(f.executionDate).getTime() / 1000)
-  if (ts <= Math.floor(Date.now() / 1000)) return 'Execution date must be in the future.'
+  if (ts <= Math.floor(Date.now() / 1000)) return 'The first payment date must be in the future. Choose a later date.'
   return null
+}
+
+const CANCELLED_MESSAGE = 'Transaction cancelled. Nothing was sent.'
+
+// Turns a wallet/network error into a short message that says what to do next
+function friendlyError(err: unknown): string {
+  const msg = parseOnchainError(err)
+  if (msg === 'Transaction cancelled.') return CANCELLED_MESSAGE
+  if (msg.startsWith('Wrong network')) return 'Your wallet is on the wrong network. Switch to Arc Mainnet and try again.'
+  if (msg.startsWith('Insufficient balance')) return 'Your wallet does not have enough USDC to cover the network fee. Add funds and try again.'
+  if (msg.startsWith('Network error')) return 'Could not reach the network. Check your connection and try again.'
+  if (msg.startsWith('Transaction failed')) return 'The network rejected this transaction. Check the details and try again.'
+  return 'Something went wrong and nothing was saved. Try again in a moment.'
 }
 
 // --- Automation row ---
 function AutomationRow({ a }: { a: AutomationRecord }) {
   return (
     <div
-      className="grid gap-4 rounded-xl p-5"
+      className="grid gap-4 p-5"
       style={{
         background: 'var(--surface-muted)',
         border: '1px solid var(--border)',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(min(160px, 100%), 1fr))',
       }}
     >
-      <div>
+      <div style={{ minWidth: 0, overflowWrap: 'anywhere' }}>
         <div className="text-xs font-semibold uppercase tracking-wider mb-1" style={{ color: 'var(--subtle)' }}>
-          Automation #{a.id}
+          Automation {a.id}
         </div>
         <div className="text-sm font-semibold" style={{ color: 'var(--ink)' }}>{a.name}</div>
         {a.note && <div className="text-xs mt-1" style={{ color: 'var(--muted)' }}>{a.note}</div>}
@@ -87,10 +101,10 @@ function AutomationRow({ a }: { a: AutomationRecord }) {
       </div>
       <div>
         <div className="text-xs font-semibold uppercase tracking-wider mb-1" style={{ color: 'var(--subtle)' }}>Recipient</div>
-        <div className="text-xs mono" style={{ color: 'var(--muted)', fontVariantNumeric: 'tabular-nums' }}>
+        <div className="text-xs mono" style={{ color: 'var(--muted)', fontVariantNumeric: 'tabular-nums', overflowWrap: 'anywhere' }}>
           {formatAddress(a.recipient)}
         </div>
-        <div className="text-xs mt-1" style={{ color: 'var(--subtle)' }}>First run: {formatDate(a.executionTime)}</div>
+        <div className="text-xs mt-1" style={{ color: 'var(--subtle)' }}>First payment: {formatDate(a.executionTime)}</div>
       </div>
       <div className="flex items-start gap-2">
         <Badge variant={a.active ? 'active' : 'neutral'}>
@@ -117,6 +131,7 @@ export default function Automations() {
     writeContract,
     data: txHash,
     isPending: isSigning,
+    error: writeError,
     reset: resetWrite,
   } = useWriteContract()
 
@@ -126,7 +141,7 @@ export default function Automations() {
   // not on every subsequent render while the same txHash is still in state.
   useEffect(() => {
     if (!isSuccess || !txHash) return
-    toast.success('Automation created on Arc.', {
+    toast.success('Automation saved on Arc.', {
       description: (
         <a
           href={buildTxExplorerUrl(AUTOMATION_REGISTRY_CHAIN_ID, txHash)}
@@ -135,7 +150,7 @@ export default function Automations() {
           className="inline-flex items-center gap-1"
           style={{ color: 'var(--accent)' }}
         >
-          View on explorer <ArrowUpRight size={11} />
+          View transaction <ArrowUpRight size={11} />
         </a>
       ) as unknown as string,
     })
@@ -154,7 +169,7 @@ export default function Automations() {
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (!isConnected || !address) {
-      setFormError('Connect your wallet first.')
+      setFormError('Connect your wallet to create an automation.')
       return
     }
     if (isWrongChain) {
@@ -184,36 +199,41 @@ export default function Automations() {
         chainId: AUTOMATION_REGISTRY_CHAIN_ID,
       })
     } catch (caughtErr) {
-      setFormError(parseOnchainError(caughtErr))
+      setFormError(friendlyError(caughtErr))
     }
   }
 
   const isSubmitting = isSigning || isConfirming
+  const shownError = formError ?? (writeError ? friendlyError(writeError) : null)
+  const errorIsCancel = shownError === CANCELLED_MESSAGE
   const minDate = MIN_DATE
 
   return (
     <div className="space-y-5">
-      {/* Page header */}
-      <div className="mb-6">
-        <div className="text-xs font-semibold uppercase tracking-widest mb-2" style={{ color: 'var(--accent)' }}>
-          Treasury Automation
-        </div>
-        <h1 className="display text-3xl font-bold" style={{ color: 'var(--ink)', letterSpacing: '-0.02em' }}>
-          Automations
-        </h1>
-        <p className="mt-1 text-sm" style={{ color: 'var(--muted)' }}>
-          Create and manage programmable USDC rules on Arc Mainnet.
-        </p>
-      </div>
+      <PageHeader
+        eyebrow="Treasury Automation"
+        title="Automations"
+        subtitle="An automation is a saved rule for a recurring USDC payment: who gets paid, how much, and how often."
+      />
 
-      {/* Keeper notice */}
+      {/* How it works + service disclosure */}
       <div
-        className="flex items-start gap-3 rounded-xl px-4 py-3 text-xs"
-        style={{ background: 'var(--warning-dim)', border: '1px solid rgba(232,184,76,0.2)', color: 'var(--warning)' }}
+        className="flex items-start gap-3 px-4 py-3 text-xs"
+        style={{ background: 'var(--surface-muted)', border: '1px solid var(--border)', color: 'var(--muted)', lineHeight: 1.6 }}
       >
         <Info size={13} className="mt-0.5 shrink-0" />
-        <span>
-          Registering an automation on-chain stores your rule in the contract. Automatic execution of recurring payments requires a separate keeper service, which is not yet deployed. Rules registered now will be ready when the keeper is live.
+        <span style={{ minWidth: 0 }}>
+          When you create an automation, its rule is saved in the Automation Registry, a contract on Arc Mainnet that keeps a public list of automation rules, including the name, amount, recipient and schedule you enter. Saving a rule does not move any money.
+        </span>
+      </div>
+
+      <div
+        className="flex items-start gap-3 px-4 py-3 text-xs"
+        style={{ background: 'var(--warning-dim)', border: '1px solid var(--warning-border)', color: 'var(--warning)', lineHeight: 1.6 }}
+      >
+        <Info size={13} className="mt-0.5 shrink-0" />
+        <span style={{ minWidth: 0 }}>
+          The automation service that sends these payments on schedule is not running yet, so no payments will be sent automatically. Rules you save now will be ready once the service is live.
         </span>
       </div>
 
@@ -227,14 +247,15 @@ export default function Automations() {
               </div>
               <h2 className="text-lg font-semibold" style={{ color: 'var(--ink)' }}>Create automation</h2>
               <p className="text-xs mt-0.5" style={{ color: 'var(--muted)' }}>
-                Define when and where your treasury should make a USDC payment.
+                Choose who gets paid, how much, and how often.
               </p>
             </div>
             <button
-              onClick={() => { setShowForm(false); setForm(EMPTY_FORM); setFormError(null) }}
-              className="flex items-center justify-center rounded-lg"
+              onClick={() => { setShowForm(false); setForm(EMPTY_FORM); setFormError(null); resetWrite() }}
+              aria-label="Close"
+              className="flex items-center justify-center shrink-0"
               style={{
-                width: 34, height: 34, background: 'var(--surface-muted)',
+                width: 44, height: 44, background: 'var(--surface-muted)',
                 border: '1px solid var(--border)', color: 'var(--muted)', cursor: 'pointer',
               }}
             >
@@ -252,10 +273,11 @@ export default function Automations() {
                   type="text"
                   value={form.name}
                   onChange={(e) => handleChange('name', e.target.value)}
-                  placeholder="e.g. Monthly Payroll"
+                  placeholder="e.g. Monthly office rent"
                   required
-                  className="w-full rounded-lg px-3 py-2.5 text-sm outline-none transition-all"
+                  className="w-full px-3 py-2.5 text-sm outline-none transition-all"
                   style={{
+                    minHeight: 44,
                     background: 'var(--surface-muted)',
                     border: '1px solid var(--border)',
                     color: 'var(--ink)',
@@ -275,8 +297,9 @@ export default function Automations() {
                   onChange={(e) => handleChange('recipient', e.target.value)}
                   placeholder="0x..."
                   required
-                  className="w-full rounded-lg px-3 py-2.5 text-sm mono outline-none transition-all"
+                  className="w-full px-3 py-2.5 text-sm mono outline-none transition-all"
                   style={{
+                    minHeight: 44,
                     background: 'var(--surface-muted)',
                     border: `1px solid ${form.recipient && !isAddress(form.recipient) ? 'var(--danger)' : 'var(--border)'}`,
                     color: 'var(--ink)',
@@ -285,11 +308,11 @@ export default function Automations() {
                   }}
                 />
                 {form.recipient && !isAddress(form.recipient) && (
-                  <p className="text-xs mt-1" style={{ color: 'var(--danger)' }}>Not a valid Ethereum address.</p>
+                  <p className="text-xs mt-1" style={{ color: 'var(--danger)' }}>This is not a valid wallet address. It should start with 0x and be 42 characters long.</p>
                 )}
               </div>
 
-              {/* Amount + Frequency */}
+              {/* Amount + How often */}
               <div className="grid gap-4 sm:grid-cols-2">
                 <div>
                   <label className="block text-xs font-semibold mb-1.5" style={{ color: 'var(--ink-2)' }}>
@@ -303,8 +326,9 @@ export default function Automations() {
                     step="0.01"
                     placeholder="1000.00"
                     required
-                    className="w-full rounded-lg px-3 py-2.5 text-sm mono outline-none"
+                    className="w-full px-3 py-2.5 text-sm mono outline-none"
                     style={{
+                      minHeight: 44,
                       background: 'var(--surface-muted)',
                       border: '1px solid var(--border)',
                       color: 'var(--ink)',
@@ -315,13 +339,14 @@ export default function Automations() {
                 </div>
                 <div>
                   <label className="block text-xs font-semibold mb-1.5" style={{ color: 'var(--ink-2)' }}>
-                    Frequency *
+                    How often *
                   </label>
                   <select
                     value={form.frequency}
                     onChange={(e) => handleChange('frequency', e.target.value)}
-                    className="w-full rounded-lg px-3 py-2.5 text-sm outline-none"
+                    className="w-full px-3 py-2.5 text-sm outline-none"
                     style={{
+                      minHeight: 44,
                       background: 'var(--surface-muted)',
                       border: '1px solid var(--border)',
                       color: 'var(--ink)',
@@ -338,7 +363,7 @@ export default function Automations() {
               {/* Execution date */}
               <div>
                 <label className="block text-xs font-semibold mb-1.5" style={{ color: 'var(--ink-2)' }}>
-                  First execution date *
+                  First payment date *
                 </label>
                 <input
                   type="date"
@@ -346,8 +371,9 @@ export default function Automations() {
                   onChange={(e) => handleChange('executionDate', e.target.value)}
                   min={minDate}
                   required
-                  className="w-full rounded-lg px-3 py-2.5 text-sm outline-none"
+                  className="w-full px-3 py-2.5 text-sm outline-none"
                   style={{
+                    minHeight: 44,
                     background: 'var(--surface-muted)',
                     border: '1px solid var(--border)',
                     color: 'var(--ink)',
@@ -365,9 +391,9 @@ export default function Automations() {
                 <textarea
                   value={form.note}
                   onChange={(e) => handleChange('note', e.target.value)}
-                  placeholder="Describe the treasury rule…"
+                  placeholder="What is this payment for?"
                   rows={2}
-                  className="w-full rounded-lg px-3 py-2.5 text-sm outline-none resize-y"
+                  className="w-full px-3 py-2.5 text-sm outline-none resize-y"
                   style={{
                     background: 'var(--surface-muted)',
                     border: '1px solid var(--border)',
@@ -379,34 +405,38 @@ export default function Automations() {
               </div>
 
               {/* Error */}
-              {formError && (
+              {shownError && (
                 <div
-                  className="rounded-lg px-4 py-3 text-xs font-medium"
-                  style={{ background: 'rgba(232,109,122,0.1)', border: '1px solid rgba(232,109,122,0.25)', color: 'var(--danger)' }}
+                  role={errorIsCancel ? 'status' : 'alert'}
+                  className="px-4 py-3 text-xs font-medium"
+                  style={errorIsCancel
+                    ? { background: 'var(--surface-muted)', border: '1px solid var(--border)', color: 'var(--muted)' }
+                    : { background: 'var(--danger-dim)', border: '1px solid var(--danger-border)', color: 'var(--danger)' }}
                 >
-                  {formError}
+                  {shownError}
                 </div>
               )}
 
               {/* Transaction state feedback */}
               {isSigning && (
                 <div className="flex items-center gap-2 text-sm" style={{ color: 'var(--muted)' }}>
-                  <Spinner size={16} /> Confirm in your wallet…
+                  <Spinner size={16} /> Confirm in your wallet to continue…
                 </div>
               )}
               {isConfirming && (
                 <div className="flex items-center gap-2 text-sm" style={{ color: 'var(--muted)' }}>
-                  <Spinner size={16} /> Waiting for confirmation…
+                  <Spinner size={16} /> Waiting for the network to confirm…
                 </div>
               )}
 
               {/* Actions */}
-              <div className="flex items-center justify-end gap-3 pt-1">
+              <div className="flex flex-wrap items-center justify-end gap-3 pt-1">
                 <button
                   type="button"
-                  onClick={() => { setShowForm(false); setForm(EMPTY_FORM); setFormError(null) }}
-                  className="rounded-lg px-4 py-2 text-sm font-semibold"
+                  onClick={() => { setShowForm(false); setForm(EMPTY_FORM); setFormError(null); resetWrite() }}
+                  className="px-4 py-2 text-sm font-semibold"
                   style={{
+                    minHeight: 44,
                     background: 'var(--surface-muted)',
                     border: '1px solid var(--border)',
                     color: 'var(--ink-2)',
@@ -420,10 +450,11 @@ export default function Automations() {
                     type="button"
                     onClick={() => switchChain({ chainId: ARC_MAINNET_CHAIN_ID })}
                     disabled={isSwitching}
-                    className="rounded-lg px-4 py-2 text-sm font-semibold"
+                    className="px-4 py-2 text-sm font-semibold"
                     style={{
+                      minHeight: 44,
                       background: 'var(--warning)',
-                      color: '#0d1810',
+                      color: 'var(--bg)',
                       border: 'none',
                       cursor: isSwitching ? 'not-allowed' : 'pointer',
                       opacity: isSwitching ? 0.6 : 1,
@@ -435,16 +466,17 @@ export default function Automations() {
                   <button
                     type="submit"
                     disabled={isSubmitting || !isConnected}
-                    className="rounded-lg px-5 py-2 text-sm font-bold"
+                    className="px-5 py-2 text-sm font-bold"
                     style={{
+                      minHeight: 44,
                       background: 'var(--accent)',
-                      color: '#021a0e',
+                      color: 'var(--bg)',
                       border: 'none',
                       cursor: isSubmitting || !isConnected ? 'not-allowed' : 'pointer',
                       opacity: isSubmitting || !isConnected ? 0.6 : 1,
                     }}
                   >
-                    {isSubmitting ? 'Creating…' : 'Create Automation'}
+                    {isSubmitting ? 'Saving…' : 'Create automation'}
                   </button>
                 )}
               </div>
@@ -454,20 +486,20 @@ export default function Automations() {
       )}
 
       {/* Toolbar */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="text-sm" style={{ color: 'var(--muted)' }}>
           {isConnected && !isLoading
-            ? `${automations.length} on-chain automation${automations.length !== 1 ? 's' : ''}`
+            ? `${automations.length} automation${automations.length !== 1 ? 's' : ''} saved on Arc`
             : isLoading
             ? 'Loading…'
-            : 'Connect wallet to view automations'}
+            : 'Connect your wallet to see your automations'}
         </div>
         <div className="flex items-center gap-2">
           {isConnected && (
             <button
               onClick={refetch}
-              className="flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-medium"
-              style={{ background: 'var(--surface-muted)', border: '1px solid var(--border)', color: 'var(--muted)', cursor: 'pointer' }}
+              className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium"
+              style={{ minHeight: 44, background: 'var(--surface-muted)', border: '1px solid var(--border)', color: 'var(--muted)', cursor: 'pointer' }}
             >
               <RefreshCw size={13} />
               Refresh
@@ -476,13 +508,13 @@ export default function Automations() {
           {!showForm && (
             <button
               onClick={() => {
-                if (!isConnected) { toast.error('Connect your wallet first.'); return }
+                if (!isConnected) { toast.error('Connect your wallet to create an automation.'); return }
                 setShowForm(true)
               }}
-              className="flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-bold"
-              style={{ background: 'var(--accent)', color: '#021a0e', border: 'none', cursor: 'pointer' }}
+              className="flex items-center gap-2 px-4 py-2 text-sm font-bold"
+              style={{ minHeight: 44, background: 'var(--accent)', color: 'var(--bg)', border: 'none', cursor: 'pointer' }}
             >
-              <Plus size={15} /> New Automation
+              <Plus size={15} /> New automation
             </button>
           )}
         </div>
@@ -490,24 +522,24 @@ export default function Automations() {
 
       {/* Automations list */}
       {!isConnected ? (
-        <WalletRequired message="Connect your Arc wallet to view and create on-chain automations." />
+        <WalletRequired message="Connect your wallet to see and create automations." />
       ) : isLoading ? (
         <Card>
           <CardBody className="flex items-center justify-center py-12 gap-3">
             <Spinner size={22} />
-            <span className="text-sm" style={{ color: 'var(--muted)' }}>Loading on-chain automations…</span>
+            <span className="text-sm" style={{ color: 'var(--muted)' }}>Loading your automations…</span>
           </CardBody>
         </Card>
       ) : error ? (
-        <Card style={{ border: '1px solid rgba(232,109,122,0.2)' }}>
+        <Card style={{ border: '1px solid var(--danger-border)' }}>
           <CardBody>
             <p className="text-sm" style={{ color: 'var(--danger)' }}>
-              Unable to load automations. Check your connection and try again.
+              Could not load your automations. Check your connection, then select Retry.
             </p>
             <button
               onClick={refetch}
               className="mt-3 text-xs font-medium"
-              style={{ background: 'none', border: 'none', color: 'var(--accent)', cursor: 'pointer' }}
+              style={{ minHeight: 44, padding: '0 8px', background: 'none', border: 'none', color: 'var(--accent)', cursor: 'pointer' }}
             >
               Retry
             </button>
@@ -517,14 +549,14 @@ export default function Automations() {
         <EmptyState
           icon={Zap}
           title="No automations yet"
-          description="Create your first automation to register a USDC payment rule on Arc Mainnet."
+          description="Create your first automation to save a recurring USDC payment rule."
           action={
             <button
               onClick={() => setShowForm(true)}
-              className="flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-bold"
-              style={{ background: 'var(--accent)', color: '#021a0e', border: 'none', cursor: 'pointer' }}
+              className="flex items-center gap-2 px-4 py-2 text-sm font-bold"
+              style={{ minHeight: 44, background: 'var(--accent)', color: 'var(--bg)', border: 'none', cursor: 'pointer' }}
             >
-              <Plus size={14} /> New Automation
+              <Plus size={14} /> New automation
             </button>
           }
         />

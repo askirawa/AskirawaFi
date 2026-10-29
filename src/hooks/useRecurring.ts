@@ -93,7 +93,7 @@ export function useRecurringSchedules(opts?: { onNotify?: NotifyFn; actorAddress
         category: 'recurring',
         action: 'recurring_schedule_created',
         actorAddress: opts?.actorAddress ?? address ?? null,
-        description: `Recurring schedule "${schedule.name}" created. Frequency: ${schedule.frequency}. Amount: ${schedule.amountUsdc} USDC.`,
+        description: `Recurring schedule "${schedule.name}" created: ${schedule.frequency} payments of ${schedule.amountUsdc} USDC.`,
         outcome: 'success',
         entityId: schedule.id,
         entityLabel: schedule.name,
@@ -272,6 +272,24 @@ export function useRecurringStats(schedules: RecurringSchedule[]) {
 
 // ─── useScheduleRunner ────────────────────────────────────────────────────────
 
+/** Turns a raw wallet/network error into a short plain-English message. */
+function describeTxError(raw: string): string {
+  const m = raw.toLowerCase()
+  if (m.includes('insufficient funds') || m.includes('exceeds balance') || m.includes('transfer amount exceeds')) {
+    return 'Your wallet does not have enough USDC to cover this payment. Add USDC and try again.'
+  }
+  if (m.includes('reverted') || m.includes('revert')) {
+    return 'The network rejected the transaction. Check your balance and the recipient details, then try again.'
+  }
+  if (m.includes('chain') && (m.includes('mismatch') || m.includes('switch'))) {
+    return 'Your wallet is on the wrong network. Switch to Arc Mainnet and try again.'
+  }
+  if (raw.length > 140 || raw.includes('\n')) {
+    return 'The payment could not be completed. Check your wallet and try again.'
+  }
+  return raw
+}
+
 export function useScheduleRunner(
   schedule: RecurringSchedule | null,
   onScheduleUpdate: (updated: RecurringSchedule) => void,
@@ -289,31 +307,31 @@ export function useScheduleRunner(
   const isWrongChain = chainId !== CHAIN_ID
 
   function canExecute(): { ok: boolean; reason?: string } {
-    if (!address) return { ok: false, reason: 'Connect your wallet first.' }
-    if (isWrongChain) return { ok: false, reason: 'Switch to Arc Mainnet.' }
+    if (!address) return { ok: false, reason: 'Your wallet is not connected. Connect it and try again.' }
+    if (isWrongChain) return { ok: false, reason: 'Your wallet is on the wrong network. Switch to Arc Mainnet and try again.' }
     if (!schedule || schedule.status !== 'active') {
-      return { ok: false, reason: 'Schedule is not active.' }
+      return { ok: false, reason: 'This schedule is not active. Resume it to send payments.' }
     }
     try {
       const raw = parseUsdcString(schedule.amountUsdc)
       if (rawBalance < raw) {
         return {
           ok: false,
-          reason: `Insufficient USDC. Need ${(Number(raw) / 10 ** USDC_DECIMALS).toFixed(2)} USDC.`,
+          reason: `Your wallet does not have enough USDC. You need ${(Number(raw) / 10 ** USDC_DECIMALS).toFixed(2)} USDC. Add USDC and try again.`,
         }
       }
     } catch {
-      return { ok: false, reason: 'Invalid payment amount.' }
+      return { ok: false, reason: 'The payment amount on this schedule is not valid. Cancel it and create a new schedule.' }
     }
     const alreadyProcessing = schedule.executionHistory.some(e => e.status === 'processing')
-    if (alreadyProcessing) return { ok: false, reason: 'An execution is already in progress.' }
+    if (alreadyProcessing) return { ok: false, reason: 'A payment is already being sent. Wait for it to finish.' }
     return { ok: true }
   }
 
   async function executeNow(scheduledForMs?: number) {
     if (!schedule || !address || !usdcFact || !publicClient) return
     const { ok, reason } = canExecute()
-    if (!ok) { setExecError(reason ?? 'Cannot execute.'); return }
+    if (!ok) { setExecError(reason ?? 'The payment cannot be sent right now. Try again.'); return }
 
     setIsExecuting(true)
     setExecError(null)
@@ -353,7 +371,7 @@ export function useScheduleRunner(
         status: succeeded ? 'confirmed' : 'failed',
         txHash: hash,
         executedAt: Date.now(),
-        errorMessage: succeeded ? undefined : 'Transaction reverted on-chain.',
+        errorMessage: succeeded ? undefined : 'The network rejected this payment. Try again.',
       }
 
       const updatedHistory = workingSchedule.executionHistory.map(e =>
@@ -380,7 +398,7 @@ export function useScheduleRunner(
           category: 'recurring',
           action: 'recurring_execution_confirmed',
           actorAddress: opts?.actorAddress ?? address ?? null,
-          description: `Recurring payment "${schedule.name}" confirmed. Amount: ${schedule.amountUsdc} USDC. Recipient: ${schedule.recipientAddress.slice(0, 8)}…`,
+          description: `Recurring payment "${schedule.name}" confirmed: ${schedule.amountUsdc} USDC to ${schedule.recipientAddress.slice(0, 8)}…`,
           outcome: 'success',
           entityId: schedule.id,
           entityLabel: schedule.name,
@@ -388,13 +406,13 @@ export function useScheduleRunner(
           meta: { recipient: schedule.recipientAddress, amount: schedule.amountUsdc },
         })
       } else {
-        const n = Notify.recurringExecutionFailed(schedule.id, schedule.name, 'Transaction reverted on-chain.')
+        const n = Notify.recurringExecutionFailed(schedule.id, schedule.name, 'The network rejected this payment. Try again.')
         opts?.onNotify?.(n)
         logAuditEvent({
           category: 'recurring',
           action: 'recurring_execution_failed',
           actorAddress: opts?.actorAddress ?? address ?? null,
-          description: `Recurring payment "${schedule.name}" reverted on-chain.`,
+          description: `Recurring payment "${schedule.name}" was rejected by the network.`,
           outcome: 'failure',
           entityId: schedule.id,
           entityLabel: schedule.name,
@@ -403,15 +421,16 @@ export function useScheduleRunner(
       }
     } catch (err) {
       const e = err as { shortMessage?: string; message?: string }
-      const msg = e?.shortMessage || e?.message || 'Transfer failed.'
+      const rawMsg = e?.shortMessage || e?.message || ''
       const isRejection =
-        msg.toLowerCase().includes('user rejected') || msg.toLowerCase().includes('user denied')
+        rawMsg.toLowerCase().includes('user rejected') || rawMsg.toLowerCase().includes('user denied')
+      const msg = describeTxError(rawMsg || 'The payment could not be sent. Try again.')
 
       const failedRecord: ExecutionRecord = {
         ...processingRecord,
         status: isRejection ? 'skipped' : 'failed',
         executedAt: Date.now(),
-        errorMessage: isRejection ? 'Cancelled by user.' : msg,
+        errorMessage: isRejection ? 'Transaction cancelled. Nothing was sent.' : msg,
       }
 
       workingSchedule = {
@@ -435,6 +454,8 @@ export function useScheduleRunner(
           entityLabel: schedule.name,
         })
         setExecError(msg)
+      } else {
+        setExecError('Transaction cancelled. Nothing was sent.')
       }
     } finally {
       setIsExecuting(false)

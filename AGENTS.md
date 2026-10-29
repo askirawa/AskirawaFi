@@ -1,10 +1,10 @@
-# AskirawaFi — Agent Notes
+# Askirawa Finance — Agent Notes
 
 > Built with Arc Studio - money-powered apps in minutes
 
 ## What This App Does
 
-AskirawaFi is a programmable USDC treasury on Arc Mainnet. It supports atomic on-chain payroll batches, multi-approver proposal workflows, recurring automated payment schedules, automation registry integration, and persistent cross-device organization management with SIWE authentication.
+Askirawa Finance is a programmable USDC treasury on Arc Mainnet. It supports atomic on-chain payroll batches, multi-approver proposal workflows, recurring automated payment schedules, automation registry integration, and persistent cross-device organization management with SIWE authentication.
 
 ## Network
 

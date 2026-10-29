@@ -1,12 +1,12 @@
 /**
  * InviteMemberModal — add/invite a new member to the organization.
  *
- * NOTE: This creates a local invitation record only. No email or push
+ * NOTE: This creates an invitation saved in this browser only. No email or push
  * notification is sent — there is no notification service in this app.
  * The invited person sees the invitation when they connect the invited wallet.
  */
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { X, UserPlus, Info } from 'lucide-react'
 import { useOrgContext } from '../../context/OrgContext'
 import {
@@ -17,7 +17,6 @@ import {
   isValidAddress,
   canAssignRole,
 } from '../../lib/org'
-import { parseOnchainError } from '../../lib/utils'
 
 interface InviteMemberModalProps {
   onClose: () => void
@@ -35,15 +34,21 @@ export default function InviteMemberModal({ onClose }: InviteMemberModalProps) {
   const [success, setSuccess] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [onClose])
+
   // Only show roles the current user can assign
   const eligibleRoles = ASSIGNABLE_ROLES.filter(r =>
     myRole ? canAssignRole(myRole, r) : false
   )
 
   function validate(): string | null {
-    if (!walletAddress.trim()) return 'Wallet address is required.'
-    if (!isValidAddress(walletAddress.trim())) return 'Invalid Ethereum address (must be 0x…, 42 chars).'
-    if (!role) return 'Select a role.'
+    if (!walletAddress.trim()) return 'Enter the wallet address of the person you want to invite.'
+    if (!isValidAddress(walletAddress.trim())) return 'This is not a valid wallet address. It should start with 0x and be 42 characters long.'
+    if (!role) return 'Choose a role for this person.'
     return null
   }
 
@@ -56,7 +61,7 @@ export default function InviteMemberModal({ onClose }: InviteMemberModalProps) {
       inviteMember(walletAddress.trim(), role, displayName.trim() || undefined, note.trim() || undefined)
       setSuccess(true)
     } catch (e) {
-      setError(parseOnchainError(e))
+      setError(e instanceof Error ? e.message : 'The invitation was not saved. Please try again.')
     } finally {
       setIsSubmitting(false)
     }
@@ -66,7 +71,7 @@ export default function InviteMemberModal({ onClose }: InviteMemberModalProps) {
     width: '100%',
     background: 'var(--surface-muted)',
     border: '1px solid var(--border)',
-    borderRadius: 10,
+    minHeight: 44,
     color: 'var(--ink)',
     fontSize: 14,
     padding: '10px 14px',
@@ -80,38 +85,38 @@ export default function InviteMemberModal({ onClose }: InviteMemberModalProps) {
         position: 'fixed', inset: 0, zIndex: 60,
         background: 'rgba(0,0,0,0.65)',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
-        padding: 16,
+        padding: 12,
       }}
+      role="dialog"
+      aria-modal="true"
       onClick={e => { if (e.target === e.currentTarget) onClose() }}
     >
       <div
         style={{
           background: 'var(--surface)',
           border: '1px solid var(--border)',
-          borderRadius: 20,
-          width: '100%',
-          maxWidth: 480,
-          maxHeight: '90vh',
+          width: 'min(560px, 100%)',
+          maxHeight: '90dvh',
           overflowY: 'auto',
-          padding: 28,
+          padding: 24,
         }}
       >
         {/* Header */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8, marginBottom: 24 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
             <div style={{
-              width: 36, height: 36, borderRadius: 10,
-              background: 'rgba(53,217,139,0.1)', border: '1px solid var(--accent-border)',
+              width: 36, height: 36, flexShrink: 0,
+              background: 'var(--accent-dim)', border: '1px solid var(--accent-border)',
               display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--accent)',
             }}>
               <UserPlus size={16} />
             </div>
             <div>
-              <p style={{ fontWeight: 700, color: 'var(--ink)', fontSize: 16 }}>Invite Team Member</p>
-              <p style={{ fontSize: 12, color: 'var(--muted)' }}>Add a wallet address to the organization</p>
+              <p style={{ fontWeight: 700, color: 'var(--ink)', fontSize: 16 }}>Invite a team member</p>
+              <p style={{ fontSize: 12, color: 'var(--muted)' }}>Add someone by wallet address</p>
             </div>
           </div>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)', padding: 4 }}>
+          <button onClick={onClose} aria-label="Close" style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)', width: 44, height: 44, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
             <X size={18} />
           </button>
         </div>
@@ -119,33 +124,32 @@ export default function InviteMemberModal({ onClose }: InviteMemberModalProps) {
         {success ? (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16, alignItems: 'center', padding: '16px 0' }}>
             <div style={{
-              width: 48, height: 48, borderRadius: '50%',
+              width: 48, height: 48,
               background: 'var(--accent-dim)', border: '1px solid var(--accent-border)',
               display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--accent)',
             }}>
               <UserPlus size={20} />
             </div>
-            <p style={{ fontWeight: 700, color: 'var(--ink)', fontSize: 15 }}>Invitation Created</p>
+            <p style={{ fontWeight: 700, color: 'var(--ink)', fontSize: 15 }}>Invitation saved</p>
             <p style={{ fontSize: 13, color: 'var(--muted)', textAlign: 'center', maxWidth: 320 }}>
-              A local invitation record has been created. The invited wallet will see it when they connect.
-              No email notification has been sent.
+              The invitation is saved in this browser only. No email or message was sent.
             </p>
             {/* Invitation notice */}
             <div style={{
-              background: 'rgba(232,184,76,0.08)', border: '1px solid rgba(232,184,76,0.2)',
-              borderRadius: 10, padding: '10px 14px', width: '100%',
+              background: 'var(--warning-dim)', border: '1px solid var(--warning-border)',
+              padding: '10px 14px', width: '100%',
               display: 'flex', gap: 10, alignItems: 'flex-start',
             }}>
               <Info size={14} style={{ color: 'var(--warning)', flexShrink: 0, marginTop: 1 }} />
               <p style={{ fontSize: 12, color: 'var(--warning)' }}>
-                To notify the invitee, share the organization app URL with them. There is no automated delivery in this version.
+                Let the person know yourself, for example by sending them the link to this app. Invitations are not delivered automatically.
               </p>
             </div>
             <button
               onClick={onClose}
               style={{
-                background: 'var(--accent)', color: '#021a0e', border: 'none',
-                borderRadius: 10, padding: '10px 24px', fontWeight: 600, fontSize: 14, cursor: 'pointer',
+                background: 'var(--accent)', color: 'var(--bg)', border: 'none',
+                minHeight: 44, padding: '0 24px', fontWeight: 600, fontSize: 14, cursor: 'pointer',
               }}
             >
               Done
@@ -153,22 +157,22 @@ export default function InviteMemberModal({ onClose }: InviteMemberModalProps) {
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
-            {/* Local storage notice */}
+            {/* This-browser-only notice */}
             <div style={{
-              background: 'rgba(232,184,76,0.08)', border: '1px solid rgba(232,184,76,0.2)',
-              borderRadius: 10, padding: '10px 14px',
+              background: 'var(--warning-dim)', border: '1px solid var(--warning-border)',
+              padding: '10px 14px',
               display: 'flex', gap: 10, alignItems: 'flex-start',
             }}>
               <Info size={13} style={{ color: 'var(--warning)', flexShrink: 0, marginTop: 1 }} />
               <p style={{ fontSize: 12, color: 'var(--warning)' }}>
-                Invitations are stored locally in this browser. The invited address will see their invitation when they connect this wallet to the app.
+                Invitations are saved in this browser only. Other people will not see them from their own devices.
               </p>
             </div>
 
             {/* Wallet address */}
             <div>
               <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: 'var(--ink-2)', marginBottom: 6 }}>
-                Wallet Address <span style={{ color: 'var(--danger)' }}>*</span>
+                Wallet address <span style={{ color: 'var(--danger)' }}>*</span>
               </label>
               <input
                 type="text"
@@ -182,11 +186,11 @@ export default function InviteMemberModal({ onClose }: InviteMemberModalProps) {
             {/* Display name */}
             <div>
               <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: 'var(--ink-2)', marginBottom: 6 }}>
-                Display Name <span style={{ color: 'var(--muted)', fontWeight: 400 }}>(optional)</span>
+                Name <span style={{ color: 'var(--muted)', fontWeight: 400 }}>(optional)</span>
               </label>
               <input
                 type="text"
-                placeholder="e.g. Jane Doe"
+                placeholder="For example: Jane Doe"
                 value={displayName}
                 onChange={e => setDisplayName(e.target.value)}
                 style={inputStyle}
@@ -207,7 +211,7 @@ export default function InviteMemberModal({ onClose }: InviteMemberModalProps) {
                       textAlign: 'left',
                       background: role === r ? 'var(--accent-dim)' : 'var(--surface-muted)',
                       border: role === r ? '1px solid var(--accent-border)' : '1px solid var(--border)',
-                      borderRadius: 10,
+                      minHeight: 44,
                       padding: '10px 14px',
                       cursor: 'pointer',
                     }}
@@ -224,10 +228,10 @@ export default function InviteMemberModal({ onClose }: InviteMemberModalProps) {
             {/* Note */}
             <div>
               <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: 'var(--ink-2)', marginBottom: 6 }}>
-                Invitation Note <span style={{ color: 'var(--muted)', fontWeight: 400 }}>(optional)</span>
+                Note <span style={{ color: 'var(--muted)', fontWeight: 400 }}>(optional)</span>
               </label>
               <textarea
-                placeholder="e.g. Welcome to AskirawaFi — you'll manage payroll approvals."
+                placeholder="For example: Welcome to Askirawa Finance. You will approve payroll."
                 value={note}
                 onChange={e => setNote(e.target.value)}
                 rows={2}
@@ -237,18 +241,18 @@ export default function InviteMemberModal({ onClose }: InviteMemberModalProps) {
 
             {/* Error */}
             {error && (
-              <p style={{ fontSize: 13, color: 'var(--danger)', background: 'rgba(232,109,122,0.08)', borderRadius: 8, padding: '8px 12px' }}>
+              <p style={{ fontSize: 13, color: 'var(--danger)', background: 'var(--danger-dim)', padding: '8px 12px' }}>
                 {error}
               </p>
             )}
 
             {/* Actions */}
-            <div style={{ display: 'flex', gap: 12, paddingTop: 4 }}>
+            <div style={{ display: 'flex', gap: 12, paddingTop: 4, flexWrap: 'wrap' }}>
               <button
                 onClick={onClose}
                 style={{
-                  flex: 1, background: 'var(--surface-muted)', border: '1px solid var(--border)',
-                  color: 'var(--ink-2)', borderRadius: 10, padding: '10px 0',
+                  flex: '1 1 100px', background: 'var(--surface-muted)', border: '1px solid var(--border)',
+                  color: 'var(--ink-2)', minHeight: 44,
                   fontWeight: 600, fontSize: 14, cursor: 'pointer',
                 }}
               >
@@ -258,12 +262,12 @@ export default function InviteMemberModal({ onClose }: InviteMemberModalProps) {
                 onClick={handleSubmit}
                 disabled={isSubmitting}
                 style={{
-                  flex: 2, background: 'var(--accent)', color: '#021a0e', border: 'none',
-                  borderRadius: 10, padding: '10px 0', fontWeight: 700, fontSize: 14,
+                  flex: '2 1 160px', background: 'var(--accent)', color: 'var(--bg)', border: 'none',
+                  minHeight: 44, fontWeight: 700, fontSize: 14,
                   cursor: isSubmitting ? 'not-allowed' : 'pointer', opacity: isSubmitting ? 0.7 : 1,
                 }}
               >
-                {isSubmitting ? 'Creating…' : 'Send Invitation'}
+                {isSubmitting ? 'Saving…' : 'Save invitation'}
               </button>
             </div>
           </div>

@@ -1,9 +1,9 @@
 /**
- * AskirawaFi — Organization & Team Management
+ * Askirawa Finance — Organization & Team Management
  *
  * STORAGE ARCHITECTURE NOTE:
  * There is no backend, authentication service, or on-chain organization registry
- * in the current AskirawaFi application. Organization and membership data is
+ * in the current Askirawa Finance application. Organization and membership data is
  * therefore stored in browser localStorage.
  *
  * Limitations that must be understood:
@@ -37,17 +37,17 @@ export const ROLE_ORDER: OrgRole[] = ['viewer', 'finance_manager', 'approver', '
 export const ROLE_LABELS: Record<OrgRole, string> = {
   owner: 'Owner',
   admin: 'Admin',
-  finance_manager: 'Finance Manager',
+  finance_manager: 'Finance manager',
   approver: 'Approver',
   viewer: 'Viewer',
 }
 
 export const ROLE_DESCRIPTIONS: Record<OrgRole, string> = {
-  owner: 'Full control: settings, members, treasury policies.',
-  admin: 'Manage members and operations within owner-granted scope.',
-  finance_manager: 'Create payroll, recurring payments, and submit transfer requests.',
-  approver: 'Review and approve or reject treasury requests.',
-  viewer: 'Read-only access to permitted information.',
+  owner: 'Full access, including settings, team members and approval rules.',
+  admin: 'Manage team members and day-to-day operations.',
+  finance_manager: 'Create payroll and recurring payments, and request transfers.',
+  approver: 'Approve or reject treasury requests.',
+  viewer: 'View information only.',
 }
 
 // ─── Permissions ──────────────────────────────────────────────────────────────

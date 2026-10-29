@@ -5,7 +5,7 @@
  * Step 3: Review and confirm
  */
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { X, ChevronLeft, ChevronRight, Info, AlertCircle } from 'lucide-react'
 import {
   type Frequency,
@@ -90,7 +90,8 @@ const inputStyle: React.CSSProperties = {
   padding: '10px 12px',
   background: 'var(--surface)',
   border: '1px solid var(--border)',
-  borderRadius: 8,
+  borderRadius: 0,
+  minHeight: 44,
   color: 'var(--ink)',
   fontSize: 14,
   outline: 'none',
@@ -139,16 +140,16 @@ function StepDetails({
 }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-      <Field label="Schedule Name" error={errors.name} required>
+      <Field label="Schedule name" error={errors.name} required>
         <FieldInput
           value={form.name}
           onChange={v => update('name', v)}
-          placeholder="e.g. Contractor Monthly Retainer"
+          placeholder="For example: Contractor retainer"
           hasError={!!errors.name}
         />
       </Field>
 
-      <Field label="Recipient Wallet Address" error={errors.recipientAddress} required>
+      <Field label="Recipient wallet address" error={errors.recipientAddress} required>
         <FieldInput
           value={form.recipientAddress}
           onChange={v => update('recipientAddress', v)}
@@ -158,10 +159,10 @@ function StepDetails({
       </Field>
 
       <Field
-        label="USDC Amount per Payment"
+        label="Amount per payment (USDC)"
         error={errors.amountUsdc}
         required
-        hint="Enter the amount for each individual payment (e.g. 500.00)"
+        hint="The amount sent each time, for example 500.00"
       >
         <div style={{ position: 'relative' }}>
           <FieldInput
@@ -187,11 +188,11 @@ function StepDetails({
         </div>
       </Field>
 
-      <Field label="Description" hint="Optional — shown on each execution record">
+      <Field label="Description" hint="Optional. Shown on each payment record.">
         <textarea
           value={form.description}
           onChange={e => update('description', e.target.value)}
-          placeholder="e.g. Monthly retainer for design work"
+          placeholder="For example: Monthly design work"
           rows={2}
           style={{
             ...inputStyle,
@@ -217,8 +218,8 @@ function StepSchedule({
 }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-      <Field label="Payment Frequency" error={errors.frequency} required>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
+      <Field label="How often" error={errors.frequency} required>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(90px, 100%), 1fr))', gap: 8 }}>
           {(['daily', 'weekly', 'monthly'] as Frequency[]).map(f => (
             <button
               key={f}
@@ -226,7 +227,8 @@ function StepSchedule({
               onClick={() => update('frequency', f)}
               style={{
                 padding: '10px 0',
-                borderRadius: 8,
+                minHeight: 44,
+                borderRadius: 0,
                 border: form.frequency === f ? '1px solid var(--accent)' : '1px solid var(--border)',
                 background: form.frequency === f ? 'var(--accent-dim)' : 'var(--surface)',
                 color: form.frequency === f ? 'var(--accent)' : 'var(--muted)',
@@ -242,8 +244,8 @@ function StepSchedule({
         </div>
       </Field>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-        <Field label="Start Date" error={errors.startDate} required>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(180px, 100%), 1fr))', gap: 16 }}>
+        <Field label="Start date" error={errors.startDate} required>
           <FieldInput
             type="date"
             value={form.startDate}
@@ -252,10 +254,10 @@ function StepSchedule({
           />
         </Field>
         <Field
-          label="Start Time"
+          label="Start time"
           error={errors.startTime}
           required
-          hint="24h format, your local time"
+          hint="Your local time"
         >
           <FieldInput
             type="time"
@@ -267,9 +269,9 @@ function StepSchedule({
       </div>
 
       <Field
-        label="End Date"
+        label="End date"
         error={errors.endDate}
-        hint="Optional — leave blank for an open-ended schedule"
+        hint="Optional. Leave blank to keep going until you cancel."
       >
         <FieldInput
           type="date"
@@ -280,9 +282,9 @@ function StepSchedule({
       </Field>
 
       <Field
-        label="Maximum Executions"
+        label="Number of payments"
         error={errors.maxExecutions}
-        hint="Optional — schedule completes after this many successful payments"
+        hint="Optional. The schedule ends after this many payments."
       >
         <FieldInput
           type="number"
@@ -300,12 +302,12 @@ function StepSchedule({
             padding: '12px 16px',
             background: 'var(--accent-dim)',
             border: '1px solid var(--accent-border)',
-            borderRadius: 8,
+            borderRadius: 0,
             fontSize: 13,
             color: 'var(--ink)',
           }}
         >
-          <span style={{ color: 'var(--muted)', marginRight: 8 }}>First payment:</span>
+          <span style={{ color: 'var(--muted)', marginRight: 8 }}>First payment due:</span>
           <strong>
             {computeNthExecution(
               form.startDate,
@@ -322,7 +324,7 @@ function StepSchedule({
           </strong>
           {form.maxExecutions && !isNaN(parseInt(form.maxExecutions)) && (
             <span style={{ color: 'var(--muted)', marginLeft: 12 }}>
-              · {form.maxExecutions} payments total
+              · {form.maxExecutions} payments in total
             </span>
           )}
         </div>
@@ -334,7 +336,7 @@ function StepSchedule({
           padding: '12px 16px',
           background: 'rgba(232,184,76,0.08)',
           border: '1px solid rgba(232,184,76,0.2)',
-          borderRadius: 8,
+          borderRadius: 0,
           display: 'flex',
           gap: 10,
           alignItems: 'flex-start',
@@ -342,10 +344,9 @@ function StepSchedule({
       >
         <Info size={14} style={{ color: 'var(--warning)', flexShrink: 0, marginTop: 1 }} />
         <div style={{ fontSize: 12, color: 'var(--muted)', lineHeight: 1.6 }}>
-          <strong style={{ color: 'var(--warning)' }}>Manual execution required.</strong>{' '}
-          Saving this schedule stores the configuration locally. Each payment must be
-          triggered manually from the schedule detail view. Automatic execution requires a
-          keeper service with pre-approved USDC allowance, which is not yet deployed.
+          <strong style={{ color: 'var(--warning)' }}>Payments are not sent automatically.</strong>{' '}
+          This schedule is saved in this browser only. You send each payment yourself from the
+          schedule page. The automation service that could do this for you is not available yet.
         </div>
       </div>
     </div>
@@ -363,12 +364,12 @@ function StepReview({ form }: { form: FormState }) {
   } catch { /* noop */ }
 
   const rows: [string, React.ReactNode][] = [
-    ['Schedule Name', form.name],
-    ['Recipient', <span style={{ fontFamily: 'monospace', fontSize: 12 }}>{form.recipientAddress}</span>],
-    ['Amount per Payment', amountValid ? `${formatUsdcBigint(rawAmount)} USDC` : form.amountUsdc],
-    ['Frequency', FREQUENCY_LABELS[form.frequency]],
+    ['Schedule name', form.name],
+    ['Recipient', <span style={{ fontFamily: 'monospace', fontSize: 12, overflowWrap: 'anywhere' }}>{form.recipientAddress}</span>],
+    ['Amount per payment', amountValid ? `${formatUsdcBigint(rawAmount)} USDC` : form.amountUsdc],
+    ['How often', FREQUENCY_LABELS[form.frequency]],
     [
-      'First Payment',
+      'First payment due',
       form.startDate && form.startTime
         ? computeNthExecution(form.startDate, form.startTime, form.frequency, 0).toLocaleString(
             'en-US',
@@ -376,8 +377,8 @@ function StepReview({ form }: { form: FormState }) {
           )
         : '—',
     ],
-    ['End Date', form.endDate || 'Open-ended'],
-    ['Max Executions', form.maxExecutions || 'Unlimited'],
+    ['End date', form.endDate || 'None (keeps going until cancelled)'],
+    ['Number of payments', form.maxExecutions || 'No limit'],
     ['Description', form.description || '—'],
   ]
 
@@ -387,7 +388,7 @@ function StepReview({ form }: { form: FormState }) {
         style={{
           background: 'var(--surface)',
           border: '1px solid var(--border)',
-          borderRadius: 10,
+          borderRadius: 0,
           overflow: 'hidden',
         }}
       >
@@ -424,15 +425,14 @@ function StepReview({ form }: { form: FormState }) {
           padding: '12px 16px',
           background: 'rgba(232,184,76,0.08)',
           border: '1px solid rgba(232,184,76,0.2)',
-          borderRadius: 8,
+          borderRadius: 0,
           fontSize: 12,
           color: 'var(--muted)',
           lineHeight: 1.6,
         }}
       >
-        <strong style={{ color: 'var(--warning)' }}>Stored locally.</strong>{' '}
-        This schedule will be saved in your browser. Payments must be executed manually
-        from the schedule detail view. No funds will move until you trigger each payment.
+        <strong style={{ color: 'var(--warning)' }}>Saved in this browser only.</strong>{' '}
+        Saving does not move any money. You send each payment yourself from the schedule page.
       </div>
     </div>
   )
@@ -461,6 +461,14 @@ export default function CreateScheduleModal({ onClose, onCreate }: CreateSchedul
   const [step, setStep] = useState(0)
   const [form, setForm] = useState<FormState>(DEFAULT_FORM)
   const [errors, setErrors] = useState<ScheduleValidationResult['errors']>({})
+
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (e.key === 'Escape') onClose()
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [onClose])
 
   const update = useCallback((k: keyof FormState, v: string) => {
     setForm(prev => ({ ...prev, [k]: v }))
@@ -530,7 +538,7 @@ export default function CreateScheduleModal({ onClose, onCreate }: CreateSchedul
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        padding: 16,
+        padding: 12,
         background: 'rgba(0,0,0,0.7)',
         backdropFilter: 'blur(4px)',
       }}
@@ -538,15 +546,14 @@ export default function CreateScheduleModal({ onClose, onCreate }: CreateSchedul
     >
       <div
         style={{
-          width: '100%',
-          maxWidth: 520,
-          maxHeight: '90vh',
-          overflow: 'hidden',
+          width: 'min(560px, 100%)',
+          maxHeight: '90dvh',
+          overflowY: 'auto',
           display: 'flex',
           flexDirection: 'column',
           background: 'var(--surface-elevated)',
           border: '1px solid var(--border)',
-          borderRadius: 16,
+          borderRadius: 0,
         }}
       >
         {/* Header */}
@@ -561,7 +568,7 @@ export default function CreateScheduleModal({ onClose, onCreate }: CreateSchedul
         >
           <div>
             <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--ink)' }}>
-              Create Recurring Payment
+              Create recurring payment
             </div>
             <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 2 }}>
               Step {step + 1} of {STEPS.length}: {STEPS[step]}
@@ -569,12 +576,17 @@ export default function CreateScheduleModal({ onClose, onCreate }: CreateSchedul
           </div>
           <button
             onClick={onClose}
+            aria-label="Close"
             style={{
               background: 'none',
               border: 'none',
               cursor: 'pointer',
               color: 'var(--muted)',
-              padding: 4,
+              width: 44,
+              height: 44,
+              flexShrink: 0,
+              alignItems: 'center',
+              justifyContent: 'center',
               display: 'flex',
             }}
           >
@@ -589,6 +601,7 @@ export default function CreateScheduleModal({ onClose, onCreate }: CreateSchedul
             gap: 0,
             padding: '0 24px',
             paddingTop: 16,
+            overflowX: 'auto',
           }}
         >
           {STEPS.map((label, i) => (
@@ -605,7 +618,7 @@ export default function CreateScheduleModal({ onClose, onCreate }: CreateSchedul
                   style={{
                     width: 22,
                     height: 22,
-                    borderRadius: '50%',
+                    borderRadius: 0,
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
@@ -613,7 +626,7 @@ export default function CreateScheduleModal({ onClose, onCreate }: CreateSchedul
                     fontWeight: 700,
                     background: i < step ? 'var(--accent)' : i === step ? 'var(--accent-dim)' : 'var(--surface-muted)',
                     border: i === step ? '1px solid var(--accent)' : '1px solid transparent',
-                    color: i < step ? '#021a0e' : i === step ? 'var(--accent)' : 'var(--muted)',
+                    color: i < step ? 'var(--bg)' : i === step ? 'var(--accent)' : 'var(--muted)',
                   }}
                 >
                   {i < step ? '✓' : i + 1}
@@ -637,7 +650,7 @@ export default function CreateScheduleModal({ onClose, onCreate }: CreateSchedul
         </div>
 
         {/* Body */}
-        <div style={{ flex: 1, overflowY: 'auto', padding: '20px 24px' }}>
+        <div style={{ flex: 1, padding: '20px 24px' }}>
           {step === 0 && <StepDetails form={form} errors={errors} update={update} />}
           {step === 1 && <StepSchedule form={form} errors={errors} update={update} />}
           {step === 2 && <StepReview form={form} />}
@@ -661,9 +674,10 @@ export default function CreateScheduleModal({ onClose, onCreate }: CreateSchedul
                 alignItems: 'center',
                 gap: 6,
                 padding: '9px 16px',
+                minHeight: 44,
                 background: 'none',
                 border: '1px solid var(--border)',
-                borderRadius: 8,
+                borderRadius: 0,
                 color: 'var(--muted)',
                 fontSize: 13,
                 fontWeight: 600,
@@ -678,9 +692,10 @@ export default function CreateScheduleModal({ onClose, onCreate }: CreateSchedul
               onClick={onClose}
               style={{
                 padding: '9px 16px',
+                minHeight: 44,
                 background: 'none',
                 border: '1px solid var(--border)',
-                borderRadius: 8,
+                borderRadius: 0,
                 color: 'var(--muted)',
                 fontSize: 13,
                 fontWeight: 600,
@@ -699,10 +714,11 @@ export default function CreateScheduleModal({ onClose, onCreate }: CreateSchedul
                 alignItems: 'center',
                 gap: 6,
                 padding: '9px 16px',
+                minHeight: 44,
                 background: 'var(--accent)',
                 border: 'none',
-                borderRadius: 8,
-                color: '#021a0e',
+                borderRadius: 0,
+                color: 'var(--bg)',
                 fontSize: 13,
                 fontWeight: 700,
                 cursor: 'pointer',
@@ -716,16 +732,17 @@ export default function CreateScheduleModal({ onClose, onCreate }: CreateSchedul
               onClick={submit}
               style={{
                 padding: '9px 20px',
+                minHeight: 44,
                 background: 'var(--accent)',
                 border: 'none',
-                borderRadius: 8,
-                color: '#021a0e',
+                borderRadius: 0,
+                color: 'var(--bg)',
                 fontSize: 13,
                 fontWeight: 700,
                 cursor: 'pointer',
               }}
             >
-              Save Schedule
+              Save schedule
             </button>
           )}
         </div>

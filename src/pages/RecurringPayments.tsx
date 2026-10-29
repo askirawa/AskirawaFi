@@ -9,6 +9,8 @@ import { useState, useMemo } from 'react'
 import { useAccount } from 'wagmi'
 import { Plus, Clock, Search, Filter, PlayCircle, PauseCircle, Info, ArrowRight } from 'lucide-react'
 import Badge from '../components/ui/Badge'
+import PageHeader from '../components/ui/PageHeader'
+import StatCard from '../components/ui/StatCard'
 import { WalletRequired } from '../components/WalletGate'
 import CreateScheduleModal from '../components/recurring/CreateScheduleModal'
 import ScheduleDetail from '../components/recurring/ScheduleDetail'
@@ -29,47 +31,7 @@ import {
   useRecurringStats,
   useUsdcBalance,
 } from '../hooks/useRecurring'
-import { ARC_MAINNET_CHAIN_ID as _ARC_MAINNET_CHAIN_ID } from '../config'
 import { useNotifications } from '../context/NotificationContext'
-
-// ─── Stat card ────────────────────────────────────────────────────────────────
-
-function StatCard({
-  label,
-  value,
-  sub,
-  accent,
-}: {
-  label: string
-  value: string | number
-  sub?: string
-  accent?: boolean
-}) {
-  return (
-    <div
-      style={{
-        background: 'var(--surface)',
-        border: `1px solid ${accent ? 'var(--accent-border)' : 'var(--border)'}`,
-        borderRadius: 12,
-        padding: '20px',
-      }}
-    >
-      <div style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 8 }}>{label}</div>
-      <div
-        style={{
-          fontSize: 24,
-          fontWeight: 700,
-          color: accent ? 'var(--accent)' : 'var(--ink)',
-          fontFamily: "'Space Grotesk', sans-serif",
-          lineHeight: 1,
-        }}
-      >
-        {value}
-      </div>
-      {sub && <div style={{ fontSize: 12, color: 'var(--subtle)', marginTop: 6 }}>{sub}</div>}
-    </div>
-  )
-}
 
 // ─── Schedule row ─────────────────────────────────────────────────────────────
 
@@ -98,8 +60,8 @@ function ScheduleRow({
   return (
     <div
       style={{
-        display: 'grid',
-        gridTemplateColumns: '1fr auto auto auto',
+        display: 'flex',
+        flexWrap: 'wrap',
         gap: 16,
         alignItems: 'center',
         padding: '14px 16px',
@@ -112,15 +74,15 @@ function ScheduleRow({
       onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent' }}
     >
       {/* Name + details */}
-      <div style={{ minWidth: 0 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-          <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--ink)' }}>{schedule.name}</span>
+      <div style={{ minWidth: 0, flex: '1 1 240px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4, flexWrap: 'wrap' }}>
+          <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--ink)', overflowWrap: 'anywhere' }}>{schedule.name}</span>
           <Badge variant={scheduleStatusVariant(schedule.status)}>
             {SCHEDULE_STATUS_LABELS[schedule.status]}
           </Badge>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-          <span style={{ fontSize: 12, color: 'var(--muted)' }}>
+          <span style={{ fontSize: 12, color: 'var(--muted)', overflowWrap: 'anywhere' }}>
             {formatScheduleId(schedule.id)}
           </span>
           <span style={{ fontSize: 12, color: 'var(--muted)' }}>
@@ -133,7 +95,7 @@ function ScheduleRow({
               fontFamily: 'monospace',
               overflow: 'hidden',
               textOverflow: 'ellipsis',
-              maxWidth: 140,
+              maxWidth: '100%',
               display: 'block',
             }}
           >
@@ -142,23 +104,23 @@ function ScheduleRow({
           {next && (
             <span style={{ fontSize: 11, color: 'var(--accent)', display: 'flex', alignItems: 'center', gap: 4 }}>
               <Clock size={10} />
-              Next: {next.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+              Next payment: {next.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
             </span>
           )}
         </div>
         {confirmedCount > 0 && (
           <div style={{ fontSize: 11, color: 'var(--subtle)', marginTop: 4 }}>
-            {confirmedCount} payment{confirmedCount !== 1 ? 's' : ''} confirmed · {formatUsdcBigint(totalPaidRaw)} USDC total paid
+            {confirmedCount} payment{confirmedCount !== 1 ? 's' : ''} confirmed · {formatUsdcBigint(totalPaidRaw)} USDC paid so far
           </div>
         )}
       </div>
 
       {/* Amount */}
-      <div style={{ textAlign: 'right' }}>
+      <div style={{ textAlign: 'right', marginLeft: 'auto' }}>
         <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--ink)', whiteSpace: 'nowrap' }}>
           {formatUsdcBigint(amountRaw)} USDC
         </div>
-        <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 2 }}>per payment</div>
+        <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 2 }}>each payment</div>
       </div>
 
       {/* Pause/resume */}
@@ -166,14 +128,18 @@ function ScheduleRow({
         {schedule.status === 'active' && (
           <button
             title="Pause schedule"
+            aria-label="Pause schedule"
             onClick={onPause}
             style={{
               background: 'none',
               border: 'none',
               cursor: 'pointer',
               color: 'var(--warning)',
-              padding: 6,
-              borderRadius: 6,
+              minWidth: 44,
+              minHeight: 44,
+              alignItems: 'center',
+              justifyContent: 'center',
+              borderRadius: 0,
               display: 'flex',
             }}
           >
@@ -183,14 +149,18 @@ function ScheduleRow({
         {schedule.status === 'paused' && (
           <button
             title="Resume schedule"
+            aria-label="Resume schedule"
             onClick={onResume}
             style={{
               background: 'none',
               border: 'none',
               cursor: 'pointer',
               color: 'var(--accent)',
-              padding: 6,
-              borderRadius: 6,
+              minWidth: 44,
+              minHeight: 44,
+              alignItems: 'center',
+              justifyContent: 'center',
+              borderRadius: 0,
               display: 'flex',
             }}
           >
@@ -222,7 +192,7 @@ function EmptyState({ onCreateClick }: { onCreateClick: () => void }) {
         style={{
           width: 52,
           height: 52,
-          borderRadius: '50%',
+          borderRadius: 0,
           background: 'var(--accent-dim)',
           border: '1px solid var(--accent-border)',
           display: 'flex',
@@ -237,8 +207,7 @@ function EmptyState({ onCreateClick }: { onCreateClick: () => void }) {
           No recurring schedules yet
         </div>
         <div style={{ fontSize: 13, color: 'var(--muted)', maxWidth: 340, lineHeight: 1.6 }}>
-          Create a recurring schedule to set up daily, weekly, or monthly USDC payments
-          to a wallet address.
+          Set up daily, weekly or monthly USDC payments to a wallet address.
         </div>
       </div>
       <button
@@ -250,8 +219,9 @@ function EmptyState({ onCreateClick }: { onCreateClick: () => void }) {
           padding: '10px 20px',
           background: 'var(--accent)',
           border: 'none',
-          borderRadius: 8,
-          color: '#021a0e',
+          borderRadius: 0,
+          minHeight: 44,
+          color: 'var(--bg)',
           fontSize: 13,
           fontWeight: 700,
           cursor: 'pointer',
@@ -259,7 +229,7 @@ function EmptyState({ onCreateClick }: { onCreateClick: () => void }) {
         }}
       >
         <Plus size={15} />
-        Create Schedule
+        Create schedule
       </button>
     </div>
   )
@@ -321,86 +291,72 @@ export default function RecurringPayments() {
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 32 }}>
-      {/* Page header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 16, flexWrap: 'wrap' }}>
-        <div>
-          <h1
-            style={{
-              fontSize: 24,
-              fontWeight: 800,
-              color: 'var(--ink)',
-              margin: 0,
-              fontFamily: "'Space Grotesk', sans-serif",
-            }}
-          >
-            Recurring Payments
-          </h1>
-          <p style={{ fontSize: 14, color: 'var(--muted)', margin: '6px 0 0' }}>
-            Schedule and manage repeating USDC payments on Arc Mainnet.
-          </p>
-        </div>
-
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          {balanceFormatted && (
-            <div
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+      <PageHeader
+        eyebrow="Treasury Operations"
+        title="Recurring Payments"
+        subtitle="Plan repeating USDC payments on Arc Mainnet."
+        action={
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+            {balanceFormatted && (
+              <div
+                style={{
+                  padding: '8px 14px',
+                  background: 'var(--surface)',
+                  border: '1px solid var(--border)',
+                  fontSize: 13,
+                  color: 'var(--muted)',
+                }}
+              >
+                Wallet balance: <strong style={{ color: 'var(--ink)' }}>{balanceFormatted} USDC</strong>
+              </div>
+            )}
+            <button
+              onClick={() => setShowCreate(true)}
+              disabled={!isConnected}
               style={{
-                padding: '8px 14px',
-                background: 'var(--surface)',
-                border: '1px solid var(--border)',
-                borderRadius: 8,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 8,
+                padding: '10px 18px',
+                minHeight: 44,
+                background: isConnected ? 'var(--accent)' : 'var(--surface-muted)',
+                border: 'none',
+                borderRadius: 0,
+                color: isConnected ? 'var(--bg)' : 'var(--subtle)',
                 fontSize: 13,
-                color: 'var(--muted)',
+                fontWeight: 700,
+                cursor: isConnected ? 'pointer' : 'not-allowed',
+                transition: 'opacity 0.15s',
               }}
+              title={!isConnected ? 'Connect your wallet to create a schedule' : undefined}
             >
-              Treasury: <strong style={{ color: 'var(--ink)' }}>{balanceFormatted} USDC</strong>
-            </div>
-          )}
-          <button
-            onClick={() => setShowCreate(true)}
-            disabled={!isConnected}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 8,
-              padding: '10px 18px',
-              background: isConnected ? 'var(--accent)' : 'var(--surface-muted)',
-              border: 'none',
-              borderRadius: 8,
-              color: isConnected ? '#021a0e' : 'var(--subtle)',
-              fontSize: 13,
-              fontWeight: 700,
-              cursor: isConnected ? 'pointer' : 'not-allowed',
-              transition: 'opacity 0.15s',
-            }}
-            title={!isConnected ? 'Connect wallet to create schedules' : undefined}
-          >
-            <Plus size={15} />
-            Create Schedule
-          </button>
-        </div>
-      </div>
+              <Plus size={15} />
+              Create schedule
+            </button>
+          </div>
+        }
+      />
 
       {!isConnected && (
         <WalletRequired message="Connect your wallet to manage recurring payments." />
       )}
 
       {/* Stats */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 16 }}>
-        <StatCard label="Total Schedules" value={stats.total} />
-        <StatCard label="Active" value={stats.active} accent />
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(160px, 100%), 1fr))', gap: 16 }}>
+        <StatCard label="Schedules" value={stats.total} />
+        <StatCard label="Active" value={stats.active} />
         <StatCard label="Paused" value={stats.paused} />
-        <StatCard label="Payments Confirmed" value={stats.confirmedExecs} sub="across all schedules" />
+        <StatCard label="Payments confirmed" value={stats.confirmedExecs} note="All schedules" />
         <StatCard
-          label="Total Paid (USDC)"
+          label="Total paid (USDC)"
           value={stats.totalConfirmedFormatted}
-          sub="confirmed on-chain"
-          accent
+          note="Confirmed payments"
         />
         <StatCard
-          label="Awaiting Execution"
+          label="Waiting to be sent"
           value={stats.pendingExecs}
-          sub="active schedules with upcoming payments"
+          note="Active schedules"
         />
       </div>
 
@@ -413,7 +369,7 @@ export default function RecurringPayments() {
           padding: '12px 16px',
           background: 'rgba(232,184,76,0.06)',
           border: '1px solid rgba(232,184,76,0.15)',
-          borderRadius: 10,
+          borderRadius: 0,
           fontSize: 13,
           color: 'var(--muted)',
           lineHeight: 1.6,
@@ -421,11 +377,10 @@ export default function RecurringPayments() {
       >
         <Info size={14} style={{ flexShrink: 0, color: 'var(--warning)', marginTop: 1 }} />
         <div>
-          <strong style={{ color: 'var(--warning)' }}>Schedules require manual execution.</strong>{' '}
-          Each payment must be triggered from the schedule detail view by a connected wallet.
-          Automatic execution (daily/weekly/monthly without user action) requires a keeper service
-          with pre-approved USDC allowance, which is not yet deployed. Scheduled dates are used for
-          display and planning only.
+          <strong style={{ color: 'var(--warning)' }}>Payments are not sent automatically.</strong>{' '}
+          Open a schedule and send each payment from your wallet when it is due. The automation
+          service that could send them for you is not available yet, so scheduled dates are for
+          planning only.
         </div>
       </div>
 
@@ -434,7 +389,7 @@ export default function RecurringPayments() {
         style={{
           background: 'var(--surface)',
           border: '1px solid var(--border)',
-          borderRadius: 12,
+          borderRadius: 0,
           overflow: 'hidden',
         }}
       >
@@ -449,7 +404,7 @@ export default function RecurringPayments() {
             flexWrap: 'wrap',
           }}
         >
-          <div style={{ position: 'relative', flex: 1, minWidth: 180 }}>
+          <div style={{ position: 'relative', flex: 1, minWidth: 'min(180px, 100%)' }}>
             <Search
               size={14}
               style={{
@@ -465,13 +420,14 @@ export default function RecurringPayments() {
               type="text"
               value={search}
               onChange={e => setSearch(e.target.value)}
-              placeholder="Search by name, address, or ID…"
+              placeholder="Search by name, wallet address or ID"
               style={{
                 width: '100%',
                 padding: '8px 12px 8px 32px',
+                minHeight: 44,
                 background: 'var(--surface-muted)',
                 border: '1px solid var(--border)',
-                borderRadius: 8,
+                borderRadius: 0,
                 color: 'var(--ink)',
                 fontSize: 13,
                 outline: 'none',
@@ -480,23 +436,24 @@ export default function RecurringPayments() {
             />
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
             <Filter size={13} style={{ color: 'var(--subtle)' }} />
             <select
               value={statusFilter}
               onChange={e => setStatusFilter(e.target.value as ScheduleStatus | 'all')}
               style={{
                 padding: '7px 10px',
+                minHeight: 44,
                 background: 'var(--surface-muted)',
                 border: '1px solid var(--border)',
-                borderRadius: 8,
+                borderRadius: 0,
                 color: 'var(--ink)',
                 fontSize: 12,
                 cursor: 'pointer',
                 outline: 'none',
               }}
             >
-              <option value="all">All Status</option>
+              <option value="all">All statuses</option>
               {ALL_STATUSES.map(s => (
                 <option key={s} value={s}>{SCHEDULE_STATUS_LABELS[s]}</option>
               ))}
@@ -507,16 +464,17 @@ export default function RecurringPayments() {
               onChange={e => setFreqFilter(e.target.value as Frequency | 'all')}
               style={{
                 padding: '7px 10px',
+                minHeight: 44,
                 background: 'var(--surface-muted)',
                 border: '1px solid var(--border)',
-                borderRadius: 8,
+                borderRadius: 0,
                 color: 'var(--ink)',
                 fontSize: 12,
                 cursor: 'pointer',
                 outline: 'none',
               }}
             >
-              <option value="all">All Frequencies</option>
+              <option value="all">All frequencies</option>
               <option value="daily">Daily</option>
               <option value="weekly">Weekly</option>
               <option value="monthly">Monthly</option>
@@ -542,7 +500,7 @@ export default function RecurringPayments() {
           }}
         >
           <Info size={11} />
-          Schedule data is stored locally in your browser. It is not shared across devices or wallets.
+          Schedules are saved in this browser only. They are not shared with other devices or team members.
         </div>
 
         {/* Rows */}
@@ -550,7 +508,7 @@ export default function RecurringPayments() {
           <EmptyState onCreateClick={() => setShowCreate(true)} />
         ) : filtered.length === 0 ? (
           <div style={{ padding: '32px', textAlign: 'center', color: 'var(--subtle)', fontSize: 13 }}>
-            No schedules match the current filters.
+            No schedules match your search or filters.
           </div>
         ) : (
           filtered.map(s => (

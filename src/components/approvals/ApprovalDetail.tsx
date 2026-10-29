@@ -4,10 +4,10 @@
  *
  * Two execution modes selected at runtime:
  *
- *   ON-CHAIN MODE (isTreasuryDeployed = true)
+ *   TREASURY CONTRACT MODE (isTreasuryDeployed = true)
  *     Local vote/approval decisions remain for UI tracking, but the execution
- *     path calls AskirawaFiTreasury.vote() and AskirawaFiTreasury.execute().
- *     USDC moves only through the treasury contract, after on-chain quorum.
+ *     path calls the treasury contract's vote() and execute().
+ *     USDC moves only through the treasury contract, after the required approvals.
  *
  *   LOCAL MODE (isTreasuryDeployed = false)
  *     Approval decisions are stored in localStorage only.
@@ -15,7 +15,7 @@
  *     NOT protected by treasury approval.  Clearly disclosed.
  */
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import {
   X, CheckCircle2, XCircle, PlayCircle, ArrowUpRight,
   AlertCircle, Info, Clock, Loader2, ShieldCheck, Lock,
@@ -60,9 +60,9 @@ interface Props {
 
 function Row({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 16, padding: '10px 0', borderBottom: '1px solid var(--border)' }}>
+    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 16, padding: '10px 0', flexWrap: 'wrap', borderBottom: '1px solid var(--border)' }}>
       <span style={{ fontSize: 12, color: 'var(--muted)', fontWeight: 500, flexShrink: 0 }}>{label}</span>
-      <span style={{ fontSize: 13, color: 'var(--ink)', fontWeight: 600, textAlign: 'right', wordBreak: 'break-all', maxWidth: '65%' }}>{children}</span>
+      <span style={{ fontSize: 13, color: 'var(--ink)', fontWeight: 600, textAlign: 'right', wordBreak: 'break-all', maxWidth: '100%', minWidth: 0 }}>{children}</span>
     </div>
   )
 }
@@ -86,24 +86,24 @@ function ConfirmDialog({
 }) {
   const [reason, setReason] = useState('')
   return (
-    <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.55)', zIndex: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24, borderRadius: 20 }}>
-      <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 16, padding: 24, width: '100%', maxWidth: 360 }}>
+    <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.55)', zIndex: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
+      <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', padding: 24, width: '100%', maxWidth: 360, maxHeight: '90dvh', overflowY: 'auto' }}>
         <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--ink)', marginBottom: 8 }}>{title}</div>
         <div style={{ fontSize: 13, color: 'var(--muted)', lineHeight: 1.5, marginBottom: 16 }}>{message}</div>
         {requireReason && (
           <textarea
-            placeholder="Optional reason…"
+            placeholder="Reason (optional)"
             value={reason}
             onChange={e => setReason(e.target.value)}
             rows={2}
-            style={{ width: '100%', background: 'var(--surface-muted)', border: '1px solid var(--border)', borderRadius: 8, padding: '8px 10px', color: 'var(--ink)', fontSize: 13, resize: 'vertical', boxSizing: 'border-box', marginBottom: 16, outline: 'none' }}
+            style={{ width: '100%', background: 'var(--surface-muted)', border: '1px solid var(--border)', padding: '10px', color: 'var(--ink)', fontSize: 13, resize: 'vertical', boxSizing: 'border-box', marginBottom: 16, outline: 'none' }}
           />
         )}
         <div style={{ display: 'flex', gap: 10 }}>
-          <button onClick={onCancel} style={{ flex: 1, padding: '9px 0', borderRadius: 10, fontSize: 13, border: '1px solid var(--border)', background: 'none', color: 'var(--muted)', cursor: 'pointer' }}>Cancel</button>
+          <button onClick={onCancel} style={{ flex: 1, minHeight: 44, fontSize: 13, border: '1px solid var(--border)', background: 'none', color: 'var(--muted)', cursor: 'pointer' }}>Go back</button>
           <button
             onClick={() => onConfirm(requireReason ? reason : undefined)}
-            style={{ flex: 1, padding: '9px 0', borderRadius: 10, fontSize: 13, border: 'none', background: confirmDanger ? 'var(--danger)' : 'var(--accent)', color: confirmDanger ? '#fff' : '#021a0e', fontWeight: 600, cursor: 'pointer' }}
+            style={{ flex: 1, minHeight: 44, fontSize: 13, border: 'none', background: confirmDanger ? 'var(--danger)' : 'var(--accent)', color: confirmDanger ? '#fff' : 'var(--bg)', fontWeight: 600, cursor: 'pointer' }}
           >
             {confirmLabel}
           </button>
@@ -172,7 +172,7 @@ export default function ApprovalDetail({ request, policy, onClose, onApprove, on
       recipients = [request.recipientAddress as `0x${string}`]
       amounts = [parseUsdcString(request.amountUsdc)]
     } catch {
-      setTreasuryErr('Invalid request amount or recipient.')
+      setTreasuryErr('The amount or recipient on this request is not valid, so nothing was sent. Create a new request with the correct details.')
       return
     }
     const hash = await treasuryExecute({ proposalId, recipients, amounts })
@@ -195,6 +195,16 @@ export default function ApprovalDetail({ request, policy, onClose, onApprove, on
 
   const [confirmAction, setConfirmAction] = useState<'approve' | 'reject' | 'cancel' | null>(null)
 
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return
+      if (confirmAction) setConfirmAction(null)
+      else onClose()
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [confirmAction, onClose])
+
   let amountRaw = 0n
   try { amountRaw = parseUsdcString(request.amountUsdc) } catch { /* noop */ }
 
@@ -205,11 +215,13 @@ export default function ApprovalDetail({ request, policy, onClose, onApprove, on
   return (
     <div
       style={{ position: 'fixed', inset: 0, zIndex: 50, background: 'rgba(0,0,0,0.6)', display: 'flex', justifyContent: 'flex-end' }}
+      role="dialog"
+      aria-modal="true"
       onClick={e => { if (e.target === e.currentTarget) onClose() }}
     >
       <div
         style={{
-          width: '100%', maxWidth: 520, height: '100%',
+          width: '100%', maxWidth: 520, height: '100%', maxHeight: '100dvh',
           background: 'var(--surface)', borderLeft: '1px solid var(--border)',
           display: 'flex', flexDirection: 'column', overflowY: 'auto',
           position: 'relative',
@@ -218,10 +230,10 @@ export default function ApprovalDetail({ request, policy, onClose, onApprove, on
         {/* Confirm dialogs overlay */}
         {confirmAction === 'approve' && address && (
           <ConfirmDialog
-            title="Approve Request"
+            title="Approve this request"
             message={isTreasuryDeployed
-              ? `You are recording a local approval decision for "${request.title}". To enforce this on-chain, use the Vote button after the local quorum is reached.`
-              : `You are approving "${request.title}" for ${formatUsdcBigint(amountRaw)} USDC. This approval is locally recorded.`
+              ? `You are recording your approval of "${request.title}" in this browser. To count it with the treasury contract, also use the Vote button.`
+              : `You are approving "${request.title}" for ${formatUsdcBigint(amountRaw)} USDC. This approval is saved in this browser only.`
             }
             confirmLabel="Approve"
             onConfirm={reason => { onApprove(request.id, address, reason); setConfirmAction(null) }}
@@ -230,8 +242,8 @@ export default function ApprovalDetail({ request, policy, onClose, onApprove, on
         )}
         {confirmAction === 'reject' && address && (
           <ConfirmDialog
-            title="Reject Request"
-            message="Provide a reason for rejection. This cannot be undone."
+            title="Reject this request"
+            message="Add a reason if you can. A rejected request cannot be reopened."
             confirmLabel="Reject"
             confirmDanger
             requireReason
@@ -241,9 +253,9 @@ export default function ApprovalDetail({ request, policy, onClose, onApprove, on
         )}
         {confirmAction === 'cancel' && (
           <ConfirmDialog
-            title="Cancel Request"
-            message="This request will be cancelled and cannot be re-opened."
-            confirmLabel="Cancel Request"
+            title="Cancel this request"
+            message="This request will be cancelled and cannot be reopened."
+            confirmLabel="Cancel request"
             confirmDanger
             onConfirm={() => { onCancel(request.id); setConfirmAction(null); onClose() }}
             onCancel={() => setConfirmAction(null)}
@@ -252,8 +264,8 @@ export default function ApprovalDetail({ request, policy, onClose, onApprove, on
 
         {/* Header */}
         <div className="flex items-start justify-between gap-4 px-6 py-5" style={{ borderBottom: '1px solid var(--border)', flexShrink: 0 }}>
-          <div style={{ flex: 1 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
+          <div style={{ flex: 1, minWidth: 0, overflowWrap: 'anywhere' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6, flexWrap: 'wrap' }}>
               <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--muted)', letterSpacing: '0.08em' }}>
                 {formatRequestId(request.id)}
               </span>
@@ -264,7 +276,7 @@ export default function ApprovalDetail({ request, policy, onClose, onApprove, on
             <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--ink)', lineHeight: 1.3 }}>{request.title}</div>
             <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 3 }}>{REQUEST_TYPE_LABELS[request.type]}</div>
           </div>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)', padding: 4, flexShrink: 0 }}>
+          <button onClick={onClose} aria-label="Close" style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)', width: 44, height: 44, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
             <X size={20} />
           </button>
         </div>
@@ -275,31 +287,30 @@ export default function ApprovalDetail({ request, policy, onClose, onApprove, on
           {/* Mode banner */}
           {isTreasuryDeployed ? (
             isOnChainProposalMissing ? (
-              <div className="flex items-start gap-3 rounded-xl p-4 mb-5" style={{ background: 'rgba(232,184,76,0.07)', border: '1px solid rgba(232,184,76,0.25)' }}>
+              <div className="flex items-start gap-3 p-4 mb-5" style={{ background: 'var(--warning-dim)', border: '1px solid var(--warning-border)' }}>
                 <AlertCircle size={14} style={{ color: 'var(--warning)', flexShrink: 0, marginTop: 2 }} />
                 <span style={{ fontSize: 12, color: 'var(--warning)', lineHeight: 1.5 }}>
-                  <strong>Not yet registered on-chain.</strong> This request was saved locally but has not been submitted to AskirawaFiTreasury.
-                  Voting and execution are disabled until the proposal is confirmed on-chain.
-                  Create a new request to submit a <code>proposeTransfer</code> transaction.
+                  <strong>Not sent to the treasury contract yet.</strong> This request is saved in this browser only.
+                  Voting and sending are turned off until the request is confirmed by the contract.
+                  Create a new request to submit it.
                 </span>
               </div>
             ) : (
-              <div className="flex items-start gap-3 rounded-xl p-4 mb-5" style={{ background: 'rgba(0,200,100,0.07)', border: '1px solid rgba(0,200,100,0.2)' }}>
+              <div className="flex items-start gap-3 p-4 mb-5" style={{ background: 'var(--success-dim)', border: '1px solid var(--success-dim)' }}>
                 <Lock size={14} style={{ color: 'var(--success)', flexShrink: 0, marginTop: 2 }} />
                 <span style={{ fontSize: 12, color: 'var(--success)', lineHeight: 1.5 }}>
-                  <strong>On-chain treasury mode.</strong> Proposal confirmed on AskirawaFiTreasury.
-                  Voting and execution call the contract on Arc Mainnet.
-                  USDC moves only after on-chain quorum is reached.
+                  <strong>Checked by the treasury contract.</strong> This request is recorded on Arc Mainnet.
+                  USDC is sent only after the required approvals are reached.
                 </span>
               </div>
             )
           ) : (
-            <div className="flex items-start gap-3 rounded-xl p-4 mb-5" style={{ background: 'rgba(232,184,76,0.07)', border: '1px solid rgba(232,184,76,0.2)' }}>
+            <div className="flex items-start gap-3 p-4 mb-5" style={{ background: 'var(--warning-dim)', border: '1px solid var(--warning-border)' }}>
               <Info size={14} style={{ color: 'var(--warning)', flexShrink: 0, marginTop: 2 }} />
               <span style={{ fontSize: 12, color: 'var(--warning)', lineHeight: 1.5 }}>
-                <strong>Local mode.</strong> Approval decisions are stored in this browser only — not enforced on-chain.
-                Execution sends USDC directly from your connected wallet without treasury quorum.
-                Deploy AskirawaFiTreasury and set <code>VITE_TREASURY_ADDRESS</code> to enable on-chain enforcement.
+                <strong>Saved in this browser only.</strong> Approvals are not enforced by a contract.
+                Sending pays USDC directly from your connected wallet, without the required approvals being checked.
+                The treasury contract has not been set up yet.
               </span>
             </div>
           )}
@@ -314,31 +325,30 @@ export default function ApprovalDetail({ request, policy, onClose, onApprove, on
             const displayTotal = onChainTotal ?? request.requiredApprovals
             const displayApproved = displayTotal > 0 && displayCount >= displayTotal
             const displayLabel = onChainCount !== null
-              ? `${displayCount}/${displayTotal} on-chain vote${displayTotal !== 1 ? 's' : ''}`
+              ? `${displayCount} of ${displayTotal} approval${displayTotal !== 1 ? 's' : ''} recorded`
               : stats.progressLabel
             return (
-              <div className="rounded-xl p-4 mb-5" style={{ background: 'var(--surface-muted)', border: '1px solid var(--border)' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-                  <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Approval Progress</span>
+              <div className="p-4 mb-5" style={{ background: 'var(--surface-muted)', border: '1px solid var(--border)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10, gap: 8, flexWrap: 'wrap' }}>
+                  <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Approval progress</span>
                   <span style={{ fontSize: 12, fontWeight: 700, color: displayApproved ? 'var(--accent)' : 'var(--muted)' }}>{displayLabel}</span>
                 </div>
-                <div style={{ height: 6, borderRadius: 4, background: 'var(--border)', overflow: 'hidden' }}>
+                <div style={{ height: 6, background: 'var(--border)', overflow: 'hidden' }}>
                   <div style={{
                     height: '100%',
                     width: `${Math.min(100, (displayCount / Math.max(1, displayTotal)) * 100)}%`,
                     background: stats.hasRejection ? 'var(--danger)' : displayApproved ? 'var(--accent)' : 'var(--warning)',
-                    borderRadius: 4,
                     transition: 'width 0.4s ease',
                   }} />
                 </div>
                 {onChainCount !== null && (
                   <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 6 }}>
-                    Source: on-chain contract state
-                    {onChainProposal?.executed && <span style={{ color: 'var(--success)', marginLeft: 8 }}>✓ Executed on-chain</span>}
-                    {onChainProposal?.cancelled && <span style={{ color: 'var(--danger)', marginLeft: 8 }}>✗ Cancelled on-chain</span>}
+                    Read from the treasury contract
+                    {onChainProposal?.executed && <span style={{ color: 'var(--success)', marginLeft: 8 }}>✓ Sent</span>}
+                    {onChainProposal?.cancelled && <span style={{ color: 'var(--danger)', marginLeft: 8 }}>✗ Cancelled</span>}
                     {onChainProposal?.expiresAt && !onChainProposal.executed && !onChainProposal.cancelled && (
                       <span style={{ color: 'var(--muted)', marginLeft: 8 }}>
-                        (exp: {new Date(onChainProposal.expiresAt * 1000).toLocaleDateString()})
+                        (expires {new Date(onChainProposal.expiresAt * 1000).toLocaleDateString()})
                       </span>
                     )}
                   </div>
@@ -348,9 +358,9 @@ export default function ApprovalDetail({ request, policy, onClose, onApprove, on
           })()}
 
           {/* Amount highlight */}
-          <div className="rounded-xl p-4 mb-5" style={{ background: 'var(--surface-muted)', border: '1px solid var(--border)' }}>
-            <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 4 }}>Payment Amount</div>
-            <div style={{ fontSize: 28, fontWeight: 800, color: 'var(--ink)', fontFamily: "'Space Grotesk', sans-serif" }}>
+          <div className="p-4 mb-5" style={{ background: 'var(--surface-muted)', border: '1px solid var(--border)' }}>
+            <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 4 }}>Payment amount</div>
+            <div style={{ fontSize: 28, fontWeight: 800, color: 'var(--ink)', fontFamily: "'Space Grotesk', sans-serif", overflowWrap: 'anywhere' }}>
               {formatUsdcBigint(amountRaw)} <span style={{ fontSize: 14, color: 'var(--muted)' }}>USDC</span>
             </div>
             <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 4 }}>
@@ -360,23 +370,23 @@ export default function ApprovalDetail({ request, policy, onClose, onApprove, on
 
           {/* Details table */}
           <div style={{ marginBottom: 20 }}>
-            <Row label="Request ID">{formatRequestId(request.id)}</Row>
+            <Row label="Request reference">{formatRequestId(request.id)}</Row>
             <Row label="Submitted by">{formatAddr(request.requesterAddress)}</Row>
             <Row label="Recipient">{formatAddr(request.recipientAddress)}</Row>
             <Row label="Created">{formatTs(request.createdAt)}</Row>
             {request.updatedAt !== request.createdAt && (
               <Row label="Updated">{formatTs(request.updatedAt)}</Row>
             )}
-            {request.confirmedAt && <Row label="Executed">{formatTs(request.confirmedAt)}</Row>}
+            {request.confirmedAt && <Row label="Sent">{formatTs(request.confirmedAt)}</Row>}
             {isTreasuryDeployed && request.onChainProposalId && (
-              <Row label="On-chain Proposal ID">
+              <Row label="Contract reference">
                 <span title={request.onChainProposalId}>
                   {request.onChainProposalId.slice(0, 10)}…{request.onChainProposalId.slice(-6)}
                 </span>
               </Row>
             )}
             {request.proposeTxHash && (
-              <Row label="Propose Tx">
+              <Row label="Submission transaction">
                 <a
                   href={buildTxExplorerUrl(ARC_MAINNET_CHAIN_ID, request.proposeTxHash) ?? `${explorerBase}/tx/${request.proposeTxHash}`}
                   target="_blank" rel="noopener noreferrer"
@@ -389,7 +399,7 @@ export default function ApprovalDetail({ request, policy, onClose, onApprove, on
               </Row>
             )}
             {(request.txHash ?? voteHash ?? execHash) && (
-              <Row label="Tx Hash">
+              <Row label="Transaction hash">
                 <a
                   href={buildTxExplorerUrl(ARC_MAINNET_CHAIN_ID, (execHash ?? voteHash ?? request.txHash)!) ?? `${explorerBase}/tx/${execHash ?? voteHash ?? request.txHash}`}
                   target="_blank" rel="noopener noreferrer"
@@ -405,24 +415,24 @@ export default function ApprovalDetail({ request, policy, onClose, onApprove, on
 
           {/* Justification */}
           <div style={{ marginBottom: 20 }}>
-            <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8 }}>Business Justification</div>
-            <div style={{ fontSize: 13, color: 'var(--ink-2)', lineHeight: 1.6, background: 'var(--surface-muted)', border: '1px solid var(--border)', borderRadius: 10, padding: '12px 14px' }}>
-              {request.description || <em style={{ color: 'var(--subtle)' }}>No description provided.</em>}
+            <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8 }}>Business reason</div>
+            <div style={{ fontSize: 13, color: 'var(--ink-2)', lineHeight: 1.6, background: 'var(--surface-muted)', border: '1px solid var(--border)', padding: '12px 14px', overflowWrap: 'anywhere' }}>
+              {request.description || <em style={{ color: 'var(--subtle)' }}>No reason was given.</em>}
             </div>
           </div>
 
           {/* Decisions */}
           {request.decisions.length > 0 && (
             <div style={{ marginBottom: 20 }}>
-              <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 10 }}>Approval Decisions</div>
+              <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 10 }}>Decisions</div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                 {request.decisions.map((d, i) => (
-                  <div key={i} className="flex items-start gap-3 rounded-xl p-3" style={{ background: 'var(--surface-muted)', border: '1px solid var(--border)' }}>
+                  <div key={i} className="flex items-start gap-3 p-3" style={{ background: 'var(--surface-muted)', border: '1px solid var(--border)' }}>
                     {d.decision === 'approved'
                       ? <CheckCircle2 size={16} style={{ color: 'var(--accent)', flexShrink: 0, marginTop: 1 }} />
                       : <XCircle size={16} style={{ color: 'var(--danger)', flexShrink: 0, marginTop: 1 }} />}
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8 }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, flexWrap: 'wrap' }}>
                         <span style={{ fontSize: 12, fontWeight: 700, color: d.decision === 'approved' ? 'var(--accent)' : 'var(--danger)' }}>
                           {d.decision === 'approved' ? 'Approved' : 'Rejected'}
                         </span>
@@ -439,22 +449,22 @@ export default function ApprovalDetail({ request, policy, onClose, onApprove, on
 
           {/* Error */}
           {activeError && (
-            <div className="flex items-start gap-3 rounded-xl p-4 mb-4" style={{ background: 'rgba(232,109,122,0.08)', border: '1px solid rgba(232,109,122,0.25)' }}>
+            <div className="flex items-start gap-3 p-4 mb-4" style={{ background: 'var(--danger-dim)', border: '1px solid var(--danger-border)' }}>
               <AlertCircle size={15} style={{ color: 'var(--danger)', flexShrink: 0, marginTop: 1 }} />
-              <span style={{ fontSize: 13, color: 'var(--danger)' }}>{activeError}</span>
+              <span style={{ fontSize: 13, color: 'var(--danger)', overflowWrap: 'anywhere', minWidth: 0 }}>{activeError}</span>
             </div>
           )}
 
           {/* Wrong-chain banner */}
           {isWrongChain && (
-            <div className="flex items-center justify-between gap-3 rounded-xl p-4 mb-4" style={{ background: 'rgba(232,184,76,0.08)', border: '1px solid rgba(232,184,76,0.2)' }}>
-              <span style={{ fontSize: 13, color: 'var(--warning)' }}>Switch to Arc Mainnet</span>
+            <div className="flex flex-wrap items-center justify-between gap-3 p-4 mb-4" style={{ background: 'var(--warning-dim)', border: '1px solid var(--warning-border)' }}>
+              <span style={{ fontSize: 13, color: 'var(--warning)' }}>Your wallet is on the wrong network. Switch to Arc Mainnet to continue.</span>
               <button
                 onClick={() => switchChain({ chainId: ARC_MAINNET_CHAIN_ID })}
                 disabled={isSwitching}
-                style={{ background: 'var(--warning)', border: 'none', borderRadius: 8, padding: '7px 14px', fontSize: 12, fontWeight: 600, cursor: 'pointer', color: '#0d1810' }}
+                style={{ background: 'var(--warning)', border: 'none', minHeight: 44, padding: '0 14px', fontSize: 12, fontWeight: 600, cursor: 'pointer', color: 'var(--bg)' }}
               >
-                {isSwitching ? 'Switching…' : 'Switch'}
+                {isSwitching ? 'Switching…' : 'Switch to Arc Mainnet'}
               </button>
             </div>
           )}
@@ -468,13 +478,13 @@ export default function ApprovalDetail({ request, policy, onClose, onApprove, on
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
               <button
                 onClick={() => setConfirmAction('reject')}
-                style={{ padding: '11px 0', borderRadius: 12, fontSize: 13, fontWeight: 600, border: '1px solid rgba(232,109,122,0.4)', background: 'rgba(232,109,122,0.08)', color: 'var(--danger)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
+                style={{ minHeight: 44, fontSize: 13, fontWeight: 600, border: '1px solid var(--danger-border)', background: 'var(--danger-dim)', color: 'var(--danger)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
               >
                 <XCircle size={15} /> Reject
               </button>
               <button
                 onClick={() => setConfirmAction('approve')}
-                style={{ padding: '11px 0', borderRadius: 12, fontSize: 13, fontWeight: 600, border: 'none', background: 'var(--accent)', color: '#021a0e', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
+                style={{ minHeight: 44, fontSize: 13, fontWeight: 600, border: 'none', background: 'var(--accent)', color: 'var(--bg)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
               >
                 <CheckCircle2 size={15} /> Approve
               </button>
@@ -483,62 +493,62 @@ export default function ApprovalDetail({ request, policy, onClose, onApprove, on
 
           {/* Already decided notice */}
           {alreadyDecided && !['executed', 'failed', 'cancelled', 'rejected'].includes(request.status) && (
-            <div className="flex items-center gap-2 rounded-xl p-3" style={{ background: 'var(--surface-muted)', border: '1px solid var(--border)' }}>
+            <div className="flex items-center gap-2 p-3" style={{ background: 'var(--surface-muted)', border: '1px solid var(--border)' }}>
               <ShieldCheck size={14} style={{ color: 'var(--accent)', flexShrink: 0 }} />
-              <span style={{ fontSize: 12, color: 'var(--muted)' }}>You have already recorded a decision on this request.</span>
+              <span style={{ fontSize: 12, color: 'var(--muted)' }}>You have already approved or rejected this request.</span>
             </div>
           )}
 
-          {/* ON-CHAIN MODE: Vote button (when proposal confirmed on-chain and status is pending/partial/approved) */}
+          {/* TREASURY CONTRACT MODE: Vote button (when proposal confirmed on-chain and status is pending/partial/approved) */}
           {isTreasuryDeployed && !isOnChainProposalMissing && !isWrongChain && (request.status === 'pending' || request.status === 'partial' || request.status === 'approved') && !request.decisions.some(d => d.approverAddress.toLowerCase() === (address ?? '').toLowerCase()) && (
             <button
               onClick={() => { void handleTreasuryVote() }}
               disabled={isVoting || !address}
               style={{
-                width: '100%', padding: '13px 0', borderRadius: 12, fontSize: 14, fontWeight: 700,
+                width: '100%', minHeight: 48, fontSize: 14, fontWeight: 700,
                 border: '1.5px solid var(--accent)', background: 'transparent',
                 color: 'var(--accent)', cursor: address ? 'pointer' : 'not-allowed',
                 display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
                 opacity: isVoting ? 0.7 : 1,
               }}
             >
-              {isVoting ? <><Loader2 size={16} className="animate-spin" /> Submitting Vote…</> : <><ShieldCheck size={16} /> Vote On-Chain</>}
+              {isVoting ? <><Loader2 size={16} className="animate-spin" /> Submitting your approval…</> : <><ShieldCheck size={16} /> Vote with the treasury contract</>}
             </button>
           )}
 
-          {/* ON-CHAIN MODE: Execute button (when approved, treasury deployed, proposal confirmed on-chain) */}
+          {/* TREASURY CONTRACT MODE: Execute button (when approved, treasury deployed, proposal confirmed on-chain) */}
           {isTreasuryDeployed && !isOnChainProposalMissing && request.status === 'approved' && (
             <button
               onClick={() => { void handleTreasuryExecute() }}
               disabled={isTreasuryExec || isWrongChain || !address}
               style={{
-                width: '100%', padding: '13px 0', borderRadius: 12, fontSize: 14, fontWeight: 700,
+                width: '100%', minHeight: 48, fontSize: 14, fontWeight: 700,
                 border: 'none', background: (!isTreasuryExec && !isWrongChain && address) ? 'var(--accent)' : 'var(--surface-strong)',
-                color: (!isTreasuryExec && !isWrongChain && address) ? '#021a0e' : 'var(--subtle)',
+                color: (!isTreasuryExec && !isWrongChain && address) ? 'var(--bg)' : 'var(--subtle)',
                 cursor: (!isTreasuryExec && !isWrongChain && address) ? 'pointer' : 'not-allowed',
                 display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
                 opacity: isTreasuryExec ? 0.7 : 1,
               }}
             >
-              {isTreasuryExec ? <><Loader2 size={16} className="animate-spin" /> Executing via Treasury…</> : <><Lock size={16} /> Execute via Treasury</>}
+              {isTreasuryExec ? <><Loader2 size={16} className="animate-spin" /> Sending via treasury contract…</> : <><Lock size={16} /> Send via treasury contract</>}
             </button>
           )}
 
-          {/* LOCAL MODE: Execute button (when approved, no treasury) */}
+          {/* BROWSER-ONLY MODE: Send button (when approved, no treasury) */}
           {!isTreasuryDeployed && request.status === 'approved' && (
             <>
               <button
                 onClick={() => { void executeRequest() }}
                 disabled={isLocalExec || !canLocalExec}
                 style={{
-                  width: '100%', padding: '13px 0', borderRadius: 12, fontSize: 14, fontWeight: 700,
+                  width: '100%', minHeight: 48, fontSize: 14, fontWeight: 700,
                   border: 'none', background: canLocalExec ? 'var(--accent)' : 'var(--surface-strong)',
-                  color: canLocalExec ? '#021a0e' : 'var(--subtle)', cursor: canLocalExec ? 'pointer' : 'not-allowed',
+                  color: canLocalExec ? 'var(--bg)' : 'var(--subtle)', cursor: canLocalExec ? 'pointer' : 'not-allowed',
                   display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
                   opacity: isLocalExec ? 0.7 : 1,
                 }}
               >
-                {isLocalExec ? <><Loader2 size={16} className="animate-spin" /> Executing…</> : <><PlayCircle size={16} /> Execute Payment (direct transfer)</>}
+                {isLocalExec ? <><Loader2 size={16} className="animate-spin" /> Sending…</> : <><PlayCircle size={16} /> Send payment (direct transfer)</>}
               </button>
               {!canLocalExec && localExecBlockReason && (
                 <div style={{ fontSize: 12, color: 'var(--muted)', textAlign: 'center' }}>{localExecBlockReason}</div>
@@ -548,7 +558,7 @@ export default function ApprovalDetail({ request, policy, onClose, onApprove, on
 
           {/* Executing state */}
           {request.status === 'executing' && (
-            <div className="flex items-center justify-center gap-3 rounded-xl py-3" style={{ background: 'var(--surface-muted)', border: '1px solid var(--border)' }}>
+            <div className="flex items-center justify-center gap-3 py-3" style={{ background: 'var(--surface-muted)', border: '1px solid var(--border)' }}>
               <Loader2 size={16} className="animate-spin" style={{ color: 'var(--accent)' }} />
               <span style={{ fontSize: 13, color: 'var(--muted)' }}>Waiting for confirmation…</span>
             </div>
@@ -556,19 +566,19 @@ export default function ApprovalDetail({ request, policy, onClose, onApprove, on
 
           {/* Executed */}
           {request.status === 'executed' && (
-            <div className="flex items-center justify-center gap-2 rounded-xl py-3" style={{ background: 'var(--accent-dim)', border: '1px solid var(--accent-border)' }}>
+            <div className="flex items-center justify-center gap-2 py-3" style={{ background: 'var(--accent-dim)', border: '1px solid var(--accent-border)' }}>
               <CheckCircle2 size={16} style={{ color: 'var(--accent)' }} />
-              <span style={{ fontSize: 13, color: 'var(--accent)', fontWeight: 600 }}>Payment executed and confirmed</span>
+              <span style={{ fontSize: 13, color: 'var(--accent)', fontWeight: 600 }}>Payment sent and confirmed</span>
             </div>
           )}
 
           {/* Pending — waiting for approvals */}
           {(request.status === 'pending' || request.status === 'partial') && !canDecide && !isAnyPending && (
-            <div className="flex items-center gap-2 rounded-xl p-3" style={{ background: 'var(--surface-muted)', border: '1px solid var(--border)' }}>
+            <div className="flex items-center gap-2 p-3" style={{ background: 'var(--surface-muted)', border: '1px solid var(--border)' }}>
               <Clock size={14} style={{ color: 'var(--muted)', flexShrink: 0 }} />
               <span style={{ fontSize: 12, color: 'var(--muted)' }}>
-                {stats.remainingApprovals} more approval{stats.remainingApprovals !== 1 ? 's' : ''} required.
-                {!isApprover && policy.approverAddresses.length > 0 && ' Your wallet is not listed as an authorized approver.'}
+                {stats.remainingApprovals} more approval{stats.remainingApprovals !== 1 ? 's' : ''} needed.
+                {!isApprover && policy.approverAddresses.length > 0 && ' Your wallet is not on the list of allowed approvers.'}
               </span>
             </div>
           )}
@@ -577,9 +587,9 @@ export default function ApprovalDetail({ request, policy, onClose, onApprove, on
           {!['executed', 'failed', 'cancelled', 'rejected', 'executing'].includes(request.status) && (
             <button
               onClick={() => setConfirmAction('cancel')}
-              style={{ padding: '9px 0', borderRadius: 10, fontSize: 12, background: 'none', border: '1px solid var(--border)', color: 'var(--subtle)', cursor: 'pointer' }}
+              style={{ minHeight: 44, fontSize: 12, background: 'none', border: '1px solid var(--border)', color: 'var(--subtle)', cursor: 'pointer' }}
             >
-              Cancel Request
+              Cancel request
             </button>
           )}
         </div>

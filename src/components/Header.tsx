@@ -45,23 +45,23 @@ export default function Header({ activePage, onNavigate }: HeaderProps) {
         <div
           className="flex items-center justify-center gap-3 px-4 py-2 text-sm font-medium"
           style={{
-            background: 'rgba(232, 184, 76, 0.12)',
-            borderBottom: '1px solid rgba(232,184,76,0.2)',
+            background: 'var(--warning-dim)',
+            borderBottom: '1px solid var(--warning-border)',
             color: 'var(--warning)',
           }}
         >
-          <span>Switch to Arc Mainnet to use AskirawaFi</span>
+          <span>Your wallet is on the wrong network. Switch to Arc Mainnet to use Askirawa Finance.</span>
           <button
             onClick={() => switchChain({ chainId: ARC_MAINNET_CHAIN_ID })}
             disabled={isSwitching}
             className="rounded-md px-3 py-1 text-xs font-semibold transition-opacity"
             style={{
               background: 'var(--warning)',
-              color: '#0d1810',
+              color: 'var(--bg)',
               opacity: isSwitching ? 0.6 : 1,
             }}
           >
-            {isSwitching ? 'Switching…' : 'Switch Network'}
+            {isSwitching ? 'Switching…' : 'Switch to Arc Mainnet'}
           </button>
         </div>
       )}
@@ -74,7 +74,7 @@ export default function Header({ activePage, onNavigate }: HeaderProps) {
             style={{
               width: 40,
               height: 40,
-              background: 'rgba(53,217,139,0.1)',
+              background: 'var(--accent-dim)',
               border: '1px solid var(--accent-border)',
               color: 'var(--accent)',
               fontFamily: "'Space Grotesk', sans-serif",
@@ -84,7 +84,7 @@ export default function Header({ activePage, onNavigate }: HeaderProps) {
           </div>
           <div>
             <div className="font-bold text-base display" style={{ color: 'var(--ink)', lineHeight: 1.1 }}>
-              AskirawaFi
+              Askirawa Finance
             </div>
             <div className="text-xs" style={{ color: 'var(--muted)' }}>
               Programmable USDC Treasury
@@ -149,7 +149,7 @@ export default function Header({ activePage, onNavigate }: HeaderProps) {
                 className="rounded-lg px-4 py-2 text-sm font-semibold transition-all"
                 style={{
                   background: ckConnected ? 'var(--surface-strong)' : 'var(--accent)',
-                  color: ckConnected ? 'var(--ink)' : '#021a0e',
+                  color: ckConnected ? 'var(--ink)' : 'var(--bg)',
                   border: ckConnected ? '1px solid var(--border-strong)' : 'none',
                   minHeight: 38,
                   cursor: 'pointer',

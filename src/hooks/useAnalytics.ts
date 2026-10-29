@@ -116,7 +116,7 @@ export function useAnalytics(filter: TxFilter) {
       toLabel,
     })
     const ts = new Date().toISOString().slice(0, 10)
-    downloadCsv(content, `askirawafi-treasury-${ts}.csv`)
+    downloadCsv(content, `askirawa-finance-treasury-${ts}.csv`)
   }
 
   return {

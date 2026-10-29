@@ -7,6 +7,7 @@ import { useAccount } from 'wagmi'
 import { Plus, Search, Filter, ShieldCheck, Clock, CheckCircle2, XCircle, PlayCircle, Info, Lock } from 'lucide-react'
 import { isTreasuryDeployed, useTreasuryConfig } from '../hooks/useTreasury'
 import Badge from '../components/ui/Badge'
+import PageHeader from '../components/ui/PageHeader'
 import { WalletRequired } from '../components/WalletGate'
 import ApprovalRequestModal from '../components/approvals/ApprovalRequestModal'
 import ApprovalDetail from '../components/approvals/ApprovalDetail'
@@ -36,7 +37,7 @@ import { useNotifications } from '../context/NotificationContext'
 function StatCard({ label, value, sub, accent }: { label: string; value: string | number; sub?: string; accent?: boolean }) {
   return (
     <div
-      className="rounded-2xl"
+      className=""
       style={{
         background: 'var(--surface)',
         border: `1px solid ${accent ? 'var(--accent-border)' : 'var(--border)'}`,
@@ -63,14 +64,14 @@ function RequestRow({ req, onClick }: { req: ApprovalRequest; onClick: () => voi
   return (
     <div
       onClick={onClick}
-      className="flex items-center gap-4 px-5 py-4 transition-colors cursor-pointer"
+      className="flex items-center gap-4 px-5 py-4 transition-colors cursor-pointer flex-wrap"
       style={{ borderBottom: '1px solid var(--border)', background: 'transparent' }}
       onMouseEnter={e => (e.currentTarget.style.background = 'var(--surface-muted)')}
       onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
     >
       {/* ID + title */}
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 3 }}>
+      <div style={{ flex: '1 1 200px', minWidth: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 3, flexWrap: 'wrap' }}>
           <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--subtle)', letterSpacing: '0.05em' }}>{formatRequestId(req.id)}</span>
           <Badge variant={requestStatusVariant(req.status)}>{REQUEST_STATUS_LABELS[req.status]}</Badge>
         </div>
@@ -166,95 +167,87 @@ export default function Approvals() {
   }, [tabRequests, statusFilter, searchQuery])
 
   const TABS: { id: Tab; label: string; count?: number }[] = [
-    { id: 'needs-action', label: 'Needs Action', count: stats.needsMyApproval + stats.approved },
-    { id: 'submitted', label: 'Submitted by Me' },
-    { id: 'history', label: 'All Requests', count: stats.total },
+    { id: 'needs-action', label: 'Needs action', count: stats.needsMyApproval + stats.approved },
+    { id: 'submitted', label: 'Submitted by me' },
+    { id: 'history', label: 'All requests', count: stats.total },
   ]
 
   const ALL_STATUSES: ApprovalRequestStatus[] = ['pending', 'partial', 'approved', 'rejected', 'executed', 'failed', 'cancelled']
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 28 }}>
-      {/* Page header */}
-      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}>
-        <div>
-          <h1 style={{ fontSize: 22, fontWeight: 800, color: 'var(--ink)', marginBottom: 4, fontFamily: "'Space Grotesk', sans-serif" }}>
-            Approval Workflows
-          </h1>
-          <p style={{ fontSize: 13, color: 'var(--muted)', maxWidth: 480 }}>
-            Treasury transfers requiring authorization before execution.
-            {balanceFormatted && (
-              <> Treasury balance: <strong style={{ color: 'var(--ink)' }}>{balanceFormatted} USDC</strong>.</>
-            )}
-          </p>
-        </div>
-        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-          <button
-            onClick={() => setShowPolicy(true)}
-            style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '9px 16px', borderRadius: 10, fontSize: 13, fontWeight: 600, background: 'var(--surface-strong)', border: '1px solid var(--border)', color: 'var(--muted)', cursor: 'pointer' }}
-          >
-            <ShieldCheck size={15} /> Policy
-          </button>
-          {isConnected && (
+      <PageHeader
+        title="Approvals"
+        subtitle={`Transfers that need sign-off before they are sent.${balanceFormatted ? ` Treasury balance: ${balanceFormatted} USDC.` : ''}`}
+        action={
+          <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
             <button
-              onClick={() => setShowCreate(true)}
-              style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '9px 18px', borderRadius: 10, fontSize: 13, fontWeight: 700, background: 'var(--accent)', border: 'none', color: '#021a0e', cursor: 'pointer' }}
+              onClick={() => setShowPolicy(true)}
+              style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '0 16px', minHeight: 44, fontSize: 13, fontWeight: 600, background: 'var(--surface-strong)', border: '1px solid var(--border)', color: 'var(--muted)', cursor: 'pointer' }}
             >
-              <Plus size={15} /> New Request
+              <ShieldCheck size={15} /> Approval rules
             </button>
-          )}
-        </div>
-      </div>
+            {isConnected && (
+              <button
+                onClick={() => setShowCreate(true)}
+                style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '0 18px', minHeight: 44, fontSize: 13, fontWeight: 700, background: 'var(--accent)', border: 'none', color: 'var(--bg)', cursor: 'pointer' }}
+              >
+                <Plus size={15} /> New request
+              </button>
+            )}
+          </div>
+        }
+      />
 
-      {/* On-chain / local mode banner */}
+      {/* Contract / this-browser mode banner */}
       {isTreasuryDeployed ? (
-        <div className="flex items-start gap-3 rounded-xl px-4 py-3" style={{ background: 'rgba(0,200,100,0.07)', border: '1px solid rgba(0,200,100,0.2)' }}>
+        <div className="flex items-start gap-3 px-4 py-3" style={{ background: 'var(--success-dim)', border: '1px solid var(--success-dim)' }}>
           <Lock size={14} style={{ color: 'var(--success)', flexShrink: 0, marginTop: 1 }} />
           <span style={{ fontSize: 12, color: 'var(--success)', lineHeight: 1.5 }}>
-            <strong>On-chain enforcement active.</strong> AskirawaFiTreasury is deployed.
-            Quorum: {treasuryConfig.quorum ?? '…'}-of-{treasuryConfig.approverCount ?? '…'}.
-            Approval decisions and executions are enforced by the contract — not the UI.
-            {' '}<em>This contract is unaudited. Do not hold substantial production funds until an independent security audit is complete.</em>
+            <strong>Approvals are enforced by the treasury contract.</strong>{' '}
+            Required approvals: {treasuryConfig.quorum ?? '…'} of {treasuryConfig.approverCount ?? '…'}.
+            The contract checks every approval and payment, not just this page.
+            {' '}<em>This contract has not been independently audited. Do not hold large amounts of funds in it until an audit is complete.</em>
           </span>
         </div>
       ) : (
-        <div className="flex items-start gap-3 rounded-xl px-4 py-3" style={{ background: 'rgba(232,184,76,0.07)', border: '1px solid rgba(232,184,76,0.2)' }}>
+        <div className="flex items-start gap-3 px-4 py-3" style={{ background: 'var(--warning-dim)', border: '1px solid var(--warning-border)' }}>
           <Info size={14} style={{ color: 'var(--warning)', flexShrink: 0, marginTop: 1 }} />
           <span style={{ fontSize: 12, color: 'var(--warning)', lineHeight: 1.5 }}>
-            <strong>Local records only.</strong> Approval decisions are stored in this browser. They are not cryptographically enforced on-chain.
-            Set <code>VITE_TREASURY_ADDRESS</code> in .env after deploying <code>AskirawaFiTreasury.sol</code> to enable on-chain enforcement.
+            <strong>Saved in this browser only.</strong> Approvals here are records on this device and are not enforced by a contract.
+            The treasury contract has not been set up yet, so approvals cannot be checked by the network.
           </span>
         </div>
       )}
 
-      {!isConnected && <WalletRequired message="Connect your wallet to manage approval requests." />}
+      {!isConnected && <WalletRequired message="Connect your wallet to view and manage approval requests." />}
 
       {/* Stats grid */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 14 }}>
-        <StatCard label="Total Requests" value={stats.total} />
-        <StatCard label="Needs Action" value={stats.needsMyApproval} accent />
-        <StatCard label="Awaiting Approvals" value={stats.pending + stats.partial} />
-        <StatCard label="Ready to Execute" value={stats.approved} />
-        <StatCard label="Executed" value={stats.executed} />
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(140px, 100%), 1fr))', gap: 14 }}>
+        <StatCard label="Total requests" value={stats.total} />
+        <StatCard label="Needs your action" value={stats.needsMyApproval} accent />
+        <StatCard label="Waiting for approvals" value={stats.pending + stats.partial} />
+        <StatCard label="Ready to send" value={stats.approved} />
+        <StatCard label="Sent" value={stats.executed} />
         <StatCard label="Rejected" value={stats.rejected} />
       </div>
 
       {/* Threshold info */}
-      <div className="flex items-center gap-3 rounded-xl px-4 py-3" style={{ background: 'var(--surface-muted)', border: '1px solid var(--border)' }}>
+      <div className="flex items-center gap-3 px-4 py-3" style={{ background: 'var(--surface-muted)', border: '1px solid var(--border)' }}>
         <ShieldCheck size={15} style={{ color: 'var(--accent)', flexShrink: 0 }} />
         <span style={{ fontSize: 13, color: 'var(--ink-2)' }}>
-          Current policy: transfers of <strong style={{ color: 'var(--ink)' }}>{policy.thresholdUsdc} USDC</strong> or more require{' '}
+          Current rule: transfers of <strong style={{ color: 'var(--ink)' }}>{policy.thresholdUsdc} USDC</strong> or more need{' '}
           <strong style={{ color: 'var(--ink)' }}>{policy.requiredApprovals} approval{policy.requiredApprovals !== 1 ? 's' : ''}</strong>.
           {policy.approverAddresses.length === 0
             ? ' Any connected wallet can approve.'
-            : ` ${policy.approverAddresses.length} authorized approver${policy.approverAddresses.length !== 1 ? 's' : ''}.`}
+            : ` ${policy.approverAddresses.length} approver${policy.approverAddresses.length !== 1 ? 's' : ''} allowed.`}
           {' '}
-          <button onClick={() => setShowPolicy(true)} style={{ background: 'none', border: 'none', color: 'var(--accent)', cursor: 'pointer', fontSize: 13, fontWeight: 600, padding: 0 }}>Edit policy</button>
+          <button onClick={() => setShowPolicy(true)} style={{ background: 'none', border: 'none', color: 'var(--accent)', cursor: 'pointer', fontSize: 13, fontWeight: 600, padding: 0, minHeight: 44 }}>Edit rules</button>
         </span>
       </div>
 
       {/* Tabs + filter bar */}
-      <div className="rounded-2xl overflow-hidden" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
+      <div className="overflow-hidden" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
         {/* Tabs */}
         <div style={{ display: 'flex', borderBottom: '1px solid var(--border)', overflowX: 'auto' }}>
           {TABS.map(tab => (
@@ -262,7 +255,8 @@ export default function Approvals() {
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
               style={{
-                padding: '14px 20px',
+                padding: '0 20px',
+                minHeight: 44,
                 fontSize: 13,
                 fontWeight: 600,
                 cursor: 'pointer',
@@ -278,7 +272,7 @@ export default function Approvals() {
             >
               {tab.label}
               {tab.count !== undefined && tab.count > 0 && (
-                <span style={{ fontSize: 11, fontWeight: 700, background: activeTab === tab.id ? 'var(--accent-dim)' : 'var(--surface-muted)', color: activeTab === tab.id ? 'var(--accent)' : 'var(--subtle)', borderRadius: 20, padding: '1px 7px', border: '1px solid var(--border)' }}>
+                <span style={{ fontSize: 11, fontWeight: 700, background: activeTab === tab.id ? 'var(--accent-dim)' : 'var(--surface-muted)', color: activeTab === tab.id ? 'var(--accent)' : 'var(--subtle)', padding: '1px 7px', border: '1px solid var(--border)' }}>
                   {tab.count}
                 </span>
               )}
@@ -292,10 +286,10 @@ export default function Approvals() {
             <Search size={14} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--muted)', pointerEvents: 'none' }} />
             <input
               type="text"
-              placeholder="Search by ID, title, or address…"
+              placeholder="Search by title, ID or wallet address…"
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
-              style={{ width: '100%', paddingLeft: 32, paddingRight: 12, paddingTop: 8, paddingBottom: 8, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 8, fontSize: 13, color: 'var(--ink)', outline: 'none', boxSizing: 'border-box' }}
+              style={{ width: '100%', paddingLeft: 32, paddingRight: 12, minHeight: 44, background: 'var(--surface)', border: '1px solid var(--border)', fontSize: 13, color: 'var(--ink)', outline: 'none', boxSizing: 'border-box' }}
             />
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -303,7 +297,7 @@ export default function Approvals() {
             <select
               value={statusFilter}
               onChange={e => setStatusFilter(e.target.value as ApprovalRequestStatus | 'all')}
-              style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 8, padding: '7px 10px', fontSize: 13, color: 'var(--ink)', outline: 'none', cursor: 'pointer' }}
+              style={{ background: 'var(--surface)', border: '1px solid var(--border)', minHeight: 44, padding: '0 10px', fontSize: 13, color: 'var(--ink)', outline: 'none', cursor: 'pointer' }}
             >
               <option value="all">All statuses</option>
               {ALL_STATUSES.map(s => (
@@ -318,20 +312,20 @@ export default function Approvals() {
           activeTab === 'needs-action' ? (
             <Empty
               icon={<ShieldCheck size={36} />}
-              message="No pending action"
-              sub="You're all caught up. New requests requiring your approval will appear here."
+              message="Nothing needs your action"
+              sub="You're all caught up. Requests waiting for you will appear here."
             />
           ) : activeTab === 'submitted' ? (
             <Empty
               icon={<Clock size={36} />}
               message="No requests submitted"
-              sub="Click 'New Request' to submit a treasury transfer for approval."
+              sub="Select “New request” to ask for approval of a treasury transfer."
             />
           ) : (
             <Empty
               icon={<PlayCircle size={36} />}
               message="No requests found"
-              sub={searchQuery || statusFilter !== 'all' ? 'Try adjusting your filters.' : 'Approval requests will appear here once submitted.'}
+              sub={searchQuery || statusFilter !== 'all' ? 'Try adjusting your filters.' : 'Approval requests will appear here once they are submitted.'}
             />
           )
         ) : (
@@ -341,7 +335,7 @@ export default function Approvals() {
         )}
       </div>
 
-      {/* Recent activity strip — last 5 executed/rejected */}
+      {/* Recent activity strip — last 5 sent/rejected */}
       {(() => {
         const recent = [...requests]
           .filter(r => r.status === 'executed' || r.status === 'rejected' || r.status === 'failed')
@@ -349,9 +343,9 @@ export default function Approvals() {
           .slice(0, 5)
         if (recent.length === 0) return null
         return (
-          <div className="rounded-2xl" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
+          <div style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
             <div className="flex items-center justify-between px-6 py-4" style={{ borderBottom: '1px solid var(--border)' }}>
-              <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--ink)' }}>Recent Activity</span>
+              <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--ink)' }}>Recent activity</span>
             </div>
             {recent.map(r => {
               let amountRaw = 0n

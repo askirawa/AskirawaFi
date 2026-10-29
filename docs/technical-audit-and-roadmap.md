@@ -1,4 +1,4 @@
-# AskirawaFi — Technical Audit and Implementation Roadmap
+# Askirawa Finance — Technical Audit and Implementation Roadmap
 
 > Read-only audit. No files were modified. No transactions were sent.
 > Date: October 21, 2026
@@ -324,7 +324,7 @@ pragma solidity ^0.8.20;
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
-/// @title AskirawaFi PayrollBatch
+/// @title Askirawa Finance PayrollBatch
 /// @notice Atomically transfers USDC to multiple recipients in a single transaction.
 /// @dev Treasury wallet must call USDC.approve(address(this), totalAmount) first.
 contract PayrollBatch is Ownable {

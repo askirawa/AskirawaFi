@@ -1,5 +1,5 @@
 /**
- * AskirawaFi — Notification System
+ * Askirawa Finance — Notification System
  *
  * DISCLOSURE:
  * Notifications are stored in browser localStorage. They are application-level
@@ -173,7 +173,7 @@ export const Notify = {
       category: 'payroll',
       severity: 'info',
       title: 'Payroll batch created',
-      description: `"${batchName}" has been saved as a draft and is ready for review.`,
+      description: `"${batchName}" was saved as a draft and is ready for review.`,
       entityId: batchId,
       entityLabel: batchName,
     })
@@ -183,8 +183,8 @@ export const Notify = {
     return emitNotification({
       category: 'payroll',
       severity,
-      title: failedCount === 0 ? 'Payroll batch completed' : 'Payroll batch partially completed',
-      description: `"${batchName}": ${confirmedCount} confirmed, ${failedCount} failed.`,
+      title: failedCount === 0 ? 'Payroll batch completed' : 'Payroll batch partly completed',
+      description: `"${batchName}": ${confirmedCount} payment${confirmedCount !== 1 ? 's' : ''} confirmed, ${failedCount} failed.`,
       entityId: batchId,
       entityLabel: batchName,
     })
@@ -217,7 +217,7 @@ export const Notify = {
       category: 'recurring',
       severity: 'info',
       title: 'Recurring schedule created',
-      description: `"${scheduleName}" is active and awaiting manual execution.`,
+      description: `"${scheduleName}" is active. You need to send each payment yourself when it is due.`,
       entityId: scheduleId,
       entityLabel: scheduleName,
     })
@@ -247,7 +247,7 @@ export const Notify = {
       category: 'recurring',
       severity: 'warning',
       title: 'Schedule cancelled',
-      description: `Recurring schedule "${scheduleName}" has been cancelled. No future payments will execute.`,
+      description: `Recurring schedule "${scheduleName}" has been cancelled. No further payments will be sent.`,
       entityId: scheduleId,
       entityLabel: scheduleName,
     })
@@ -268,7 +268,7 @@ export const Notify = {
       category: 'recurring',
       severity: 'error',
       title: 'Recurring payment failed',
-      description: `Execution of "${scheduleName}" failed: ${reason}`,
+      description: `The payment for "${scheduleName}" failed: ${reason}`,
       entityId: scheduleId,
       entityLabel: scheduleName,
     })
@@ -280,7 +280,7 @@ export const Notify = {
       category: 'approval',
       severity: 'info',
       title: 'Approval request submitted',
-      description: `"${title}" is pending approval.`,
+      description: `"${title}" is waiting for approval.`,
       entityId: requestId,
       entityLabel: title,
     })
@@ -309,8 +309,8 @@ export const Notify = {
     return emitNotification({
       category: 'approval',
       severity: 'success',
-      title: 'Approval threshold reached',
-      description: `"${title}" has all required approvals and is ready to execute.`,
+      title: 'Required approvals reached',
+      description: `"${title}" has all the approvals it needs and is ready to send.`,
       entityId: requestId,
       entityLabel: title,
     })
@@ -319,8 +319,8 @@ export const Notify = {
     return emitNotification({
       category: 'approval',
       severity: 'success',
-      title: 'Transfer executed',
-      description: `"${title}" was executed and confirmed on Arc Mainnet.`,
+      title: 'Transfer sent',
+      description: `"${title}" was sent and confirmed on Arc Mainnet.`,
       entityId: requestId,
       entityLabel: title,
       txHash,
@@ -336,12 +336,22 @@ export const Notify = {
       entityLabel: title,
     })
   },
+  approvalSendCancelled(requestId: string, title: string): AppNotification {
+    return emitNotification({
+      category: 'approval',
+      severity: 'info',
+      title: 'Payment not sent',
+      description: `You cancelled the wallet prompt for "${title}". Nothing was sent, and you can try again.`,
+      entityId: requestId,
+      entityLabel: title,
+    })
+  },
   approvalFailed(requestId: string, title: string, reason: string): AppNotification {
     return emitNotification({
       category: 'approval',
       severity: 'error',
       title: 'Transfer failed',
-      description: `"${title}" execution failed: ${reason}`,
+      description: `"${title}" could not be sent: ${reason}`,
       entityId: requestId,
       entityLabel: title,
     })
@@ -353,7 +363,7 @@ export const Notify = {
       category: 'organization',
       severity: 'info',
       title: 'Organization created',
-      description: `"${orgName}" has been created. This is a local record — not on-chain verified.`,
+      description: `"${orgName}" was created. It is saved in this browser only and is not enforced by a contract.`,
       entityId: orgId,
       entityLabel: orgName,
     })
@@ -373,7 +383,7 @@ export const Notify = {
       category: 'organization',
       severity: 'info',
       title: 'Member invited',
-      description: `${walletAddress.slice(0, 8)}… was invited to "${orgName}". No email was sent — share the link manually.`,
+      description: `${walletAddress.slice(0, 8)}… was invited to "${orgName}". No email was sent, so share the invitation link yourself.`,
       entityId: orgId,
       entityLabel: orgName,
     })

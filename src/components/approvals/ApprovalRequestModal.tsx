@@ -29,7 +29,7 @@
  *   The contract enforces [now+1h, now+30d].
  */
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { X, AlertCircle, Info, Lock, ChevronRight, ChevronLeft, CheckCircle2, Loader2, ExternalLink } from 'lucide-react'
 import { useAccount } from 'wagmi'
 import {
@@ -101,7 +101,7 @@ function Field({ label, error, required, children }: { label: string; error?: st
 
 const inputStyle: React.CSSProperties = {
   width: '100%', background: 'var(--surface-muted)', border: '1px solid var(--border)',
-  borderRadius: 8, padding: '10px 12px', color: 'var(--ink)', fontSize: 14,
+  minHeight: 44, padding: '10px 12px', color: 'var(--ink)', fontSize: 14,
   outline: 'none', boxSizing: 'border-box',
 }
 
@@ -143,26 +143,26 @@ function StepDetails({
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-      <Field label="Request Title" error={errors.title} required>
+      <Field label="Title" error={errors.title} required>
         <input
           style={inputStyle}
-          placeholder="e.g. Q4 Vendor Payment — Acme Corp"
+          placeholder="For example: Q4 vendor payment to Acme Corp"
           value={form.title}
           onChange={e => onUpdate('title', e.target.value)}
           maxLength={120}
         />
       </Field>
 
-      <Field label="Request Type" required>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+      <Field label="Type" required>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(140px, 100%), 1fr))', gap: 8 }}>
           {(['transfer', 'payroll_batch', 'recurring_schedule', 'other'] as RequestType[]).map(t => (
             <button
               key={t}
               type="button"
               onClick={() => onUpdate('type', t)}
               style={{
-                padding: '9px 12px',
-                borderRadius: 8,
+                padding: '0 12px',
+                minHeight: 44,
                 fontSize: 12,
                 fontWeight: 600,
                 cursor: 'pointer',
@@ -178,7 +178,7 @@ function StepDetails({
         </div>
       </Field>
 
-      <Field label="Recipient Address" error={errors.recipientAddress} required>
+      <Field label="Recipient wallet address" error={errors.recipientAddress} required>
         <input
           style={inputStyle}
           placeholder="0x..."
@@ -188,7 +188,7 @@ function StepDetails({
         />
       </Field>
 
-      <Field label="USDC Amount" error={errors.amountUsdc} required>
+      <Field label="Amount (USDC)" error={errors.amountUsdc} required>
         <div style={{ position: 'relative' }}>
           <input
             style={{ ...inputStyle, paddingRight: 60 }}
@@ -204,17 +204,17 @@ function StepDetails({
           <div className="flex items-center gap-1.5 mt-1.5" style={{ fontSize: 12, color: needsApproval ? 'var(--warning)' : 'var(--accent)' }}>
             <Info size={12} />
             {needsApproval
-              ? `Amount ≥ ${policy.thresholdUsdc} USDC — approval required (${policy.requiredApprovals} approver${policy.requiredApprovals !== 1 ? 's' : ''})`
-              : `Amount below ${policy.thresholdUsdc} USDC threshold`
+              ? `This amount is ${policy.thresholdUsdc} USDC or more, so it needs ${policy.requiredApprovals} approval${policy.requiredApprovals !== 1 ? 's' : ''}.`
+              : `This amount is below ${policy.thresholdUsdc} USDC, so no approval is needed.`
             }
           </div>
         )}
       </Field>
 
-      {/* Expiry — only shown in on-chain mode */}
+      {/* Expiry — only shown when the treasury contract is set up */}
       {isTreasuryDeployed && (
-        <Field label="Proposal Expiry">
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        <Field label="Request expires after">
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, minHeight: 44 }}>
             <input
               type="range"
               min={1}
@@ -228,15 +228,15 @@ function StepDetails({
             </span>
           </div>
           <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 4 }}>
-            Approvers have {form.expiryDays} day{form.expiryDays !== 1 ? 's' : ''} to vote before the proposal expires on-chain.
+            Approvers have {form.expiryDays} day{form.expiryDays !== 1 ? 's' : ''} to vote before this request expires.
           </div>
         </Field>
       )}
 
-      <Field label="Business Justification" error={errors.description} required>
+      <Field label="Business reason" error={errors.description} required>
         <textarea
           style={{ ...inputStyle, resize: 'vertical', minHeight: 80 }}
-          placeholder="Describe the purpose and business context for this payment…"
+          placeholder="What is this payment for?"
           value={form.description}
           onChange={e => onUpdate('description', e.target.value)}
           maxLength={600}
@@ -254,9 +254,9 @@ function StepDetails({
 
 function Row({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, paddingBottom: 12, borderBottom: '1px solid var(--border)' }}>
+    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, paddingBottom: 12, borderBottom: '1px solid var(--border)', flexWrap: 'wrap' }}>
       <span style={{ fontSize: 12, color: 'var(--muted)', fontWeight: 500, flexShrink: 0 }}>{label}</span>
-      <span style={{ fontSize: 13, color: 'var(--ink)', fontWeight: 600, textAlign: 'right', wordBreak: 'break-all' }}>{children}</span>
+      <span style={{ fontSize: 13, color: 'var(--ink)', fontWeight: 600, textAlign: 'right', wordBreak: 'break-all', minWidth: 0, maxWidth: '100%' }}>{children}</span>
     </div>
   )
 }
@@ -274,24 +274,24 @@ function StepReview({ form, policy, requesterAddress }: {
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
       {/* Header notice — mode aware */}
       {isTreasuryDeployed ? (
-        <div className="flex items-start gap-3 rounded-xl p-4" style={{ background: 'rgba(0,200,100,0.07)', border: '1px solid rgba(0,200,100,0.2)' }}>
+        <div className="flex items-start gap-3 p-4" style={{ background: 'var(--success-dim)', border: '1px solid var(--success-dim)' }}>
           <Lock size={16} style={{ color: 'var(--success)', flexShrink: 0, marginTop: 1 }} />
           <div style={{ fontSize: 13, color: 'var(--ink-2)', lineHeight: 1.5 }}>
-            <strong style={{ color: 'var(--success)' }}>On-chain treasury mode</strong>
+            <strong style={{ color: 'var(--success)' }}>Checked by the treasury contract</strong>
             <br />
-            Clicking <strong>Submit &amp; Propose</strong> will open your wallet to sign a <code>proposeTransfer</code> transaction on AskirawaFiTreasury.
-            The proposal is only registered on-chain after the transaction is confirmed.
-            Only then will this request appear as actionable for voters.
+            Selecting <strong>Submit request</strong> opens your wallet to sign a transaction.
+            The request is only recorded after the network confirms it.
+            Approvers can act on it after that.
           </div>
         </div>
       ) : (
-        <div className="flex items-start gap-3 rounded-xl p-4" style={{ background: 'var(--surface-muted)', border: '1px solid var(--border)' }}>
+        <div className="flex items-start gap-3 p-4" style={{ background: 'var(--surface-muted)', border: '1px solid var(--border)' }}>
           <Info size={16} style={{ color: 'var(--warning)', flexShrink: 0, marginTop: 1 }} />
           <div style={{ fontSize: 13, color: 'var(--ink-2)', lineHeight: 1.5 }}>
-            <strong style={{ color: 'var(--ink)' }}>Local mode — not on-chain enforced</strong>
+            <strong style={{ color: 'var(--ink)' }}>Saved in this browser only — not enforced by a contract</strong>
             <br />
-            Decisions are stored in your browser only. Execution sends USDC directly from your wallet without treasury quorum.
-            Deploy AskirawaFiTreasury to enable cryptographic enforcement.
+            Approvals are kept in this browser. Sending pays USDC directly from your wallet without the required approvals being checked.
+            The treasury contract has not been set up yet.
           </div>
         </div>
       )}
@@ -300,7 +300,7 @@ function StepReview({ form, policy, requesterAddress }: {
       <div style={{ display: 'flex', flexDirection: 'column', gap: 12, paddingTop: 4 }}>
         <Row label="Title">{form.title}</Row>
         <Row label="Type">{REQUEST_TYPE_LABELS[form.type]}</Row>
-        <Row label="Requester">{requesterAddress.slice(0, 6)}…{requesterAddress.slice(-4)}</Row>
+        <Row label="Requested by">{requesterAddress.slice(0, 6)}…{requesterAddress.slice(-4)}</Row>
         <Row label="Recipient">{form.recipientAddress.slice(0, 10)}…{form.recipientAddress.slice(-6)}</Row>
         <Row label="Amount">
           <span style={{ color: amountRaw > 0n ? 'var(--ink)' : 'var(--muted)' }}>
@@ -310,15 +310,15 @@ function StepReview({ form, policy, requesterAddress }: {
         {isTreasuryDeployed && (
           <Row label="Expires in">{form.expiryDays} day{form.expiryDays !== 1 ? 's' : ''}</Row>
         )}
-        <Row label="Approval">
+        <Row label="Approvals">
           {needsApproval
-            ? `${policy.requiredApprovals} of ${policy.requiredApprovals} approver${policy.requiredApprovals !== 1 ? 's' : ''} required`
-            : 'Below threshold — approval not required'
+            ? `${policy.requiredApprovals} approval${policy.requiredApprovals !== 1 ? 's' : ''} needed`
+            : 'None needed (below the approval limit)'
           }
         </Row>
         <div style={{ paddingBottom: 4 }}>
-          <div style={{ fontSize: 12, color: 'var(--muted)', fontWeight: 500, marginBottom: 4 }}>Justification</div>
-          <div style={{ fontSize: 13, color: 'var(--ink-2)', lineHeight: 1.6 }}>{form.description}</div>
+          <div style={{ fontSize: 12, color: 'var(--muted)', fontWeight: 500, marginBottom: 4 }}>Business reason</div>
+          <div style={{ fontSize: 13, color: 'var(--ink-2)', lineHeight: 1.6, overflowWrap: 'anywhere' }}>{form.description}</div>
         </div>
       </div>
     </div>
@@ -371,10 +371,10 @@ export default function ApprovalRequestModal({ policy, onSubmit, onClose }: Prop
     const offChainId = generateId()
 
     if (isTreasuryDeployed) {
-      // ── ON-CHAIN MODE ───────────────────────────────────────────────────────
+      // ── TREASURY CONTRACT MODE ───────────────────────────────────────────────────────
       // Validate chain before opening wallet
       if (isWrongChain) {
-        setSubmitState({ status: 'error', message: 'Switch to Arc Mainnet before submitting.' })
+        setSubmitState({ status: 'error', message: 'Your wallet is on the wrong network. Switch to Arc Mainnet and try again.' })
         return
       }
 
@@ -382,7 +382,7 @@ export default function ApprovalRequestModal({ policy, onSubmit, onClose }: Prop
       try {
         amount = parseUsdcString(form.amountUsdc)
       } catch {
-        setSubmitState({ status: 'error', message: 'Invalid USDC amount.' })
+        setSubmitState({ status: 'error', message: 'The amount is not valid, so nothing was sent. Go back, enter a number such as 5000.00 and try again.' })
         return
       }
 
@@ -396,8 +396,8 @@ export default function ApprovalRequestModal({ policy, onSubmit, onClose }: Prop
       })
 
       if (!result) {
-        // useTreasuryPropose sets its own error; surface it
-        setSubmitState({ status: 'error', message: 'Proposal transaction failed or was rejected. No on-chain proposal was created.' })
+        // useTreasuryPropose sets its own error; show a plain summary
+        setSubmitState({ status: 'error', message: 'The request was not submitted. If you cancelled in your wallet, nothing was sent. Otherwise check your wallet and try again.' })
         return
       }
 
@@ -417,7 +417,7 @@ export default function ApprovalRequestModal({ policy, onSubmit, onClose }: Prop
 
       setSubmitState({ status: 'success', proposalId: result.proposalId, txHash: result.hash })
     } else {
-      // ── LOCAL MODE ──────────────────────────────────────────────────────────
+      // ── BROWSER-ONLY MODE ──────────────────────────────────────────────────────────
       onSubmit({
         title: form.title,
         type: form.type,
@@ -432,6 +432,15 @@ export default function ApprovalRequestModal({ policy, onSubmit, onClose }: Prop
   }
 
   const isSubmitting = submitState.status === 'submitting'
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && !isSubmitting) onClose()
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [isSubmitting, onClose])
+
   const isSuccess = submitState.status === 'success'
   const isError = submitState.status === 'error'
 
@@ -441,25 +450,27 @@ export default function ApprovalRequestModal({ policy, onSubmit, onClose }: Prop
         position: 'fixed', inset: 0, zIndex: 60,
         background: 'rgba(0,0,0,0.65)',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
-        padding: 16,
+        padding: 12,
       }}
+      role="dialog"
+      aria-modal="true"
       onClick={e => { if (e.target === e.currentTarget && !isSubmitting) onClose() }}
     >
       <div
         style={{
           background: 'var(--surface)', border: '1px solid var(--border)',
-          borderRadius: 20, width: '100%', maxWidth: 520,
+          width: 'min(560px, 100%)',
           maxHeight: '90dvh', overflow: 'hidden',
           display: 'flex', flexDirection: 'column',
         }}
       >
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-5" style={{ borderBottom: '1px solid var(--border)' }}>
-          <div>
+          <div style={{ minWidth: 0 }}>
             <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--ink)' }}>
               {isSuccess
-                ? isTreasuryDeployed ? 'Proposal Registered On-Chain' : 'Request Saved'
-                : step === 1 ? 'New Approval Request' : 'Review Request'}
+                ? isTreasuryDeployed ? 'Request submitted' : 'Request saved'
+                : step === 1 ? 'New approval request' : 'Review request'}
             </div>
             {!isSuccess && (
               <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 2 }}>
@@ -470,30 +481,31 @@ export default function ApprovalRequestModal({ policy, onSubmit, onClose }: Prop
           <button
             onClick={onClose}
             disabled={isSubmitting}
-            style={{ background: 'none', border: 'none', cursor: isSubmitting ? 'not-allowed' : 'pointer', color: 'var(--muted)', padding: 4, opacity: isSubmitting ? 0.4 : 1 }}
+            aria-label="Close"
+            style={{ background: 'none', border: 'none', cursor: isSubmitting ? 'not-allowed' : 'pointer', color: 'var(--muted)', width: 44, height: 44, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, opacity: isSubmitting ? 0.4 : 1 }}
           >
             <X size={20} />
           </button>
         </div>
 
         {/* Body */}
-        <div style={{ overflowY: 'auto', flex: 1, padding: '24px 24px 0' }}>
+        <div style={{ overflowY: 'auto', flex: 1, padding: '24px 24px 24px' }}>
           {isSuccess ? (
             <div className="flex flex-col items-center justify-center py-10 text-center gap-4">
-              <div style={{ width: 52, height: 52, borderRadius: '50%', background: 'var(--accent-dim)', border: '1px solid var(--accent-border)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <div style={{ width: 52, height: 52, background: 'var(--accent-dim)', border: '1px solid var(--accent-border)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <CheckCircle2 size={24} style={{ color: 'var(--accent)' }} />
               </div>
               <div style={{ width: '100%' }}>
                 {isTreasuryDeployed ? (
                   <>
-                    <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--ink)', marginBottom: 6 }}>Proposal registered on-chain</div>
+                    <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--ink)', marginBottom: 6 }}>Request submitted</div>
                     <div style={{ fontSize: 13, color: 'var(--muted)', lineHeight: 1.6, marginBottom: 16 }}>
-                      The <code>proposeTransfer</code> transaction was confirmed on Arc Mainnet.
-                      Authorized approvers can now vote using the <strong>Vote On-Chain</strong> button in the request detail.
+                      The network confirmed your request on Arc Mainnet.
+                      Approvers can now approve it from the request details.
                     </div>
                     {submitState.status === 'success' && submitState.txHash && (
-                      <div style={{ background: 'var(--surface-muted)', border: '1px solid var(--border)', borderRadius: 10, padding: '10px 14px', fontSize: 12, textAlign: 'left' }}>
-                        <div style={{ color: 'var(--muted)', marginBottom: 4 }}>Propose Tx</div>
+                      <div style={{ background: 'var(--surface-muted)', border: '1px solid var(--border)', padding: '10px 14px', fontSize: 12, textAlign: 'left' }}>
+                        <div style={{ color: 'var(--muted)', marginBottom: 4 }}>Transaction hash</div>
                         <a
                           href={`https://explorer.arc.io/tx/${submitState.txHash}`}
                           target="_blank" rel="noopener noreferrer"
@@ -505,7 +517,7 @@ export default function ApprovalRequestModal({ policy, onSubmit, onClose }: Prop
                         </a>
                         {submitState.status === 'success' && submitState.proposalId && (
                           <>
-                            <div style={{ color: 'var(--muted)', marginBottom: 4, marginTop: 10 }}>On-chain Proposal ID</div>
+                            <div style={{ color: 'var(--muted)', marginBottom: 4, marginTop: 10 }}>Contract reference</div>
                             <div style={{ color: 'var(--ink)', fontWeight: 600, wordBreak: 'break-all' }}>
                               {submitState.proposalId.slice(0, 12)}…{submitState.proposalId.slice(-8)}
                             </div>
@@ -516,10 +528,10 @@ export default function ApprovalRequestModal({ policy, onSubmit, onClose }: Prop
                   </>
                 ) : (
                   <>
-                    <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--ink)', marginBottom: 6 }}>Request saved locally</div>
+                    <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--ink)', marginBottom: 6 }}>Request saved in this browser</div>
                     <div style={{ fontSize: 13, color: 'var(--muted)', lineHeight: 1.5 }}>
-                      The approval request has been saved in this browser. Share it with your authorized approvers.
-                      Decisions are stored locally and not enforced on-chain.
+                      The request is saved in this browser only. Other people cannot see it from their own devices.
+                      Approvals are not enforced by a contract.
                     </div>
                   </>
                 )}
@@ -533,40 +545,40 @@ export default function ApprovalRequestModal({ policy, onSubmit, onClose }: Prop
 
           {/* Wrong-chain warning in review step */}
           {step === 2 && isWrongChain && !isSuccess && (
-            <div className="flex items-center gap-2 rounded-xl p-3 mt-4" style={{ background: 'rgba(232,184,76,0.08)', border: '1px solid rgba(232,184,76,0.2)' }}>
+            <div className="flex items-center gap-2 p-3 mt-4" style={{ background: 'var(--warning-dim)', border: '1px solid var(--warning-border)' }}>
               <AlertCircle size={14} style={{ color: 'var(--warning)', flexShrink: 0 }} />
-              <span style={{ fontSize: 12, color: 'var(--warning)' }}>Switch to Arc Mainnet before submitting.</span>
+              <span style={{ fontSize: 12, color: 'var(--warning)' }}>Your wallet is on the wrong network. Switch to Arc Mainnet to continue.</span>
             </div>
           )}
 
           {/* Error banner */}
           {isError && (
-            <div className="flex items-start gap-2 rounded-xl p-3 mt-4" style={{ background: 'rgba(232,109,122,0.08)', border: '1px solid rgba(232,109,122,0.25)' }}>
+            <div className="flex items-start gap-2 p-3 mt-4" style={{ background: 'var(--danger-dim)', border: '1px solid var(--danger-border)' }}>
               <AlertCircle size={14} style={{ color: 'var(--danger)', flexShrink: 0, marginTop: 1 }} />
-              <span style={{ fontSize: 13, color: 'var(--danger)', lineHeight: 1.5 }}>{submitState.message}</span>
+              <span style={{ fontSize: 13, color: 'var(--danger)', lineHeight: 1.5, overflowWrap: 'anywhere' }}>{submitState.message}</span>
             </div>
           )}
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-between gap-3 px-6 py-5" style={{ borderTop: '1px solid var(--border)' }}>
+        <div className="flex flex-wrap items-center justify-between gap-3 px-6 py-5" style={{ borderTop: '1px solid var(--border)' }}>
           {isSuccess ? (
             <button
               onClick={onClose}
-              className="w-full rounded-xl py-3 text-sm font-semibold"
-              style={{ background: 'var(--accent)', color: '#021a0e', border: 'none', cursor: 'pointer' }}
+              className="w-full text-sm font-semibold"
+              style={{ minHeight: 44, background: 'var(--accent)', color: 'var(--bg)', border: 'none', cursor: 'pointer' }}
             >
               Done
             </button>
           ) : step === 1 ? (
             <>
-              <button onClick={onClose} style={{ background: 'none', border: '1px solid var(--border)', borderRadius: 10, padding: '10px 20px', fontSize: 13, color: 'var(--muted)', cursor: 'pointer' }}>
+              <button onClick={onClose} style={{ background: 'none', border: '1px solid var(--border)', minHeight: 44, padding: '0 20px', fontSize: 13, color: 'var(--muted)', cursor: 'pointer' }}>
                 Cancel
               </button>
               <button
                 onClick={handleNext}
-                className="flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-semibold"
-                style={{ background: 'var(--accent)', color: '#021a0e', border: 'none', cursor: 'pointer' }}
+                className="flex items-center gap-2 px-5 text-sm font-semibold"
+                style={{ minHeight: 44, background: 'var(--accent)', color: 'var(--bg)', border: 'none', cursor: 'pointer' }}
               >
                 Review <ChevronRight size={16} />
               </button>
@@ -577,26 +589,27 @@ export default function ApprovalRequestModal({ policy, onSubmit, onClose }: Prop
                 onClick={() => { setStep(1); setSubmitState({ status: 'idle' }) }}
                 disabled={isSubmitting}
                 className="flex items-center gap-2"
-                style={{ background: 'none', border: '1px solid var(--border)', borderRadius: 10, padding: '10px 20px', fontSize: 13, color: 'var(--muted)', cursor: isSubmitting ? 'not-allowed' : 'pointer', opacity: isSubmitting ? 0.5 : 1 }}
+                style={{ background: 'none', border: '1px solid var(--border)', minHeight: 44, padding: '0 20px', fontSize: 13, color: 'var(--muted)', cursor: isSubmitting ? 'not-allowed' : 'pointer', opacity: isSubmitting ? 0.5 : 1 }}
               >
                 <ChevronLeft size={16} /> Back
               </button>
               <button
                 onClick={() => { void handleSubmit() }}
                 disabled={!address || isSubmitting || isWrongChain}
-                className="rounded-xl px-6 py-2.5 text-sm font-semibold transition-opacity flex items-center gap-2"
+                className="px-6 text-sm font-semibold transition-opacity flex items-center gap-2"
                 style={{
+                  minHeight: 44,
                   background: (!address || isWrongChain) ? 'var(--surface-strong)' : 'var(--accent)',
-                  color: (!address || isWrongChain) ? 'var(--subtle)' : '#021a0e',
+                  color: (!address || isWrongChain) ? 'var(--subtle)' : 'var(--bg)',
                   border: 'none',
                   cursor: (!address || isSubmitting || isWrongChain) ? 'not-allowed' : 'pointer',
                   opacity: isSubmitting ? 0.8 : 1,
                 }}
               >
                 {isSubmitting ? (
-                  <><Loader2 size={15} className="animate-spin" />{isTreasuryDeployed ? 'Awaiting wallet…' : 'Saving…'}</>
+                  <><Loader2 size={15} className="animate-spin" />{isTreasuryDeployed ? 'Confirm in your wallet…' : 'Saving…'}</>
                 ) : (
-                  isTreasuryDeployed ? 'Submit & Propose On-Chain' : 'Submit Request'
+                  isTreasuryDeployed ? 'Submit request' : 'Save request'
                 )}
               </button>
             </>

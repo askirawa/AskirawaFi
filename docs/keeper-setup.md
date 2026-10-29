@@ -1,4 +1,4 @@
-# AskirawaFi Keeper Setup
+# Askirawa Finance Keeper Setup
 
 The keeper worker (`server/keeper.ts`) is a long-running Bun process that polls the treasury on-chain, detects due recurring payment schedules, and executes them without requiring the user to open the application.
 
@@ -58,7 +58,7 @@ bun run keeper:start
 ### Systemd (VPS)
 ```ini
 [Unit]
-Description=AskirawaFi Keeper
+Description=Askirawa Finance Keeper
 After=network.target
 
 [Service]

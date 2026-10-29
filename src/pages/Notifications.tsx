@@ -13,21 +13,13 @@ import {
   type NotificationSeverity,
 } from '../lib/notifications'
 import Card, { CardHeader, CardBody } from '../components/ui/Card'
+import PageHeader from '../components/ui/PageHeader'
 import Badge from '../components/ui/Badge'
 import EmptyState from '../components/ui/EmptyState'
 
 type CategoryFilter = 'all' | NotificationCategory
 type SeverityFilter = 'all' | NotificationSeverity
 type ReadFilter = 'all' | 'unread' | 'read'
-
-const CATEGORY_ICONS: Record<NotificationCategory, string> = {
-  payroll: '💼',
-  recurring: '🔄',
-  approval: '✅',
-  organization: '🏢',
-  transaction: '⛓',
-  system: '⚙',
-}
 
 const SEVERITY_LABEL: Record<NotificationSeverity, string> = {
   info: 'Info',
@@ -63,31 +55,29 @@ export default function Notifications() {
   const selectStyle = {
     background: 'var(--surface-muted)',
     border: '1px solid var(--border)',
-    borderRadius: 8,
     color: 'var(--ink-2)',
     fontSize: 12,
     padding: '6px 10px',
+    minHeight: 44,
+    maxWidth: '100%',
     cursor: 'pointer',
   } as React.CSSProperties
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-      {/* Page header */}
-      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
-        <div>
-          <h1 style={{ fontSize: 24, fontWeight: 700, color: 'var(--ink)', margin: 0 }}>Notifications</h1>
-          <p style={{ fontSize: 14, color: 'var(--muted)', margin: '4px 0 0' }}>
-            In-app activity alerts — stored locally in this browser only.
-          </p>
-        </div>
-        <div style={{ display: 'flex', gap: 8 }}>
+      <PageHeader
+        eyebrow="Alerts"
+        title="Notifications"
+        subtitle="Alerts about what you do in this app. They are saved in this browser only."
+        action={
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
           {unreadCount > 0 && (
             <button
               onClick={markAllRead}
               style={{
                 display: 'flex', alignItems: 'center', gap: 6,
                 background: 'var(--surface-muted)', border: '1px solid var(--border)',
-                borderRadius: 8, color: 'var(--ink-2)', fontSize: 13,
+                minHeight: 44, color: 'var(--ink-2)', fontSize: 13,
                 fontWeight: 600, cursor: 'pointer', padding: '8px 14px',
               }}
             >
@@ -97,11 +87,11 @@ export default function Notifications() {
           )}
           {notifications.length > 0 && (
             <button
-              onClick={() => { if (window.confirm('Clear all notifications?')) clearAllNotifs() }}
+              onClick={() => { if (window.confirm('Delete all notifications from this browser? This cannot be undone.')) clearAllNotifs() }}
               style={{
                 display: 'flex', alignItems: 'center', gap: 6,
                 background: 'var(--surface-muted)', border: '1px solid var(--border)',
-                borderRadius: 8, color: 'var(--muted)', fontSize: 13,
+                minHeight: 44, color: 'var(--muted)', fontSize: 13,
                 fontWeight: 600, cursor: 'pointer', padding: '8px 14px',
               }}
             >
@@ -110,24 +100,24 @@ export default function Notifications() {
             </button>
           )}
         </div>
-      </div>
+        }
+      />
 
       {/* Disclosure */}
       <div
         style={{
           padding: '10px 14px',
-          borderRadius: 10,
-          background: 'rgba(232,184,76,0.07)',
-          border: '1px solid rgba(232,184,76,0.18)',
+          background: 'var(--warning-dim)',
+          border: '1px solid var(--warning-border)',
           fontSize: 12,
           color: 'var(--warning)',
         }}
       >
-        Notifications are browser-local records. They are not sent externally and are not shared with other users or devices.
+        Notifications are saved in this browser only. They are not emailed or sent anywhere, and other people and other devices cannot see them.
       </div>
 
       {/* Stats row */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: 12 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(130px, 100%), 1fr))', gap: 12 }}>
         {[
           { label: 'Total', value: notifications.length },
           { label: 'Unread', value: unreadCount },
@@ -172,7 +162,7 @@ export default function Notifications() {
             onChange={e => { setSeverityFilter(e.target.value as SeverityFilter); resetPage() }}
             style={selectStyle}
           >
-            <option value="all">All severities</option>
+            <option value="all">All types</option>
             {(['info', 'success', 'warning', 'error'] as NotificationSeverity[]).map(s => (
               <option key={s} value={s}>{SEVERITY_LABEL[s]}</option>
             ))}
@@ -187,7 +177,7 @@ export default function Notifications() {
       <Card>
         <CardHeader>
           <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--ink-2)' }}>
-            {readFilter === 'unread' ? 'Unread' : readFilter === 'read' ? 'Read' : 'All'} Notifications
+            {readFilter === 'unread' ? 'Unread' : readFilter === 'read' ? 'Read' : 'All'} notifications
           </span>
         </CardHeader>
         <CardBody style={{ padding: 0 }}>
@@ -196,8 +186,8 @@ export default function Notifications() {
               icon={Bell}
               title="No notifications"
               description={filtered.length === 0 && notifications.length === 0
-                ? 'Notifications will appear here as you use AskirawaFi.'
-                : 'No notifications match the current filters.'}
+                ? 'Notifications will appear here as you use Askirawa Finance.'
+                : 'Nothing matches these filters. Change a filter to see more.'}
             />
           ) : (
             <div>
@@ -207,9 +197,9 @@ export default function Notifications() {
                   style={{
                     display: 'flex',
                     gap: 12,
-                    padding: '14px 20px',
+                    padding: '14px 16px',
                     borderBottom: idx < paginated.length - 1 ? '1px solid var(--border)' : 'none',
-                    background: n.read ? 'transparent' : 'rgba(53,217,139,0.025)',
+                    background: n.read ? 'transparent' : 'var(--accent-dim)',
                   }}
                 >
                   {/* Indicator */}
@@ -227,18 +217,18 @@ export default function Notifications() {
                   {/* Content */}
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 4 }}>
-                      <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--ink)' }}>{n.title}</span>
+                      <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--ink)', overflowWrap: 'anywhere' }}>{n.title}</span>
                       <Badge variant={
                         n.severity === 'success' ? 'success'
                         : n.severity === 'warning' ? 'warning'
                         : n.severity === 'error' ? 'danger'
                         : 'neutral'
                       }>
-                        {CATEGORY_ICONS[n.category]} {CATEGORY_LABELS[n.category]}
+                        {CATEGORY_LABELS[n.category]}
                       </Badge>
                       {!n.read && <Badge variant="active">Unread</Badge>}
                     </div>
-                    <p style={{ fontSize: 13, color: 'var(--muted)', margin: '0 0 6px', lineHeight: 1.45 }}>
+                    <p style={{ fontSize: 13, color: 'var(--muted)', margin: '0 0 6px', lineHeight: 1.45, overflowWrap: 'anywhere' }}>
                       {n.description}
                     </p>
                     <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
@@ -248,14 +238,14 @@ export default function Notifications() {
                           href={`https://explorer.arc.io/tx/${n.txHash}`}
                           target="_blank"
                           rel="noopener noreferrer"
-                          style={{ fontSize: 11, color: 'var(--accent)' }}
+                          style={{ fontSize: 11, color: 'var(--accent)', textDecoration: 'underline', wordBreak: 'break-all' }}
                         >
-                          {n.txHash.slice(0, 10)}… ↗
+                          Transaction {n.txHash.slice(0, 10)}… ↗
                         </a>
                       )}
                       {n.entityLabel && (
                         <span style={{ fontSize: 11, color: 'var(--subtle)' }}>
-                          Ref: {n.entityLabel}
+                          Related to: {n.entityLabel}
                         </span>
                       )}
                     </div>
@@ -267,9 +257,10 @@ export default function Notifications() {
                       <button
                         onClick={() => markRead(n.id)}
                         title="Mark as read"
-                        style={{
+                        aria-label="Mark as read"
+                        style={{ minWidth: 40, minHeight: 40, justifyContent: 'center',
                           background: 'none', border: 'none', cursor: 'pointer',
-                          color: 'var(--accent)', padding: 6, borderRadius: 6,
+                          color: 'var(--accent)', padding: 6,
                           display: 'flex', alignItems: 'center',
                         }}
                       >
@@ -279,9 +270,10 @@ export default function Notifications() {
                     <button
                       onClick={() => clear(n.id)}
                       title="Dismiss"
-                      style={{
+                      aria-label="Dismiss notification"
+                      style={{ minWidth: 40, minHeight: 40, justifyContent: 'center',
                         background: 'none', border: 'none', cursor: 'pointer',
-                        color: 'var(--subtle)', padding: 6, borderRadius: 6,
+                        color: 'var(--subtle)', padding: 6,
                         display: 'flex', alignItems: 'center',
                       }}
                     >
@@ -297,7 +289,7 @@ export default function Notifications() {
 
       {/* Pagination */}
       {totalPages > 1 && (
-        <div style={{ display: 'flex', justifyContent: 'center', gap: 8 }}>
+        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
           <button
             onClick={() => setPage(p => Math.max(0, p - 1))}
             disabled={page === 0}

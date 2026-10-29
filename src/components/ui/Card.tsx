@@ -15,7 +15,7 @@ interface CardSectionProps {
   children: React.ReactNode
   className?: string
   style?: React.CSSProperties
-  /** Mono label shown on the left of the header strip (e.g. "01 / SECTION") */
+  /** Mono label shown on the left of the header strip (e.g. "Summary") */
   label?: string
   /** Optional right-side content in the header strip */
   action?: React.ReactNode

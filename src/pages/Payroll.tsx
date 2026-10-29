@@ -57,10 +57,10 @@ import { useNotifications } from '../context/NotificationContext'
 
 const STATUS_FILTERS: Array<{ id: BatchStatus | 'all'; label: string }> = [
   { id: 'all', label: 'All' },
-  { id: 'ready', label: 'Ready' },
-  { id: 'processing', label: 'Processing' },
+  { id: 'ready', label: 'Ready to send' },
+  { id: 'processing', label: 'In progress' },
   { id: 'completed', label: 'Completed' },
-  { id: 'partial', label: 'Partial' },
+  { id: 'partial', label: 'Partly paid' },
   { id: 'failed', label: 'Failed' },
   { id: 'draft', label: 'Draft' },
 ]
@@ -90,12 +90,12 @@ function BatchRow({
       onClick={onClick}
       className="cursor-pointer transition-colors"
       style={{ borderBottom: '1px solid var(--border)' }}
-      onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.025)')}
+      onMouseEnter={e => (e.currentTarget.style.background = 'var(--surface-muted)')}
       onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
     >
       <td className="px-6 py-4">
         <div className="text-sm font-medium" style={{ color: 'var(--ink)' }}>{batch.name}</div>
-        <div className="text-xs mono mt-0.5" style={{ color: 'var(--subtle)' }}>{formatBatchId(batch.id)}</div>
+        <div className="text-xs mono mt-0.5" style={{ color: 'var(--subtle)', overflowWrap: 'anywhere' }}>{formatBatchId(batch.id)}</div>
       </td>
       <td className="px-6 py-4 text-sm" style={{ color: 'var(--muted)' }}>
         {formatTs(batch.createdAt)}
@@ -108,7 +108,7 @@ function BatchRow({
           : <span style={{ color: 'var(--subtle)' }}>—</span>}
       </td>
       <td className="px-6 py-4 text-sm" style={{ color: 'var(--ink-2)' }}>
-        {stats.employeeCount} emp.
+        {stats.employeeCount} {stats.employeeCount === 1 ? 'employee' : 'employees'}
       </td>
       <td className="px-6 py-4 text-sm font-semibold mono" style={{ color: 'var(--ink)', fontVariantNumeric: 'tabular-nums' }}>
         {stats.totalFormatted} USDC
@@ -213,37 +213,36 @@ export default function Payroll() {
           <Info size={15} className="mt-0.5 shrink-0" style={{ color: 'var(--warning)' }} />
           <div className="text-xs" style={{ color: 'var(--muted)', lineHeight: 1.7 }}>
             <span className="font-semibold" style={{ color: 'var(--ink-2)' }}>How payroll works today: </span>
-            Batch records are stored locally in your browser. Executing a batch sends individual USDC{' '}
-            <code>transfer()</code> calls on Arc Mainnet — each requires a separate wallet confirmation and
-            is not atomic. A future dedicated PayrollBatch contract will enable atomic batch execution
-            and automatic scheduling.
+            Batches are saved in this browser only. Running a batch sends one USDC payment per employee on
+            Arc Mainnet, and each payment needs its own wallet confirmation. Payments are sent one at a time,
+            so some may succeed while others fail. Scheduled batches are not sent automatically.
           </div>
         </CardBody>
       </Card>
 
       {/* Stats row */}
-      <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+      <div className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(min(200px, 100%), 1fr))' }}>
         {[
           {
             label: 'USDC Balance',
             value: !isConnected ? '—' : balanceLoading ? null : `$${balanceFormatted ?? '0.00'}`,
-            note: 'Connected wallet',
+            note: 'Your connected wallet',
             accent: true,
           },
           {
-            label: 'Total Employees',
+            label: 'Employees',
             value: String(stats.uniqueRecipients),
-            note: 'Unique recipients',
+            note: 'Unique wallet addresses',
           },
           {
             label: 'Payroll Batches',
             value: String(stats.totalBatches),
-            note: `${stats.completedBatches} completed · ${stats.draftBatches} pending`,
+            note: `${stats.completedBatches} completed · ${stats.draftBatches} not yet run`,
           },
           {
             label: 'Confirmed Payments',
             value: String(stats.confirmedPayments),
-            note: `${stats.pendingPayments} pending · ${stats.failedPayments} failed`,
+            note: `${stats.pendingPayments} waiting · ${stats.failedPayments} failed`,
           },
         ].map(({ label, value, note, accent }) => (
           <Card key={label} style={{ minHeight: 110 }}>
@@ -276,8 +275,8 @@ export default function Payroll() {
               ({filteredBatches.length})
             </span>
           </h2>
-          <div className="text-xs font-medium px-2 py-1 rounded-md" style={{ background: 'rgba(232,184,76,0.1)', color: 'var(--warning)' }}>
-            Local records
+          <div className="text-xs font-medium px-2 py-1" style={{ background: 'rgba(232,184,76,0.1)', color: 'var(--warning)' }}>
+            Saved in this browser
           </div>
         </CardHeader>
 
@@ -291,16 +290,17 @@ export default function Payroll() {
             <Search size={13} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--subtle)' }} />
             <input
               type="search"
-              placeholder="Search batches or employees…"
+              placeholder="Search by batch, employee or wallet address"
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
               style={{
                 width: '100%',
                 background: 'var(--surface-muted)',
                 border: '1px solid var(--border)',
-                borderRadius: 8,
+                borderRadius: 0,
                 color: 'var(--ink)',
                 fontSize: 13,
+                minHeight: 44,
                 padding: '7px 10px 7px 30px',
                 outline: 'none',
               }}
@@ -314,13 +314,13 @@ export default function Payroll() {
               <button
                 key={f.id}
                 onClick={() => setStatusFilter(f.id)}
-                className="rounded-lg px-2.5 py-1 text-xs font-medium transition-colors"
+                className="px-3 py-1 text-xs font-medium transition-colors"
                 style={{
                   background: statusFilter === f.id ? 'var(--accent-dim)' : 'var(--surface-muted)',
                   border: `1px solid ${statusFilter === f.id ? 'var(--accent-border)' : 'var(--border)'}`,
                   color: statusFilter === f.id ? 'var(--accent)' : 'var(--muted)',
                   cursor: 'pointer',
-                  minHeight: 28,
+                  minHeight: 40,
                 }}
               >
                 {f.label}
@@ -332,7 +332,7 @@ export default function Payroll() {
         {/* Table or empty state */}
         {!isConnected ? (
           <CardBody>
-            <WalletRequired message="Connect your wallet to create and manage payroll batches." />
+            <WalletRequired message="Connect your wallet to create and manage payroll." />
           </CardBody>
         ) : filteredBatches.length === 0 ? (
           <CardBody>
@@ -341,15 +341,15 @@ export default function Payroll() {
               title={batches.length === 0 ? 'No payroll batches yet' : 'No results match your filters'}
               description={
                 batches.length === 0
-                  ? 'Create your first payroll batch to send USDC to multiple employees in one operation.'
-                  : 'Try adjusting your search or filter to find what you need.'
+                  ? 'Create a payroll batch to pay several employees in USDC.'
+                  : 'Try a different search or filter.'
               }
               action={
                 batches.length === 0 ? (
                   <button
                     onClick={() => setShowCreate(true)}
-                    className="flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold"
-                    style={{ background: 'var(--accent)', border: 'none', color: '#021a0e', cursor: 'pointer', minHeight: 38 }}
+                    className="flex items-center gap-2 px-4 py-2 text-sm font-semibold"
+                    style={{ background: 'var(--accent)', border: 'none', color: 'var(--bg)', cursor: 'pointer', minHeight: 44 }}
                   >
                     <Plus size={14} />
                     Create Payroll
@@ -363,7 +363,7 @@ export default function Payroll() {
             <table className="w-full" style={{ minWidth: 800 }}>
               <thead>
                 <tr style={{ background: 'rgba(255,255,255,0.02)' }}>
-                  {['Batch', 'Created', 'Pay Date', 'Employees', 'Amount', 'Status', 'Payments', ''].map(h => (
+                  {['Batch', 'Created', 'Pay date', 'Employees', 'Amount', 'Status', 'Payments', ''].map(h => (
                     <th
                       key={h}
                       className="text-left text-xs uppercase tracking-wider px-6 py-3"

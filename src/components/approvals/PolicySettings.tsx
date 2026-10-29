@@ -1,10 +1,10 @@
 /**
  * PolicySettings — modal for editing the approval threshold and approver list.
  *
- * Changes are saved to localStorage only. The policy is UI-enforced, not on-chain.
+ * Changes are saved in this browser only. The rules are checked by this page, not by a contract.
  */
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { X, Plus, Trash2, Info, AlertCircle } from 'lucide-react'
 import { type ApprovalPolicy } from '../../lib/approvals'
 
@@ -18,7 +18,7 @@ const inputStyle: React.CSSProperties = {
   width: '100%',
   background: 'var(--surface-muted)',
   border: '1px solid var(--border)',
-  borderRadius: 8,
+  minHeight: 44,
   padding: '10px 12px',
   color: 'var(--ink)',
   fontSize: 14,
@@ -50,14 +50,20 @@ export default function PolicySettings({ policy, onSave, onClose }: Props) {
   const [newApprover, setNewApprover] = useState('')
   const [errors, setErrors] = useState<{ threshold?: string; required?: string; approver?: string }>({})
 
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [onClose])
+
   function validate(): boolean {
     const e: typeof errors = {}
     if (!/^\d+(\.\d+)?$/.test(threshold.trim()) || Number(threshold) <= 0) {
-      e.threshold = 'Enter a valid positive USDC amount.'
+      e.threshold = 'Enter an amount greater than zero, for example 1000.00.'
     }
     const req = parseInt(required, 10)
     if (isNaN(req) || req < 1) {
-      e.required = 'Required approvals must be at least 1.'
+      e.required = 'Enter at least 1 approval.'
     }
     setErrors(e)
     return Object.keys(e).length === 0
@@ -66,11 +72,11 @@ export default function PolicySettings({ policy, onSave, onClose }: Props) {
   function addApprover() {
     const addr = newApprover.trim()
     if (!/^0x[0-9a-fA-F]{40}$/.test(addr)) {
-      setErrors(e => ({ ...e, approver: 'Invalid Ethereum address.' }))
+      setErrors(e => ({ ...e, approver: 'This is not a valid wallet address. It should start with 0x and be 42 characters long.' }))
       return
     }
     if (approvers.some(a => a.toLowerCase() === addr.toLowerCase())) {
-      setErrors(e => ({ ...e, approver: 'Address already in the list.' }))
+      setErrors(e => ({ ...e, approver: 'This wallet address is already on the list.' }))
       return
     }
     setApprovers(a => [...a, addr])
@@ -93,34 +99,36 @@ export default function PolicySettings({ policy, onSave, onClose }: Props) {
 
   return (
     <div
-      style={{ position: 'fixed', inset: 0, zIndex: 70, background: 'rgba(0,0,0,0.65)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}
+      style={{ position: 'fixed', inset: 0, zIndex: 70, background: 'rgba(0,0,0,0.65)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 12 }}
+      role="dialog"
+      aria-modal="true"
       onClick={e => { if (e.target === e.currentTarget) onClose() }}
     >
-      <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 20, width: '100%', maxWidth: 480, maxHeight: '88dvh', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+      <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', width: 'min(560px, 100%)', maxHeight: '90dvh', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-5" style={{ borderBottom: '1px solid var(--border)' }}>
-          <div>
-            <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--ink)' }}>Approval Policy</div>
-            <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 2 }}>UI-enforced only — not a smart-contract restriction</div>
+          <div style={{ minWidth: 0 }}>
+            <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--ink)' }}>Approval rules</div>
+            <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 2 }}>Saved in this browser only — not enforced by a contract</div>
           </div>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)', padding: 4 }}>
+          <button onClick={onClose} aria-label="Close" style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)', width: 44, height: 44, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
             <X size={20} />
           </button>
         </div>
 
         {/* Body */}
-        <div style={{ overflowY: 'auto', flex: 1, padding: '24px 24px 0', display: 'flex', flexDirection: 'column', gap: 22 }}>
+        <div style={{ overflowY: 'auto', flex: 1, padding: '24px', display: 'flex', flexDirection: 'column', gap: 22 }}>
           {/* Warning */}
-          <div className="flex items-start gap-3 rounded-xl p-4" style={{ background: 'rgba(232,184,76,0.07)', border: '1px solid rgba(232,184,76,0.2)' }}>
+          <div className="flex items-start gap-3 p-4" style={{ background: 'var(--warning-dim)', border: '1px solid var(--warning-border)' }}>
             <Info size={14} style={{ color: 'var(--warning)', flexShrink: 0, marginTop: 1 }} />
             <span style={{ fontSize: 12, color: 'var(--warning)', lineHeight: 1.5 }}>
-              This policy is stored in your browser and enforced by the UI only. It does not prevent direct wallet transactions. A treasury multisig contract is needed for on-chain enforcement.
+              These rules are saved in this browser and checked by this page only. They do not stop anyone from sending payments directly from a wallet. A treasury contract is needed to enforce them.
             </span>
           </div>
 
           {/* Threshold */}
           <div>
-            <Label>Approval Threshold (USDC)</Label>
+            <Label>Approval limit (USDC)</Label>
             <div style={{ position: 'relative' }}>
               <input
                 style={{ ...inputStyle, paddingRight: 60 }}
@@ -132,43 +140,44 @@ export default function PolicySettings({ policy, onSave, onClose }: Props) {
             </div>
             <FieldError msg={errors.threshold} />
             <div style={{ fontSize: 12, color: 'var(--subtle)', marginTop: 6 }}>
-              Transfers at or above this amount will require approval before execution.
+              Transfers of this amount or more need approval before they are sent.
             </div>
           </div>
 
           {/* Required approvals */}
           <div>
-            <Label>Required Approvals</Label>
+            <Label>Approvals needed</Label>
             <input
               type="number"
               min={1}
               max={10}
-              style={{ ...inputStyle, maxWidth: 120 }}
+              style={{ ...inputStyle, maxWidth: 'min(120px, 100%)' }}
               value={required}
               onChange={e => { setRequired(e.target.value); setErrors(er => ({ ...er, required: undefined })) }}
             />
             <FieldError msg={errors.required} />
             <div style={{ fontSize: 12, color: 'var(--subtle)', marginTop: 6 }}>
-              Number of distinct approvals needed before a request can be executed.
+              How many different people must approve before a payment can be sent.
             </div>
           </div>
 
           {/* Authorized approvers */}
           <div>
-            <Label>Authorized Approvers</Label>
+            <Label>Allowed approvers</Label>
             <div style={{ fontSize: 12, color: 'var(--subtle)', marginBottom: 10 }}>
-              Leave empty to allow any connected wallet to approve. Add specific addresses to restrict.
+              Leave empty to let any connected wallet approve. Add wallet addresses to limit who can approve.
             </div>
             {approvers.length > 0 && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 10 }}>
                 {approvers.map(addr => (
-                  <div key={addr} className="flex items-center justify-between gap-3 rounded-xl px-4 py-2.5" style={{ background: 'var(--surface-muted)', border: '1px solid var(--border)' }}>
-                    <span style={{ fontSize: 13, color: 'var(--ink)', fontFamily: 'monospace' }}>
+                  <div key={addr} className="flex items-center justify-between gap-3 px-4 py-2.5" style={{ background: 'var(--surface-muted)', border: '1px solid var(--border)' }}>
+                    <span style={{ fontSize: 13, color: 'var(--ink)', fontFamily: 'monospace', minWidth: 0, overflowWrap: 'anywhere' }}>
                       {addr.slice(0, 10)}…{addr.slice(-8)}
                     </span>
                     <button
                       onClick={() => removeApprover(addr)}
-                      style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--subtle)', padding: 2 }}
+                      aria-label="Remove approver"
+                      style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--subtle)', width: 44, height: 44, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}
                     >
                       <Trash2 size={14} />
                     </button>
@@ -176,9 +185,9 @@ export default function PolicySettings({ policy, onSave, onClose }: Props) {
                 ))}
               </div>
             )}
-            <div style={{ display: 'flex', gap: 8 }}>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
               <input
-                style={{ ...inputStyle, flex: 1 }}
+                style={{ ...inputStyle, flex: '1 1 200px', minWidth: 0 }}
                 placeholder="0x..."
                 value={newApprover}
                 onChange={e => { setNewApprover(e.target.value); setErrors(er => ({ ...er, approver: undefined })) }}
@@ -187,7 +196,7 @@ export default function PolicySettings({ policy, onSave, onClose }: Props) {
               />
               <button
                 onClick={addApprover}
-                style={{ flexShrink: 0, padding: '9px 14px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--surface-strong)', color: 'var(--ink)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5, fontSize: 13, fontWeight: 600 }}
+                style={{ flexShrink: 0, minHeight: 44, padding: '0 14px', border: '1px solid var(--border)', background: 'var(--surface-strong)', color: 'var(--ink)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5, fontSize: 13, fontWeight: 600 }}
               >
                 <Plus size={14} /> Add
               </button>
@@ -197,15 +206,15 @@ export default function PolicySettings({ policy, onSave, onClose }: Props) {
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-between gap-3 px-6 py-5" style={{ borderTop: '1px solid var(--border)' }}>
-          <button onClick={onClose} style={{ background: 'none', border: '1px solid var(--border)', borderRadius: 10, padding: '10px 20px', fontSize: 13, color: 'var(--muted)', cursor: 'pointer' }}>
+        <div className="flex flex-wrap items-center justify-between gap-3 px-6 py-5" style={{ borderTop: '1px solid var(--border)' }}>
+          <button onClick={onClose} style={{ background: 'none', border: '1px solid var(--border)', minHeight: 44, padding: '0 20px', fontSize: 13, color: 'var(--muted)', cursor: 'pointer' }}>
             Cancel
           </button>
           <button
             onClick={handleSave}
-            style={{ padding: '10px 24px', borderRadius: 10, fontSize: 13, fontWeight: 700, background: 'var(--accent)', border: 'none', color: '#021a0e', cursor: 'pointer' }}
+            style={{ minHeight: 44, padding: '0 24px', fontSize: 13, fontWeight: 700, background: 'var(--accent)', border: 'none', color: 'var(--bg)', cursor: 'pointer' }}
           >
-            Save Policy
+            Save rules
           </button>
         </div>
       </div>

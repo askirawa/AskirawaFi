@@ -1,4 +1,4 @@
-# AskirawaFi — Final Pre-Deployment Audit
+# Askirawa Finance — Final Pre-Deployment Audit
 **Date:** October 22, 2026  
 **Status:** AWAITING DEPLOYMENT AUTHORIZATION — do not deploy until explicitly instructed.
 

@@ -28,17 +28,17 @@ const DEMO_ACTIVITY = [
   { type: 'Deposit',   description: 'USDC Treasury Deposit',        amount: '100,000',date: 'Oct 16, 2026', status: 'pending'   as const },
 ]
 
-const FEATURE_CARDS: { page: Page; index: string; label: string; desc: string; icon: React.ReactNode }[] = [
-  { page: 'payroll',       index: '01', label: 'Payroll',            desc: 'Batch USDC payroll execution',        icon: <Wallet size={14} strokeWidth={1.5} /> },
-  { page: 'recurring',     index: '02', label: 'Recurring Payments', desc: 'Scheduled payment management',        icon: <RefreshCw size={14} strokeWidth={1.5} /> },
-  { page: 'approvals',     index: '03', label: 'Approvals',          desc: 'Multi-party treasury authorization',  icon: <CheckSquare size={14} strokeWidth={1.5} /> },
-  { page: 'automations',   index: '04', label: 'Automations',        desc: 'On-chain automation registry',        icon: <Zap size={14} strokeWidth={1.5} /> },
-  { page: 'organization',  index: '05', label: 'Team & Roles',       desc: 'Organisation and role management',    icon: <Building2 size={14} strokeWidth={1.5} /> },
-  { page: 'analytics',     index: '06', label: 'Analytics',          desc: 'Treasury reporting and CSV export',   icon: <BarChart2 size={14} strokeWidth={1.5} /> },
-  { page: 'activity',      index: '07', label: 'Activity',           desc: 'Transaction activity feed',           icon: <Activity size={14} strokeWidth={1.5} /> },
-  { page: 'transactions',  index: '08', label: 'Transactions',       desc: 'Full transaction history',            icon: <List size={14} strokeWidth={1.5} /> },
-  { page: 'notifications', index: '09', label: 'Notifications',      desc: 'Alerts and system events',            icon: <Bell size={14} strokeWidth={1.5} /> },
-  { page: 'audit',         index: '10', label: 'Audit Log',          desc: 'Immutable application event record',  icon: <BookOpen size={14} strokeWidth={1.5} /> },
+const FEATURE_CARDS: { page: Page; label: string; desc: string; icon: React.ReactNode }[] = [
+  { page: 'payroll',       label: 'Payroll',            desc: 'Pay many people in one go',        icon: <Wallet size={14} strokeWidth={1.5} /> },
+  { page: 'recurring',     label: 'Recurring Payments', desc: 'Payments that repeat on a schedule',        icon: <RefreshCw size={14} strokeWidth={1.5} /> },
+  { page: 'approvals',     label: 'Approvals',          desc: 'Get sign-off before money moves',  icon: <CheckSquare size={14} strokeWidth={1.5} /> },
+  { page: 'automations',   label: 'Automations',        desc: 'Automated tasks registered on Arc',        icon: <Zap size={14} strokeWidth={1.5} /> },
+  { page: 'organization',  label: 'Team & Roles',       desc: 'Manage your team and who can do what',    icon: <Building2 size={14} strokeWidth={1.5} /> },
+  { page: 'analytics',     label: 'Analytics',          desc: 'Reports and CSV downloads',   icon: <BarChart2 size={14} strokeWidth={1.5} /> },
+  { page: 'activity',      label: 'Activity',           desc: 'Latest payment activity',           icon: <Activity size={14} strokeWidth={1.5} /> },
+  { page: 'transactions',  label: 'Transactions',       desc: 'Every payment, in full',            icon: <List size={14} strokeWidth={1.5} /> },
+  { page: 'notifications', label: 'Notifications',      desc: 'Alerts and updates',            icon: <Bell size={14} strokeWidth={1.5} /> },
+  { page: 'audit',         label: 'Audit Log',          desc: 'A record of changes made in this app',  icon: <BookOpen size={14} strokeWidth={1.5} /> },
 ]
 
 export default function Dashboard({ onNavigate }: DashboardProps) {
@@ -66,14 +66,13 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
     <div style={{ display: 'flex', flexDirection: 'column', gap: 36 }}>
 
       <PageHeader
-        eyebrow="Programmable USDC Treasury"
-        counter="00"
+        eyebrow="Programmable USDC Treasury built on Arc"
         title="Dashboard"
-        subtitle="Your treasury overview on Arc Mainnet."
+        subtitle="Your USDC balance and recent activity."
       />
 
       {/* Hero row: balance (light card) + network status */}
-      <div style={{ display: 'grid', gap: 16, gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))' }}>
+      <div style={{ display: 'grid', gap: 16, gridTemplateColumns: 'repeat(auto-fit, minmax(min(280px, 100%), 1fr))' }}>
 
         {/* Hero balance card — light gradient */}
         <div style={{
@@ -93,7 +92,7 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
             textTransform: 'uppercase',
             color: '#6B6B6B',
           }}>
-            Wallet Balance / USDC
+            Wallet balance (USDC)
           </div>
 
           {!isConnected ? (
@@ -107,7 +106,7 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
                 lineHeight: 1.0,
                 fontVariantNumeric: 'tabular-nums',
               }}>—</div>
-              <div style={{ fontSize: 13, color: '#888888', marginTop: 4 }}>Connect wallet to view live balance</div>
+              <div style={{ fontSize: 13, color: '#888888', marginTop: 4 }}>Connect your wallet to see your balance</div>
             </>
           ) : balanceLoading ? (
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 8 }}>
@@ -127,7 +126,7 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
               }}>
                 ${formattedBalance ?? '0.00'}
               </div>
-              <div style={{ fontSize: 13, color: '#666666' }}>USDC · Arc Mainnet</div>
+              <div style={{ fontSize: 13, color: '#666666' }}>USDC on Arc Mainnet</div>
             </>
           )}
 
@@ -166,7 +165,7 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
             onMouseEnter={e => { e.currentTarget.style.background = '#333333' }}
             onMouseLeave={e => { e.currentTarget.style.background = '#1C1C1C' }}
           >
-            <span>New Payment</span>
+            <span>New payment</span>
             <ArrowUpRight size={13} strokeWidth={1.5} style={{ marginLeft: 8 }} />
           </button>
         </div>
@@ -188,7 +187,7 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
             textTransform: 'uppercase',
             color: 'var(--subtle)',
           }}>
-            Network Status
+            Network status
           </div>
           <div style={{
             fontFamily: "'Space Grotesk', sans-serif",
@@ -200,7 +199,7 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
           }}>
             Operational
           </div>
-          <div style={{ fontSize: 13, color: 'var(--muted)' }}>Arc Mainnet · USDC native gas</div>
+          <div style={{ fontSize: 13, color: 'var(--muted)' }}>Arc Mainnet. Network fees are paid in USDC.</div>
           <div style={{ marginTop: 'auto' }}>
             <div style={{
               display: 'flex',
@@ -210,7 +209,7 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
               color: 'var(--muted)',
             }}>
               <span style={{ width: 5, height: 5, background: 'var(--success)', display: 'inline-block', flexShrink: 0 }} />
-              <span>Registry contract</span>
+              <span>Automation Registry</span>
               <a
                 href={`https://explorer.arc.io/address/${AUTOMATION_REGISTRY_ADDRESS}`}
                 target="_blank"
@@ -233,40 +232,36 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
       </div>
 
       {/* Stat row */}
-      <div style={{ display: 'grid', gap: 1, gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', border: '1px solid var(--border)' }}>
+      <div style={{ display: 'grid', gap: 1, gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', border: '1px solid var(--border)' }}>
         <StatCard
-          label="On-Chain Automations"
+          label="Registered automations"
           value={!isConnected ? '—' : countLoading ? null : String(automationCount ?? 0)}
-          note="Registry total"
-          counter="01"
+          note="Total on Arc"
         />
         <StatCard
-          label="Avg Gas Fee"
-          value="< $0.01"
-          note="USDC · Arc Mainnet"
-          counter="02"
+          label="Network fees"
+          value="USDC"
+          note="Paid in USDC, no other token needed"
         />
         <StatCard
-          label="Settlement"
+          label="Network"
           value="Arc"
-          note="EVM · Chain 5042"
-          counter="03"
+          note="Mainnet, chain ID 5042"
         />
         <StatCard
-          label="Pending Payments"
+          label="Pending payments"
           value="—"
-          note="Keeper required"
-          counter="04"
+          note="Needs the automation service"
         />
       </div>
 
       {/* Recent Activity */}
       <SectionCard
-        label="01 / Recent Activity"
+        label="Recent activity"
         chamfer
         actions={
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <Badge variant="warning">Demo data</Badge>
+            <Badge variant="warning">Sample data</Badge>
             <button
               onClick={() => onNavigate('activity')}
               style={{
@@ -285,7 +280,7 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
                 textTransform: 'uppercase',
               }}
             >
-              View all <ArrowUpRight size={11} strokeWidth={1.5} />
+              See all <ArrowUpRight size={11} strokeWidth={1.5} />
             </button>
           </div>
         }
@@ -293,7 +288,7 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
         <table>
           <thead>
             <tr>
-              <th>Category</th>
+              <th>Type</th>
               <th>Description</th>
               <th style={{ textAlign: 'right' }}>Amount (USDC)</th>
               <th>Date</th>
@@ -340,10 +335,10 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
           color: 'var(--subtle)',
           marginBottom: 16,
         }}>
-          02 / Treasury Features
+          What you can do
         </div>
-        <div style={{ display: 'grid', gap: 1, gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', border: '1px solid var(--border)' }}>
-          {FEATURE_CARDS.map(({ page, index, label, desc, icon }) => (
+        <div style={{ display: 'grid', gap: 1, gridTemplateColumns: 'repeat(auto-fill, minmax(min(220px, 100%), 1fr))', border: '1px solid var(--border)' }}>
+          {FEATURE_CARDS.map(({ page, label, desc, icon }) => (
             <button
               key={page}
               onClick={() => onNavigate(page)}
@@ -366,12 +361,6 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
             >
               <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
                 <span style={{ color: 'var(--muted)', opacity: 0.9 }}>{icon}</span>
-                <span style={{
-                  fontFamily: "'JetBrains Mono', monospace",
-                  fontSize: 10,
-                  color: 'var(--subtle)',
-                  letterSpacing: '0.06em',
-                }}>{index}</span>
               </div>
               <div>
                 <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--ink)', marginBottom: 4, letterSpacing: '-0.01em' }}>
@@ -403,11 +392,12 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
             textTransform: 'uppercase',
             color: 'var(--warning)',
             marginBottom: 8,
-          }}>Architecture Disclosures</div>
+          }}>Important to know</div>
           <div style={{ fontSize: 13, color: 'var(--muted)', lineHeight: 1.8 }}>
-            Approval policies, organisation roles, and scheduling rules are enforced at the application layer only — not by an on-chain contract.
-            All records are stored in browser localStorage and are not shared across devices.
-            Recurring payments and scheduled payroll require manual execution; no keeper service is currently deployed.
+            Approval rules, team roles and payment schedules are saved in this browser only. They are not enforced
+            by a smart contract and do not sync between devices.
+            Recurring and scheduled payments must be run by hand because the automation service is not running yet.
+            The activity table above shows sample data.
           </div>
         </div>
       </div>

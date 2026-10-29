@@ -23,7 +23,7 @@ export default function DonutChart({ slices, size = 180 }: DonutChartProps) {
   if (total === 0n || slices.length === 0) {
     return (
       <div style={{ width: size, height: size, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--muted)', fontSize: 12 }}>
-        No data
+        No data to show
       </div>
     )
   }
@@ -89,11 +89,11 @@ export default function DonutChart({ slices, size = 180 }: DonutChartProps) {
       </svg>
 
       {/* Legend */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 6, width: '100%', maxWidth: size + 40 }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 6, width: '100%', maxWidth: Math.max(size + 40, 200) }}>
         {arcs.map((arc, i) => (
           <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12 }}>
-            <span style={{ width: 10, height: 10, borderRadius: 3, background: arc.color, flexShrink: 0 }} />
-            <span style={{ flex: 1, color: 'var(--ink-2)' }}>{arc.label}</span>
+            <span style={{ width: 10, height: 10, background: arc.color, flexShrink: 0 }} />
+            <span style={{ flex: 1, minWidth: 0, color: 'var(--ink-2)', overflowWrap: 'anywhere' }}>{arc.label}</span>
             <span style={{ color: 'var(--muted)', fontVariantNumeric: 'tabular-nums' }}>
               {(arc.pct * 100).toFixed(1)}%
             </span>

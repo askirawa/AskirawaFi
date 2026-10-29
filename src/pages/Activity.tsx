@@ -47,36 +47,37 @@ export default function Activity() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
       <PageHeader
-        eyebrow="Treasury Activity"
+        eyebrow="Treasury"
         title="Activity"
-        subtitle="Track everything happening across your treasury."
+        subtitle="See recent payments and deposits across your treasury."
       />
 
       {/* Demo notice */}
       <div
         style={{
-          display: 'flex', alignItems: 'center', gap: 8,
-          borderRadius: 10, padding: '10px 14px', fontSize: 12,
+          display: 'flex', alignItems: 'flex-start', gap: 8,
+          padding: '10px 14px', fontSize: 12,
           background: 'var(--warning-dim)', border: '1px solid var(--warning-border)', color: 'var(--warning)',
         }}
       >
-        <ActivityIcon size={13} />
-        <span>
-          Activity shown is demo data. Live on-chain transaction history requires an event indexer.
+        <ActivityIcon size={13} style={{ marginTop: 1, flexShrink: 0 }} />
+        <span style={{ minWidth: 0 }}>
+          The activity below is sample data, not your real transactions. Live activity from Arc is not connected yet.
         </span>
       </div>
 
       {/* Filter + search toolbar */}
       <div className="flex flex-wrap items-center gap-3">
-        <div className="flex items-center gap-1">
+        <div className="flex flex-wrap items-center gap-1">
           {FILTERS.map((f) => {
             const isActive = filter === f.id
             return (
               <button
                 key={f.id}
                 onClick={() => setFilter(f.id)}
-                className="rounded-lg px-3 py-1.5 text-xs font-semibold transition-all"
+                className="px-3 py-1.5 text-xs font-semibold transition-all"
                 style={{
+                  minHeight: 44,
                   background: isActive ? 'var(--accent-dim)' : 'var(--surface-muted)',
                   border: isActive ? '1px solid var(--accent-border)' : '1px solid var(--border)',
                   color: isActive ? 'var(--accent)' : 'var(--muted)',
@@ -90,16 +91,16 @@ export default function Activity() {
         </div>
 
         <div
-          className="flex items-center gap-2 rounded-lg px-3 flex-1 min-w-[200px] max-w-sm"
-          style={{ background: 'var(--surface-muted)', border: '1px solid var(--border)' }}
+          className="flex items-center gap-2 px-3 flex-1 min-w-0 max-w-sm"
+          style={{ minHeight: 44, minWidth: 'min(200px, 100%)', background: 'var(--surface-muted)', border: '1px solid var(--border)' }}
         >
           <Search size={14} style={{ color: 'var(--subtle)' }} />
           <input
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search activity…"
-            className="flex-1 bg-transparent text-sm outline-none py-2"
+            placeholder="Search activity"
+            className="flex-1 min-w-0 bg-transparent text-sm outline-none py-2"
             style={{ color: 'var(--ink)', fontFamily: 'inherit' }}
           />
         </div>
@@ -107,14 +108,14 @@ export default function Activity() {
 
       {/* Table */}
       <SectionCard
-        title="Recent Activity"
-        actions={<span style={{ fontSize: 12, color: 'var(--muted)' }}>{filtered.length} record{filtered.length !== 1 ? 's' : ''}</span>}
+        title="Recent activity"
+        actions={<span style={{ fontSize: 12, color: 'var(--muted)' }}>{filtered.length} sample record{filtered.length !== 1 ? 's' : ''}</span>}
       >
         {filtered.length === 0 ? (
           <EmptyState
             icon={ActivityIcon}
-            title="No results"
-            description="Try adjusting your filters or search term."
+            title="Nothing matches"
+            description="Clear the search box or choose a different filter."
           />
         ) : (
           <div style={{ overflowX: 'auto' }}>

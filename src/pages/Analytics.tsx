@@ -2,7 +2,7 @@
  * Analytics — Treasury Analytics & Reports
  *
  * Data sources:
- *   - Live USDC balance: read from Arc Mainnet USDC ERC-20 contract (on-chain).
+ *   - Live USDC balance: read from Arc Mainnet USDC ERC-20 contract.
  *   - Transaction records: aggregated from browser localStorage (payroll, recurring, approvals).
  *
  * Records are labeled by verification level:
@@ -23,6 +23,7 @@ import { DATE_RANGE_LABELS, formatUsdcBigint, parseUsdcSafe } from '../lib/analy
 import Card, { CardHeader, CardBody } from '../components/ui/Card'
 import Badge from '../components/ui/Badge'
 import EmptyState from '../components/ui/EmptyState'
+import PageHeader from '../components/ui/PageHeader'
 import Spinner from '../components/ui/Spinner'
 import CashFlowChart from '../components/charts/CashFlowChart'
 import DonutChart from '../components/charts/DonutChart'
@@ -47,7 +48,7 @@ import {
 const PRESETS: DateRangePreset[] = ['last7', 'last30', 'last90', 'thisMonth', 'prevMonth', 'custom']
 
 const CATEGORY_LABELS: Record<TxCategory | 'all', string> = {
-  all: 'All Categories',
+  all: 'All categories',
   payroll: 'Payroll',
   recurring: 'Recurring Payments',
   approval_transfer: 'Treasury Transfers',
@@ -55,10 +56,10 @@ const CATEGORY_LABELS: Record<TxCategory | 'all', string> = {
 }
 
 const STATUS_LABELS: Record<TxVerification | 'all', string> = {
-  all: 'All Statuses',
-  on_chain_confirmed: 'On-chain Confirmed',
+  all: 'All statuses',
+  on_chain_confirmed: 'Confirmed on Arc',
   submitted_unconfirmed: 'Submitted',
-  local_only: 'Local Record',
+  local_only: 'Saved in this browser',
 }
 
 const PAGE_SIZE = 20
@@ -85,8 +86,8 @@ function MetricCard({
       style={{
         background: 'var(--surface)',
         border: '1px solid var(--border)',
-        borderRadius: 16,
         padding: '18px 20px',
+        minWidth: 0,
         display: 'flex',
         flexDirection: 'column',
         gap: 6,
@@ -94,7 +95,7 @@ function MetricCard({
     >
       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
         <Icon size={15} style={{ color: color ?? 'var(--subtle)' }} strokeWidth={1.5} />
-        <span style={{ fontSize: 12, color: 'var(--muted)', fontWeight: 500 }}>{label}</span>
+        <span style={{ fontSize: 12, color: 'var(--muted)', fontWeight: 500, minWidth: 0 }}>{label}</span>
       </div>
       {loading ? (
         <div style={{ height: 28, display: 'flex', alignItems: 'center' }}>
@@ -113,7 +114,7 @@ function MetricCard({
 function VerificationBadge({ status }: { status: TxVerification }) {
   if (status === 'on_chain_confirmed') return <Badge variant="success">Confirmed</Badge>
   if (status === 'submitted_unconfirmed') return <Badge variant="warning">Submitted</Badge>
-  return <Badge variant="neutral">Local</Badge>
+  return <Badge variant="neutral">This browser</Badge>
 }
 
 function DirectionChip({ direction }: { direction: TxDirection }) {
@@ -123,7 +124,7 @@ function DirectionChip({ direction }: { direction: TxDirection }) {
     </span>
   )
   if (direction === 'incoming') return (
-    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3, fontSize: 12, color: 'var(--accent)' }}>
+    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3, fontSize: 12, color: 'var(--success)' }}>
       <TrendingUp size={12} strokeWidth={2} /> In
     </span>
   )
@@ -137,9 +138,9 @@ function TxRow({ tx }: { tx: AnalyticsTx }) {
 
   const catColors: Record<TxCategory, string> = {
     payroll: 'var(--accent)',
-    recurring: '#6366f1',
-    approval_transfer: '#f59e0b',
-    automation: '#8b5cf6',
+    recurring: 'var(--ink-2)',
+    approval_transfer: 'var(--warning)',
+    automation: 'var(--muted)',
   }
 
   const catLabels: Record<TxCategory, string> = {
@@ -164,8 +165,8 @@ function TxRow({ tx }: { tx: AnalyticsTx }) {
             fontSize: 11,
             fontWeight: 600,
             color: catColors[tx.category] ?? 'var(--muted)',
-            background: `${catColors[tx.category] ?? 'var(--border)'}18`,
-            borderRadius: 6,
+            background: 'var(--surface-muted)',
+            border: '1px solid var(--border)',
             padding: '2px 8px',
             whiteSpace: 'nowrap',
           }}
@@ -187,7 +188,7 @@ function TxRow({ tx }: { tx: AnalyticsTx }) {
       {/* Direction + Amount */}
       <td style={{ padding: '10px 12px', textAlign: 'right', whiteSpace: 'nowrap' }}>
         <div><DirectionChip direction={tx.direction} /></div>
-        <div style={{ fontSize: 13, fontWeight: 700, color: tx.direction === 'outgoing' ? 'var(--ink-2)' : 'var(--accent)', fontVariantNumeric: 'tabular-nums' }}>
+        <div style={{ fontSize: 13, fontWeight: 700, color: tx.direction === 'outgoing' ? 'var(--ink-2)' : 'var(--success)', fontVariantNumeric: 'tabular-nums' }}>
           {tx.direction === 'outgoing' ? '-' : '+'}{formatUsdcBigint(parseUsdcSafe(tx.amountUsdc))} USDC
         </div>
       </td>
@@ -204,13 +205,13 @@ function TxRow({ tx }: { tx: AnalyticsTx }) {
             href={tx.explorerUrl}
             target="_blank"
             rel="noopener noreferrer"
-            style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 11, color: 'var(--accent)', fontFamily: 'monospace', textDecoration: 'none' }}
+            style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 11, color: 'var(--accent)', fontFamily: 'monospace', textDecoration: 'none', minHeight: 40 }}
           >
             {tx.txHash.slice(0, 8)}…
             <ExternalLink size={10} />
           </a>
         ) : (
-          <span style={{ fontSize: 11, color: 'var(--subtle)' }}>No hash</span>
+          <span style={{ fontSize: 11, color: 'var(--subtle)' }}>No transaction hash</span>
         )}
       </td>
     </tr>
@@ -293,56 +294,53 @@ export default function Analytics() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 28 }}>
-      {/* Page header */}
-      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
-        <div>
-          <h1 style={{ fontSize: 22, fontWeight: 700, color: 'var(--ink)', fontFamily: "'Space Grotesk', sans-serif", margin: 0 }}>
-            Treasury Analytics
-          </h1>
-          <p style={{ fontSize: 13, color: 'var(--muted)', marginTop: 4 }}>
-            Arc Mainnet · USDC · {isConnected ? (address?.slice(0, 6) + '…' + address?.slice(-4)) : 'Wallet not connected'}
-          </p>
-        </div>
-        <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-          <button
-            onClick={() => void refetchBalance()}
-            title="Refresh balance"
-            style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 8, padding: '7px 10px', cursor: 'pointer', color: 'var(--muted)', display: 'flex', alignItems: 'center', gap: 6 }}
-          >
-            <RefreshCw size={14} strokeWidth={1.5} />
-          </button>
-          <button
-            onClick={handleExportCsv}
-            disabled={sortedRecords.length === 0}
-            style={{
-              display: 'flex', alignItems: 'center', gap: 8,
-              background: sortedRecords.length > 0 ? 'var(--accent)' : 'var(--surface)',
-              color: sortedRecords.length > 0 ? '#021a0e' : 'var(--subtle)',
-              border: 'none', borderRadius: 10, padding: '8px 16px',
-              fontSize: 13, fontWeight: 600, cursor: sortedRecords.length > 0 ? 'pointer' : 'not-allowed',
-            }}
-          >
-            <Download size={14} strokeWidth={2} />
-            Export CSV
-          </button>
-        </div>
-      </div>
+      <PageHeader
+        eyebrow="Treasury"
+        title="Analytics"
+        subtitle={`Arc Mainnet · USDC · ${isConnected ? (address?.slice(0, 6) + '…' + address?.slice(-4)) : 'Wallet not connected'}`}
+        action={
+          <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+            <button
+              onClick={() => void refetchBalance()}
+              title="Refresh balance"
+              aria-label="Refresh balance"
+              style={{ background: 'var(--surface)', border: '1px solid var(--border)', width: 44, height: 44, cursor: 'pointer', color: 'var(--muted)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+            >
+              <RefreshCw size={14} strokeWidth={1.5} />
+            </button>
+            <button
+              onClick={handleExportCsv}
+              disabled={sortedRecords.length === 0}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 8, minHeight: 44,
+                background: sortedRecords.length > 0 ? 'var(--accent)' : 'var(--surface)',
+                color: sortedRecords.length > 0 ? 'var(--bg)' : 'var(--subtle)',
+                border: 'none', padding: '8px 16px',
+                fontSize: 13, fontWeight: 600, cursor: sortedRecords.length > 0 ? 'pointer' : 'not-allowed',
+              }}
+            >
+              <Download size={14} strokeWidth={2} />
+              Export CSV
+            </button>
+          </div>
+        }
+      />
 
       {/* Data source notice */}
       <div
         style={{
           display: 'flex', alignItems: 'flex-start', gap: 10, padding: '12px 16px',
-          background: 'rgba(100,149,237,0.07)', border: '1px solid rgba(100,149,237,0.2)',
-          borderRadius: 12, fontSize: 12, color: 'var(--muted)',
+          background: 'var(--surface-muted)', border: '1px solid var(--border)',
+          fontSize: 12, color: 'var(--muted)', lineHeight: 1.6,
         }}
       >
-        <Info size={14} style={{ color: '#6495ed', flexShrink: 0, marginTop: 1 }} strokeWidth={1.5} />
-        <span>
-          <strong style={{ color: 'var(--ink-2)' }}>Data sources:</strong>{' '}
-          USDC balance is read live from Arc Mainnet. Transaction records are aggregated from browser localStorage
-          (payroll, recurring payments, approvals). Records labeled <strong>"On-chain confirmed"</strong> have a verified
-          transaction hash. Records labeled <strong>"Local"</strong> exist only in this browser.
-          Historical incoming transfers require an event indexer not yet deployed.
+        <Info size={14} style={{ color: 'var(--muted)', flexShrink: 0, marginTop: 1 }} strokeWidth={1.5} />
+        <span style={{ minWidth: 0 }}>
+          <strong style={{ color: 'var(--ink-2)' }}>Where this data comes from:</strong>{' '}
+          Your USDC balance is read live from Arc Mainnet. The transaction list is built from payroll, recurring
+          payments and approvals saved in this browser, so it only covers activity made here. <strong>Confirmed</strong>{' '}
+          records have a transaction hash the network has confirmed. <strong>This browser</strong> records have no
+          transaction hash. Incoming transfers are not included yet.
         </span>
       </div>
 
@@ -350,15 +348,15 @@ export default function Analytics() {
       <Card>
         <CardBody>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center' }}>
-            <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--muted)', marginRight: 4 }}>Period:</span>
+            <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--muted)', marginRight: 4 }}>Time period:</span>
             {PRESETS.map(p => (
               <button
                 key={p}
                 onClick={() => handlePresetChange(p)}
                 style={{
-                  padding: '5px 12px', borderRadius: 8, fontSize: 12, fontWeight: 500,
+                  padding: '5px 12px', minHeight: 44, fontSize: 12, fontWeight: 500,
                   background: preset === p ? 'var(--accent)' : 'var(--surface-muted)',
-                  color: preset === p ? '#021a0e' : 'var(--muted)',
+                  color: preset === p ? 'var(--bg)' : 'var(--muted)',
                   border: preset === p ? 'none' : '1px solid var(--border)',
                   cursor: 'pointer',
                 }}
@@ -367,19 +365,19 @@ export default function Analytics() {
               </button>
             ))}
             {preset === 'custom' && (
-              <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginLeft: 4 }}>
+              <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginLeft: 4, flexWrap: 'wrap' }}>
                 <input
                   type="date"
                   value={customFrom}
                   onChange={e => { setCustomFrom(e.target.value); handleFilterChange() }}
-                  style={{ padding: '4px 8px', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 8, color: 'var(--ink)', fontSize: 12 }}
+                  style={{ padding: '4px 8px', minHeight: 44, maxWidth: '100%', background: 'var(--surface)', border: '1px solid var(--border)', color: 'var(--ink)', fontSize: 12, colorScheme: 'dark' }}
                 />
                 <span style={{ color: 'var(--subtle)', fontSize: 12 }}>to</span>
                 <input
                   type="date"
                   value={customTo}
                   onChange={e => { setCustomTo(e.target.value); handleFilterChange() }}
-                  style={{ padding: '4px 8px', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 8, color: 'var(--ink)', fontSize: 12 }}
+                  style={{ padding: '4px 8px', minHeight: 44, maxWidth: '100%', background: 'var(--surface)', border: '1px solid var(--border)', color: 'var(--ink)', fontSize: 12, colorScheme: 'dark' }}
                 />
               </div>
             )}
@@ -388,72 +386,72 @@ export default function Analytics() {
       </Card>
 
       {/* Summary metrics */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 12 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(160px, 100%), 1fr))', gap: 12 }}>
         <MetricCard
-          label="Wallet USDC Balance"
-          value={usdcBalanceFormatted ? `$${usdcBalanceFormatted}` : isConnected && isCorrectChain ? '—' : 'Connect wallet'}
-          sub={isCorrectChain ? 'Live · Arc Mainnet' : 'Wrong network'}
+          label="Wallet USDC balance"
+          value={usdcBalanceFormatted ? `$${usdcBalanceFormatted}` : isConnected && isCorrectChain ? '—' : 'Connect your wallet'}
+          sub={isCorrectChain ? 'Live from Arc Mainnet' : 'Switch to Arc Mainnet to see this'}
           icon={Wallet}
           color="var(--accent)"
           loading={balanceLoading}
         />
         <MetricCard
-          label="Total Outgoing"
+          label="Total sent"
           value={`$${formatUsdcBigint(summary.totalOutgoingRaw)}`}
-          sub="App records · period"
+          sub="This browser’s records · period"
           icon={TrendingDown}
           color="var(--danger)"
         />
         <MetricCard
-          label="Total Incoming"
+          label="Total received"
           value={`$${formatUsdcBigint(summary.totalIncomingRaw)}`}
-          sub="App records · period"
+          sub="This browser’s records · period"
           icon={TrendingUp}
           color="var(--accent)"
         />
         <MetricCard
-          label="Net Cash Flow"
+          label="Net cash flow"
           value={netFlowStr}
-          sub="App records · period"
+          sub="This browser’s records · period"
           icon={Minus}
           color={netFlowPos ? 'var(--accent)' : 'var(--danger)'}
         />
         <MetricCard
-          label="Payroll Sent"
+          label="Payroll sent"
           value={`$${formatUsdcBigint(summary.payrollOutgoingRaw)}`}
-          sub="Period"
+          sub="Selected period"
           icon={Activity}
-          color="#6366f1"
+          color="var(--ink-2)"
         />
         <MetricCard
-          label="Confirmed Txs"
+          label="Confirmed transactions"
           value={String(summary.confirmedCount)}
-          sub="On-chain verified"
+          sub="Confirmed by the network"
           icon={CheckCircle}
           color="var(--accent)"
         />
         <MetricCard
-          label="Pending / Submitted"
+          label="Pending"
           value={String(summary.pendingCount)}
           sub="Awaiting confirmation"
           icon={Clock}
           color="var(--warning)"
         />
         <MetricCard
-          label="Local Records"
+          label="Saved in this browser"
           value={String(summary.totalCount - summary.confirmedCount - summary.pendingCount)}
-          sub="No tx hash"
+          sub="No transaction hash"
           icon={XCircle}
           color="var(--subtle)"
         />
       </div>
 
       {/* Charts row */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 260px', gap: 16 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(260px, 100%), 1fr))', gap: 16 }}>
         <Card>
           <CardHeader>
-            <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--ink-2)' }}>Cash Flow</span>
-            <span style={{ fontSize: 11, color: 'var(--subtle)' }}>Daily outgoing vs incoming USDC · app records</span>
+            <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--ink-2)' }}>Cash flow</span>
+            <span style={{ fontSize: 11, color: 'var(--subtle)' }}>Daily USDC sent and received · this browser’s records</span>
           </CardHeader>
           <CardBody>
             <CashFlowChart buckets={dailyBuckets} height={160} />
@@ -462,7 +460,7 @@ export default function Analytics() {
 
         <Card>
           <CardHeader>
-            <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--ink-2)' }}>By Category</span>
+            <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--ink-2)' }}>By category</span>
           </CardHeader>
           <CardBody style={{ display: 'flex', justifyContent: 'center' }}>
             <DonutChart slices={categoryBreakdown} size={160} />
@@ -473,13 +471,13 @@ export default function Analytics() {
       {/* Transaction table */}
       <Card>
         <CardHeader>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', minWidth: 0 }}>
             <BarChart2 size={16} style={{ color: 'var(--accent)' }} strokeWidth={1.5} />
             <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--ink-2)' }}>
-              Transaction History
+              Transaction history
             </span>
             <span style={{ fontSize: 12, color: 'var(--subtle)' }}>
-              {sortedRecords.length} records · {allTxCount} total
+              {sortedRecords.length} shown · {allTxCount} total
             </span>
           </div>
           <button
@@ -488,7 +486,7 @@ export default function Analytics() {
             style={{
               display: 'flex', alignItems: 'center', gap: 6,
               background: 'var(--surface-muted)', border: '1px solid var(--border)',
-              borderRadius: 8, padding: '6px 12px', fontSize: 12, fontWeight: 500,
+              minHeight: 44, padding: '6px 12px', fontSize: 12, fontWeight: 500,
               color: sortedRecords.length > 0 ? 'var(--ink-2)' : 'var(--subtle)',
               cursor: sortedRecords.length > 0 ? 'pointer' : 'not-allowed',
             }}
@@ -501,24 +499,24 @@ export default function Analytics() {
         {/* Filters */}
         <div
           style={{
-            padding: '12px 24px',
+            padding: '12px 16px',
             borderBottom: '1px solid var(--border)',
             display: 'flex', flexWrap: 'wrap', gap: 10, alignItems: 'center',
           }}
         >
           <input
-            placeholder="Search hash, address, description…"
+            placeholder="Search by hash, address or description"
             value={search}
             onChange={e => { setSearch(e.target.value); handleFilterChange() }}
             style={{
-              flex: '1 1 200px', padding: '6px 12px', background: 'var(--surface-muted)',
-              border: '1px solid var(--border)', borderRadius: 8, color: 'var(--ink)', fontSize: 12,
+              flex: '1 1 200px', minWidth: 0, minHeight: 44, padding: '6px 12px', background: 'var(--surface-muted)',
+              border: '1px solid var(--border)', color: 'var(--ink)', fontSize: 12,
             }}
           />
           <select
             value={category}
             onChange={e => { setCategory(e.target.value as TxCategory | 'all'); handleFilterChange() }}
-            style={{ padding: '6px 10px', background: 'var(--surface-muted)', border: '1px solid var(--border)', borderRadius: 8, color: 'var(--ink)', fontSize: 12 }}
+            style={{ padding: '6px 10px', minHeight: 44, maxWidth: '100%', background: 'var(--surface-muted)', border: '1px solid var(--border)', color: 'var(--ink)', fontSize: 12 }}
           >
             {(Object.keys(CATEGORY_LABELS) as (TxCategory | 'all')[]).map(k => (
               <option key={k} value={k}>{CATEGORY_LABELS[k]}</option>
@@ -527,16 +525,16 @@ export default function Analytics() {
           <select
             value={direction}
             onChange={e => { setDirection(e.target.value as TxDirection | 'all'); handleFilterChange() }}
-            style={{ padding: '6px 10px', background: 'var(--surface-muted)', border: '1px solid var(--border)', borderRadius: 8, color: 'var(--ink)', fontSize: 12 }}
+            style={{ padding: '6px 10px', minHeight: 44, maxWidth: '100%', background: 'var(--surface-muted)', border: '1px solid var(--border)', color: 'var(--ink)', fontSize: 12 }}
           >
-            <option value="all">All Directions</option>
-            <option value="outgoing">Outgoing</option>
-            <option value="incoming">Incoming</option>
+            <option value="all">Sent and received</option>
+            <option value="outgoing">Sent</option>
+            <option value="incoming">Received</option>
           </select>
           <select
             value={verStatus}
             onChange={e => { setVerStatus(e.target.value as TxVerification | 'all'); handleFilterChange() }}
-            style={{ padding: '6px 10px', background: 'var(--surface-muted)', border: '1px solid var(--border)', borderRadius: 8, color: 'var(--ink)', fontSize: 12 }}
+            style={{ padding: '6px 10px', minHeight: 44, maxWidth: '100%', background: 'var(--surface-muted)', border: '1px solid var(--border)', color: 'var(--ink)', fontSize: 12 }}
           >
             {(Object.keys(STATUS_LABELS) as (TxVerification | 'all')[]).map(k => (
               <option key={k} value={k}>{STATUS_LABELS[k]}</option>
@@ -549,7 +547,7 @@ export default function Analytics() {
           <EmptyState
             icon={BarChart2}
             title="No transactions in this period"
-            description="Execute payroll batches, recurring payments, or treasury transfers to see records here."
+            description="Send payroll, recurring payments or treasury transfers and they will appear here."
           />
         ) : (
           <div style={{ overflowX: 'auto' }}>
@@ -562,7 +560,7 @@ export default function Analytics() {
                   <th style={{ padding: '10px 12px', textAlign: 'left', fontSize: 11, color: 'var(--subtle)', fontWeight: 600 }}>To</th>
                   <th style={{ padding: '10px 12px', textAlign: 'right', fontSize: 11, color: 'var(--subtle)', fontWeight: 600 }}>Amount</th>
                   <th style={{ padding: '10px 12px', textAlign: 'left', fontSize: 11, color: 'var(--subtle)', fontWeight: 600 }}>Status</th>
-                  <th style={{ padding: '10px 12px', textAlign: 'left', fontSize: 11, color: 'var(--subtle)', fontWeight: 600 }}>Tx Hash</th>
+                  <th style={{ padding: '10px 12px', textAlign: 'left', fontSize: 11, color: 'var(--subtle)', fontWeight: 600 }}>Transaction hash</th>
                 </tr>
               </thead>
               <tbody>
@@ -572,22 +570,22 @@ export default function Analytics() {
 
             {/* Pagination */}
             {totalPages > 1 && (
-              <div style={{ padding: '12px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderTop: '1px solid var(--border)' }}>
+              <div style={{ padding: '12px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8, borderTop: '1px solid var(--border)' }}>
                 <span style={{ fontSize: 12, color: 'var(--muted)' }}>
-                  Page {page} of {totalPages} · {sortedRecords.length} records
+                  Page {page} of {totalPages}
                 </span>
                 <div style={{ display: 'flex', gap: 8 }}>
                   <button
                     onClick={() => setPage(p => Math.max(1, p - 1))}
                     disabled={page === 1}
-                    style={{ padding: '5px 12px', background: 'var(--surface-muted)', border: '1px solid var(--border)', borderRadius: 8, fontSize: 12, color: page === 1 ? 'var(--subtle)' : 'var(--ink)', cursor: page === 1 ? 'not-allowed' : 'pointer' }}
+                    style={{ padding: '5px 12px', minHeight: 44, minWidth: 64, background: 'var(--surface-muted)', border: '1px solid var(--border)', fontSize: 12, color: page === 1 ? 'var(--subtle)' : 'var(--ink)', cursor: page === 1 ? 'not-allowed' : 'pointer' }}
                   >
                     Prev
                   </button>
                   <button
                     onClick={() => setPage(p => Math.min(totalPages, p + 1))}
                     disabled={page === totalPages}
-                    style={{ padding: '5px 12px', background: 'var(--surface-muted)', border: '1px solid var(--border)', borderRadius: 8, fontSize: 12, color: page === totalPages ? 'var(--subtle)' : 'var(--ink)', cursor: page === totalPages ? 'not-allowed' : 'pointer' }}
+                    style={{ padding: '5px 12px', minHeight: 44, minWidth: 64, background: 'var(--surface-muted)', border: '1px solid var(--border)', fontSize: 12, color: page === totalPages ? 'var(--subtle)' : 'var(--ink)', cursor: page === totalPages ? 'not-allowed' : 'pointer' }}
                   >
                     Next
                   </button>
@@ -598,26 +596,24 @@ export default function Analytics() {
         )}
       </Card>
 
-      {/* Missing infrastructure note */}
+      {/* Missing data note */}
       <Card>
         <CardBody>
           <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
             <Info size={16} style={{ color: 'var(--subtle)', flexShrink: 0, marginTop: 2 }} strokeWidth={1.5} />
-            <div style={{ fontSize: 13, color: 'var(--muted)' }}>
-              <strong style={{ color: 'var(--ink-2)' }}>For complete on-chain analytics:</strong>{' '}
-              Historical incoming USDC transfers require an event indexer (Envio, The Graph, or a custom
-              eth_getLogs scanner) that queries Transfer events on the Arc Mainnet USDC contract for the treasury wallet.
-              Until deployed, only outgoing records from this application are available.
-              Contact your technical team to set up the indexer, or use the{' '}
+            <div style={{ fontSize: 13, color: 'var(--muted)', minWidth: 0, lineHeight: 1.6 }}>
+              <strong style={{ color: 'var(--ink-2)' }}>Looking for the full history?</strong>{' '}
+              Money received into your wallet is not tracked here yet, and neither is activity made outside this app or
+              on another device. Open the{' '}
               <a
                 href="https://explorer.arc.io"
                 target="_blank"
                 rel="noopener noreferrer"
-                style={{ color: 'var(--accent)', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 3 }}
+                style={{ color: 'var(--accent)', textDecoration: 'underline', display: 'inline-flex', alignItems: 'center', gap: 3 }}
               >
                 Arc Explorer <ExternalLink size={10} />
               </a>{' '}
-              to view the full transaction history for your wallet address.
+              to see every transaction for your wallet address.
             </div>
           </div>
         </CardBody>
